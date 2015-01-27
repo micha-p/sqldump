@@ -1,6 +1,6 @@
 # sqlgopher
 
-A small web-based tool for database administration. Started during Gopher Gala 2015. 
+A small web-based tool for database administration. Started during Gopher Gala 2015.
 
 ## prepare
 
