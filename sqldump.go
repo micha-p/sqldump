@@ -4,10 +4,8 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
-	"strconv"
 )
 
-var base_url = "http://localhost"
 var database = "information_schema"
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,83 +24,6 @@ func helpHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "select links with mouse or finger\n")
 }
 
-func dumpIt(w http.ResponseWriter, r *http.Request) {
-	v := r.URL.Query()
-	db := v.Get("db")
-	t := v.Get("t")
-	x := v.Get("x")
-	user, _, host, port := getCredentials(r)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, "<p>")
-	fmt.Fprint(w, href("/logout", "[X]"))
-	fmt.Fprint(w, " &nbsp; ")
-	fmt.Fprint(w, href("/help", "[?]"))
-	fmt.Fprint(w, " &nbsp; ")
-	fmt.Fprint(w, href("/", "[/]"))
-	fmt.Fprint(w, " &nbsp; ")
-	fmt.Fprint(w, user+"@"+host+":"+port)
-	fmt.Fprint(w, " &nbsp; ")
-
-	if db == "" {
-		fmt.Fprintln(w, "</p>")
-		fmt.Fprint(w, tableA)
-		dumpHome(w, r)
-		fmt.Fprint(w, tableO)
-	} else if t == "" {
-		fmt.Fprintln(w, db, "</p>")
-		fmt.Fprint(w, tableA)
-		dumpTables(w, r, db)
-		fmt.Fprint(w, tableO)
-	} else if x == "" {
-		q := r.URL.Query()
-		q.Add("action", "insert")
-		linkinsert := q.Encode()
-		q.Del("action")
-		q.Add("action", "select")
-		linkselect := q.Encode()
-		q.Del("action")
-		q.Del("t")
-		linkescape := q.Encode()
-
-		fmt.Fprint(w, db+"."+t)
-		fmt.Fprint(w, " &nbsp; ")
-		fmt.Fprint(w, " ["+href("?"+linkescape, ".")+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkinsert, "+")+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkselect, "?")+"] ")
-		fmt.Fprintln(w, "</p>")
-
-		fmt.Fprint(w, tableA)
-		dumpRecords(w, r, db, t)
-		fmt.Fprint(w, tableO)
-	} else {
-		xint, err := strconv.Atoi(x)
-		checkY(err)
-		xmax, err := strconv.Atoi(getCount(r, db, t))
-		left := strconv.Itoa(maxI(xint-1, 1))
-		right := strconv.Itoa(minI(xint+1, xmax))
-
-		q := r.URL.Query()
-		q.Set("x", left)
-		linkleft := q.Encode()
-		q.Set("x", right)
-		linkright := q.Encode()
-		q.Del("x")
-		linkall := q.Encode()
-
-		fmt.Fprint(w, db+"."+t)
-		fmt.Fprint(w, " &nbsp; ")
-		fmt.Fprint(w, " ["+href("?"+linkall, ".")+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkleft, "<")+"] ")
-		fmt.Fprint(w, " ["+x+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkright, ">")+"] ")
-		fmt.Fprintln(w, "</p>")
-
-		fmt.Fprint(w, tableA)
-		dumpFields(w, r, db, t, x)
-		fmt.Fprint(w, tableO)
-	}
-}
 
 func workload(w http.ResponseWriter, r *http.Request) {
 

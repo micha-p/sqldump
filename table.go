@@ -1,17 +1,8 @@
 package main
 
-/*
-<table>
-<tr> <th>head 1</th> <th>head 2</th> </tr>
-<tr> <td>cell 1</td> <td>cell 2</td> </tr>
-<tr> <td>cell 3</td> <td>cell 4</td> </tr>
-</table>
-*/
-
 import (
 	"fmt"
 	"net/http"
-	"text/template"
 )
 
 // TODO create and parse templates at compile time
@@ -23,22 +14,17 @@ const lineO = "</tr>\n"
 const templH = "<th>{{.}}</th>"
 const templC = "<td>{{.}}</td>"
 
-// saving key strokes
 
 func tableHead(w http.ResponseWriter, s string) {
-	tableOut(w, s, templH)
+	err := templateHead.Execute(w, s)
+	checkY(err)
 }
 
 func tableCell(w http.ResponseWriter, s string) {
-	tableOut(w, s, templC)
+	err := templateCell.Execute(w, s)
+	checkY(err)
 }
 
-func tableOut(w http.ResponseWriter, s string, templ string) {
-	t, err := template.New("th").Parse(templ)
-	checkY(err)
-	err = t.Execute(w, s)
-	checkY(err)
-}
 
 func tableDuo(w http.ResponseWriter, s1 string, s2 string) {
 	fmt.Fprint(w, lineA)

@@ -72,11 +72,3 @@ func logoutHandler(w http.ResponseWriter, request *http.Request) {
 	http.Redirect(w, request, request.URL.Host, 302)
 }
 
-const loginPage = `<form method="post" action="/login">
-   <label for="user">User</label><input type="text"     id="user" name="user"><br>
-   <label for="pass">Pass</label><input type="password" id="pass" name="pass"><br>
-   <label for="host">Host</label><input type="text"     id="host" name="host" value="localhost"><br>
-   <label for="port">Port</label><input type="text"     id="port" name="port" value="3306"><br>
-   <button type="submit">Login</button>
-</form>
-`

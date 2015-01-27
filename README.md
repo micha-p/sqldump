@@ -1,9 +1,6 @@
-# sqldump
+# sqlgopher
 
-A small tool for assisting database administration. My first 48 hours in Golang.
-
-Unfortunately I do not have that much time, so it's just close to the backend with some basic html. 
-Use your fantasy for best UX and choose high levels of abstraction and imagination for fancy output with latest js-technology. 
+A small web-based tool for database administration. Started during Gopher Gala 2015. 
 
 ## prepare
 
@@ -13,6 +10,9 @@ Use your fantasy for best UX and choose high levels of abstraction and imaginati
     mysql -p"mypassword" -u galagopher galadb -e 'insert into posts values("hello","2015-01-01");'
     mysql -p"mypassword" -u galagopher galadb -e 'insert into posts values("more","2015-01-03");'
     mysql -p"mypassword" -u galagopher galadb -e 'insert into posts values("end","2015-01-23");'
+    mysql -p"mypassword" -u galagopher galadb -e 'insert into posts set title="four",start="2015-01-04";'
+    mysql -p"mypassword" -u galagopher galadb -e 'insert into posts set title="five",start="2015-01-05";'
+    mysql -p"mypassword" -u galagopher galadb -e 'insert into posts set title="six",start="2015-01-06";'
     mysql -p"mypassword" -u galagopher galadb -B -e 'select * from posts;'
 
 ## install
@@ -20,18 +20,18 @@ Use your fantasy for best UX and choose high levels of abstraction and imaginati
     export GOPATH=$PWD
     go get github.com/go-sql-driver/mysql
     go get github.com/gorilla/securecookie
-    go get -u github.com/gophergala/sqldump
+    go get -u github.com/micha-p/sqlgopher
 
 ## run
 
-    bin/sqldump
+    bin/sqlgopher
 
 
 ## usage
 
 [http://localhost:8080](http://localhost:8080)
 
-or more convenient but not safe
+or more convenient but not secure
 
 [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306)
 
