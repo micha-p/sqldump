@@ -130,22 +130,11 @@ func actionShow(w http.ResponseWriter, r *http.Request, database string, table s
 	records = append(records, row)
 
 	for rows.Next() {
-		var f, t, n, k, d, e string
-		var kn, dn sql.NullString
-		err := rows.Scan(&f, &t, &n, &kn, &dn, &e)
+		var f, t, n, k, e string
+		var d []byte    // might contain Null
+		err := rows.Scan(&f, &t, &n, &k, &dn, &e)
 		checkY(err)
-
-		if kn.Valid {
-			k = kn.String
-		} else {
-			k = ""
-		}
-		if dn.Valid {
-			d = dn.String
-		} else {
-			d = ""
-		}
-		records = append(records, []string{f, t, n, k, d, e})
+		records = append(records, []string{f, t, n, k, string(d), e})
 	}
 	tableOut(w, r, records)
 }

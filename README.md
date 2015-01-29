@@ -13,7 +13,7 @@ This tool is made for administration of these by browsers on the command-line or
 - potentially changing database driver (TODO)
 - templates for html
 
-## prepare
+### prepare
 
     sudo mysqladmin --defaults-file=/etc/mysql/debian.cnf create galadb
     sudo mysql --defaults-file=/etc/mysql/debian.cnf -e "GRANT ALL PRIVILEGES  ON galadb.*  TO 'galagopher'@'localhost' IDENTIFIED BY 'mypassword'  WITH GRANT OPTION;"
@@ -26,19 +26,19 @@ This tool is made for administration of these by browsers on the command-line or
     mysql -p"mypassword" -u galagopher galadb -e 'insert into posts set title="six",start="2015-01-06";'
     mysql -p"mypassword" -u galagopher galadb -B -e 'select * from posts;'
 
-## install
+### install
 
     export GOPATH=$PWD
     go get github.com/go-sql-driver/mysql
     go get github.com/gorilla/securecookie
     go get -u github.com/micha-p/sqlgopher
 
-## run
+### run
 
     bin/sqlgopher
 
 
-## usage
+### usage
 
 [http://localhost:8080](http://localhost:8080)
 
@@ -51,11 +51,12 @@ or on command line
     w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     micha@micha-GA-78LMT-USB3:~/bin/sqlgopher$ lynx 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
 
-## caveats
+### caveats
 
 - just basic protection against sql injection via database and table names
 - However, any users might destroy just their own databases, logged in before
 - insert and query limited by request length
+- same data types cause problems at driver level
 
 # License
 
