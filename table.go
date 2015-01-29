@@ -1,47 +1,92 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 )
 
 /*
  * <table>
  * <tr> <th>head 1</th> <th>head 2</th> </tr>
- * <tr> <td>cell 1</td> <td>cell 2</td> </tr>
- * <tr> <td>cell 3</td> <td>cell 4</td> </tr>
+ * <tr> <td>data 1</td> <td>data 2</td> </tr>
+ * <tr> <td>data 3</td> <td>data 4</td> </tr>
  * </table>
  */
 
-// TODO create and parse templates at compile time
-
-const tableA = "<table>\n"
-const tableO = "</table>\n"
-const lineA = "<tr>"
-const lineO = "</tr>\n"
-const templH = "<th>{{.}}</th>"
-const templC = "<td>{{.}}</td>"
-
 type Context struct {
-	Title string
-	Records   [][]string
+	User     string
+	Host     string
+	Port     string
+	Database string
+	Table    string
+	Records  [][]string
+	Escape   string
+	Select   string
+	Insert   string
+	Info     string
+	All      string
+	X        string
+	Left     string
+	Right    string
 }
 
+func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
 
-func tableHead(w http.ResponseWriter, s string) {
-	err := templateHead.Execute(w, s)
+	u, _, h, p := getCredentials(r)
+	db := r.URL.Query().Get("db")
+	t := r.URL.Query().Get("t")
+	x := r.URL.Query().Get("x")
+	var linkleft string
+	var linkright string
+	var linkall string
+	var linkescape string
+	var linkselect string
+	var linkinsert string
+	var linkinfo string
+
+	if t == "" {
+	} else if x == "" {
+		q := r.URL.Query()
+		q.Add("action", "insert")
+		linkinsert = q.Encode()
+		q.Del("action")
+		q.Add("action", "select")
+		linkselect = q.Encode()
+		q.Del("action")
+		q.Del("t")
+		linkescape = q.Encode()
+	} else {
+		xint, err := strconv.Atoi(x)
+		checkY(err)
+		xmax, err := strconv.Atoi(getCount(r, db, t))
+		left := strconv.Itoa(maxI(xint-1, 1))
+		right := strconv.Itoa(minI(xint+1, xmax))
+
+		q := r.URL.Query()
+		q.Set("x", left)
+		linkleft = q.Encode()
+		q.Set("x", right)
+		linkright = q.Encode()
+		q.Del("x")
+		linkall = q.Encode()
+	}
+
+	c := Context{User: u,
+		Host:     h,
+		Port:     p,
+		Database: db,
+		Table:    t,
+		Records:  records,
+		Escape:   href("?"+linkescape, "."),
+		Select:   href("?"+linkselect, "/"),
+		Insert:   href("?"+linkinsert, "+"),
+		Info:     href("?"+linkinfo+"TODO", "?"),
+		All:      href("?"+linkall, "."),
+		X:        x,
+		Left:     href("?"+linkleft, "<"),
+		Right:    href("?"+linkright, ">"),
+	}
+
+	err := templateTable.Execute(w, c)
 	checkY(err)
-}
-
-func tableCell(w http.ResponseWriter, s string) {
-	err := templateCell.Execute(w, s)
-	checkY(err)
-}
-
-
-func tableDuo(w http.ResponseWriter, s1 string, s2 string) {
-	fmt.Fprint(w, lineA)
-	tableCell(w, s1)
-	tableCell(w, s2)
-	fmt.Fprint(w, lineO)
 }

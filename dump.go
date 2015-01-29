@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
 	"net/http"
@@ -35,85 +34,23 @@ func getRows(r *http.Request, database string, stmt string) *sql.Rows {
 }
 
 func dumpIt(w http.ResponseWriter, r *http.Request) {
-	v := r.URL.Query()
-	db := v.Get("db")
-	t := v.Get("t")
-	x := v.Get("x")
-	user, _, host, port := getCredentials(r)
+
+	db := r.URL.Query().Get("db")
+	t := r.URL.Query().Get("t")
+	x := r.URL.Query().Get("x")
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, "<p>")
-	fmt.Fprint(w, href("/logout", "[X]"))
-	fmt.Fprint(w, " &nbsp; ")
-	fmt.Fprint(w, href("/help", "[?]"))
-	fmt.Fprint(w, " &nbsp; ")
-	fmt.Fprint(w, href("/", "[/]"))
-	fmt.Fprint(w, " &nbsp; ")
-	fmt.Fprint(w, user+"@"+host+":"+port)
-	fmt.Fprint(w, " &nbsp; ")
 
 	if db == "" {
-		fmt.Fprintln(w, "</p>")
-		fmt.Fprint(w, tableA)
 		dumpHome(w, r)
-		fmt.Fprint(w, tableO)
 	} else if t == "" {
-		fmt.Fprintln(w, db, "</p>")
-		fmt.Fprint(w, tableA)
 		dumpTables(w, r, db)
-		fmt.Fprint(w, tableO)
 	} else if x == "" {
-		q := r.URL.Query()
-		q.Add("action", "insert")
-		linkinsert := q.Encode()
-		q.Del("action")
-		q.Add("action", "select")
-		linkselect := q.Encode()
-		q.Del("action")
-		q.Del("t")
-		linkescape := q.Encode()
-
-		fmt.Fprint(w, db+"."+t)
-		fmt.Fprint(w, " &nbsp; ")
-		fmt.Fprint(w, " ["+href("?"+linkescape, ".")+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkinsert, "+")+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkselect, "?")+"] ")
-		fmt.Fprintln(w, "</p>")
-
-		fmt.Fprint(w, tableA)
 		dumpRecords(w, r, db, t)
-		fmt.Fprint(w, tableO)
 	} else {
-		xint, err := strconv.Atoi(x)
-		checkY(err)
-		xmax, err := strconv.Atoi(getCount(r, db, t))
-		left := strconv.Itoa(maxI(xint-1, 1))
-		right := strconv.Itoa(minI(xint+1, xmax))
-
-		q := r.URL.Query()
-		q.Set("x", left)
-		linkleft := q.Encode()
-		q.Set("x", right)
-		linkright := q.Encode()
-		q.Del("x")
-		linkall := q.Encode()
-
-		fmt.Fprint(w, db+"."+t)
-		fmt.Fprint(w, " &nbsp; ")
-		fmt.Fprint(w, " ["+href("?"+linkall, ".")+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkleft, "<")+"] ")
-		fmt.Fprint(w, " ["+x+"] ")
-		fmt.Fprint(w, " ["+href("?"+linkright, ">")+"] ")
-		fmt.Fprintln(w, "</p>")
-
-		fmt.Fprint(w, tableA)
 		dumpFields(w, r, db, t, x)
-		fmt.Fprint(w, tableO)
 	}
 }
-
-
-
 
 // Shows selection of databases at top level
 func dumpHome(w http.ResponseWriter, r *http.Request) {
@@ -122,12 +59,16 @@ func dumpHome(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	var n int = 1
+	records := [][]string{}
 	for rows.Next() {
 		var field string
 		rows.Scan(&field)
-		tableDuo(w, href(r.URL.Host+"?"+"db="+field, "["+strconv.Itoa(n)+"]"), field)
+		row := []string{href(r.URL.Host+"?"+"db="+field, "["+strconv.Itoa(n)+"]"), field}
+		records = append(records, row)
 		n = n + 1
 	}
+
+	tableOut(w, r, records)
 }
 
 //  Dump all tables of a database
@@ -136,25 +77,23 @@ func dumpTables(w http.ResponseWriter, r *http.Request, database string) {
 	rows := getRows(r, database, "show tables")
 	defer rows.Close()
 
-	{ // table head
-		fmt.Fprint(w, lineA)
-		tableHead(w, "#")
-		tableHead(w, "table")
-		fmt.Fprint(w, lineO)
-	}
-
+	records := [][]string{[]string{"rows", "table"}}
 	for rows.Next() {
 		var field string
+		var row []string
 		rows.Scan(&field)
 		if database == "information_schema" {
-			tableDuo(w, href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, "?"), field)
+			row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, "?"), field}
 		} else {
-			tableDuo(w, href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, getCount(r, database, field)), field)
+			row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, getCount(r, database, field)), field}
 		}
+		records = append(records, row)
 	}
+	tableOut(w, r, records)
+
 }
 
-//  Dump all records of a table, one per line
+//  Dump all records of a table, one per row
 func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table string) {
 
 	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
@@ -162,21 +101,10 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 	cols, err := rows.Columns()
 	checkY(err)
 
-	{
-		// table head
-		fmt.Fprint(w, lineA)
-		tableHead(w, "#")
-		for _, col := range cols {
-			tableHead(w, col)
-		}
-		fmt.Fprint(w, lineO)
-	}
-
 	/*  credits:
 	 * 	http://stackoverflow.com/questions/19991541/dumping-mysql-tables-to-json-with-golang
 	 * 	http://go-database-sql.org/varcols.html
 	 */
-
 	raw := make([]interface{}, len(cols))
 	val := make([]interface{}, len(cols))
 
@@ -185,22 +113,28 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 	}
 
 	var n int = 1
+	head := []string{"#"}
+	for _, column := range cols {
+		head = append(head, column)
+	}
+	records := [][]string{}
+	records = append(records, head)
 	for rows.Next() {
 
-		fmt.Fprint(w, lineA)
-		tableCell(w, href(r.URL.Host+"?"+r.URL.RawQuery+"&x="+strconv.Itoa(n), strconv.Itoa(n)))
+		row := []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&x="+strconv.Itoa(n), strconv.Itoa(n))}
 
 		err = rows.Scan(raw...)
 		checkY(err)
 
 		for _, col := range val {
 			if col != nil {
-				tableCell(w, string(col.([]byte)))
+				row = append(row, string(col.([]byte)))
 			}
 		}
-		fmt.Fprint(w, lineO)
+		records = append(records, row)
 		n = n + 1
 	}
+	tableOut(w, r, records)
 }
 
 // Dump all fields of a record, one column per line
@@ -220,7 +154,9 @@ func dumpFields(w http.ResponseWriter, r *http.Request, database string, table s
 
 	rec, err := strconv.Atoi(num)
 	checkY(err)
+
 	var n int = 1
+	records := [][]string{}
 
 rowLoop:
 	for rows.Next() {
@@ -231,12 +167,15 @@ rowLoop:
 			checkY(err)
 
 			for i, col := range val {
+				var row []string
 				if col != nil {
-					tableDuo(w, columns[i], string(col.([]byte)))
+					row = []string{columns[i] + ":", string(col.([]byte))}
+					records = append(records, row)
 				}
 			}
 			break rowLoop
 		}
 		n = n + 1
 	}
+	tableOut(w, r, records)
 }

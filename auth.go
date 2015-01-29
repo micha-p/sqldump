@@ -71,4 +71,3 @@ func logoutHandler(w http.ResponseWriter, request *http.Request) {
 	clearCredentials(w)
 	http.Redirect(w, request, request.URL.Host, 302)
 }
-

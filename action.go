@@ -72,11 +72,7 @@ func actionInsert(w http.ResponseWriter, r *http.Request, database string, table
 
 // http://jan.newmarch.name/go/template/chapter-template.html
 // http://golang.org/pkg/text/template/
-const sqlinsert=`insert into {{.}} set {{range pairs}} title= "final", start= "15-12-09"`
-
-
-
-
+const sqlinsert = `insert into {{.}} set {{range pairs}} title= "final", start= "15-12-09"`
 
 func insertHandler(w http.ResponseWriter, r *http.Request) {
 	db := r.FormValue("db")

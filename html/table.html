@@ -1,9 +1,22 @@
 <html>
 <head>
-<title>{{.Title}}</title>
+<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{else}}{{.User}}@{{.Host}}:{{.Port}}{{end}}</title> 
 <body>
 
-<h1>{{.Title}}<h1>
+<!-- top menu -->
+<p>
+<a href="/logout">[X]</a>
+&nbsp; 
+<a href="/help">[?]</a>
+&nbsp; 
+<a href="/">[/]</a>
+&nbsp; 
+{{.User}}@{{.Host}}:{{.Port}}
+{{if .Database}}&nbsp;{{.Database}}{{end}}{{if .Table}}.{{.Table}}{{end}}
+{{if .X}}&nbsp; [{{.All}}] [{{.Left}}] [{{.X}}] [{{.Right}}]
+{{else}}{{if .Table}} &nbsp; [{{.Escape}}] [{{.Select}}] [{{.Insert}}] [{{.Info}}]{{end}}
+{{end}}
+</p>
 
 <table>
 {{range .Records}}         
