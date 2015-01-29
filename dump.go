@@ -8,17 +8,6 @@ import (
 	"strconv"
 )
 
-func getCount(r *http.Request, database string, table string) string {
-
-	rows := getRows(r, database, "select count(*) from "+template.HTMLEscapeString(table))
-	defer rows.Close()
-
-	rows.Next()
-	var field string
-	rows.Scan(&field)
-	return field
-}
-
 func getRows(r *http.Request, database string, stmt string) *sql.Rows {
 	user, pw, h, p := getCredentials(r)
 	conn, err := sql.Open("mysql", dsn(user, pw, h, p, database))
@@ -32,6 +21,18 @@ func getRows(r *http.Request, database string, stmt string) *sql.Rows {
 
 	return rows
 }
+
+func getCount(r *http.Request, database string, table string) string {
+
+	rows := getRows(r, database, "select count(*) from "+template.HTMLEscapeString(table))
+	defer rows.Close()
+
+	rows.Next()
+	var field string
+	rows.Scan(&field)
+	return field
+}
+
 
 func dumpIt(w http.ResponseWriter, r *http.Request) {
 

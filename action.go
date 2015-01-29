@@ -12,7 +12,10 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"html/template"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 )
 
@@ -72,7 +75,8 @@ func actionInsert(w http.ResponseWriter, r *http.Request, database string, table
 
 // http://jan.newmarch.name/go/template/chapter-template.html
 // http://golang.org/pkg/text/template/
-const sqlinsert = `insert into {{.}} set {{range pairs}} title= "final", start= "15-12-09"`
+
+const sqlinsert = `insert into {{.}} set {{range pairs}}`
 
 func insertHandler(w http.ResponseWriter, r *http.Request) {
 	db := r.FormValue("db")
@@ -84,17 +88,29 @@ func insertHandler(w http.ResponseWriter, r *http.Request) {
 	cols, err := rows.Columns()
 	checkY(err)
 
-	// no time left for submission
-
-	sql := "insert into " + t + " set\n"
-
+	// Imploding within templates is severly missing!
+    var assignments []string
 	for _, col := range cols {
 		val := r.FormValue(col)
 		if val != "" {
-			sql = sql + "  " + col + "= \"" + val + "\",\n"
+			assignments = append (assignments, "  " + col + "= \"" + val + "\"")
 		}
 	}
-	fmt.Fprintln(w, sql)
+	
+	if len(assignments) > 0 {
 
-	//    http.Redirect(w, r, r.URL.Host + "?db=" + db + "&t=" + t, 302)
+		stmt := "INSERT INTO " + t + " SET" + strings.Join(assignments, ",")
+
+		user, pw, h, p := getCredentials(r)
+		conn, err := sql.Open("mysql", dsn(user, pw, h, p, db))
+		checkY(err)
+		defer conn.Close()
+	
+		statement, err := conn.Prepare(stmt)
+		checkY(err)
+		_, err = statement.Exec()
+		checkY(err)
+	
+	    http.Redirect(w, r, r.URL.Host + "?db=" + db + "&t=" + t, 302)
+	}
 }
