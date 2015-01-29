@@ -5,6 +5,14 @@ import (
 	"net/http"
 )
 
+/*
+ * <table>
+ * <tr> <th>head 1</th> <th>head 2</th> </tr>
+ * <tr> <td>cell 1</td> <td>cell 2</td> </tr>
+ * <tr> <td>cell 3</td> <td>cell 4</td> </tr>
+ * </table>
+ */
+
 // TODO create and parse templates at compile time
 
 const tableA = "<table>\n"
@@ -13,6 +21,11 @@ const lineA = "<tr>"
 const lineO = "</tr>\n"
 const templH = "<th>{{.}}</th>"
 const templC = "<td>{{.}}</td>"
+
+type Context struct {
+	Title string
+	Records   [][]string
+}
 
 
 func tableHead(w http.ResponseWriter, s string) {

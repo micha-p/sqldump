@@ -1,0 +1,15 @@
+<html>
+<head>
+<title>{{.Title}}</title>
+<body>
+
+<h1>{{.Title}}<h1>
+
+<table>
+{{range .Records}}         
+<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>{{end}}
+</table>
+</body>
+</html>
+
+

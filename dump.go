@@ -33,6 +33,7 @@ func getRows(r *http.Request, database string, stmt string) *sql.Rows {
 
 	return rows
 }
+
 func dumpIt(w http.ResponseWriter, r *http.Request) {
 	v := r.URL.Query()
 	db := v.Get("db")

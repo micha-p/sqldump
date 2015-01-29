@@ -1,6 +1,7 @@
 # sqlgopher
 
 A small web-based tool for database administration. Started during Gopher Gala 2015.
+Only basic html to allow for browsers at the command line. 
 
 ## prepare
 
@@ -35,15 +36,16 @@ or more convenient but not secure
 
 [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306)
 
+or on command line
+
+    w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
+    micha@micha-GA-78LMT-USB3:~/bin/sqlgopher$ lynx 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
 
 ## caveats
 
 - just basic protection against sql injection via database and table names
-
-## perspectives
-
-- choice for different database drivers
-- insert and edit records
+- However, any users might destroy just their own databases, logged in before
+- insert and query limited by request length
 
 # License
 

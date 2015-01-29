@@ -70,6 +70,14 @@ func actionInsert(w http.ResponseWriter, r *http.Request, database string, table
 	shipForm(w, r, database, table, "insert", "Insert")
 }
 
+// http://jan.newmarch.name/go/template/chapter-template.html
+// http://golang.org/pkg/text/template/
+const sqlinsert=`insert into {{.}} set {{range pairs}} title= "final", start= "15-12-09"`
+
+
+
+
+
 func insertHandler(w http.ResponseWriter, r *http.Request) {
 	db := r.FormValue("db")
 	t := r.FormValue("t")

@@ -17,11 +17,31 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
+
+func tableHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	
+	var p1 = []string{"firstleft", "firstright"}
+	var p2 = []string{"Boum", "Head"}
+	var p3 = []string{"A", "Ar"}
+	tab := [][]string{p1, p2}
+	t2 := append(tab, p3)
+
+	now := Context{
+		Title: "Ups", 
+		Records:   t2,
+	}
+	
+
+	err := templateTable.Execute(w, now)
+	checkY(err)
+}
+
+
 func helpHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// TODO help
-	fmt.Fprintf(w, "Best viewed with cli-browser >= 6.0\n")
-	fmt.Fprintf(w, "select links with mouse or finger\n")
+	fmt.Fprintf(w, helpPage)
+
 }
 
 
@@ -73,6 +93,7 @@ func main() {
 
 	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.HandleFunc("/help", helpHandler)
+	http.HandleFunc("/tabletest", tableHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/insert", insertHandler)
