@@ -33,7 +33,6 @@ func getCount(r *http.Request, database string, table string) string {
 	return field
 }
 
-
 func dumpIt(w http.ResponseWriter, r *http.Request) {
 
 	db := r.URL.Query().Get("db")

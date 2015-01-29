@@ -34,6 +34,8 @@ func workload(w http.ResponseWriter, r *http.Request) {
 		actionSelect(w, r, db, t)
 	} else if action == "insert" && db != "" && t != "" {
 		actionInsert(w, r, db, t)
+	} else if action == "show" && db != "" && t != "" {
+		actionShow(w, r, db, t)
 	} else {
 		dumpIt(w, r)
 	}

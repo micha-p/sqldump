@@ -9,7 +9,7 @@ This tool is made for administration of these by browsers on the command-line or
 - access via login mask or bookmarks
 - credentials stored in secure cookies
 - fast dumping of database content
-- inserting and querying data is NOT finished so far
+- inserting (DONE) and querying data (TODO)
 - potentially changing database driver (TODO)
 - templates for html
 

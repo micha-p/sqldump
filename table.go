@@ -42,7 +42,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
 	var linkescape string
 	var linkselect string
 	var linkinsert string
-	var linkinfo string
+	var linkshow string
 
 	if t == "" {
 	} else if x == "" {
@@ -52,6 +52,9 @@ func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
 		q.Del("action")
 		q.Add("action", "select")
 		linkselect = q.Encode()
+		q.Del("action")
+		q.Add("action", "show")
+		linkshow = q.Encode()
 		q.Del("action")
 		q.Del("t")
 		linkescape = q.Encode()
@@ -80,7 +83,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
 		Escape:   href("?"+linkescape, "."),
 		Select:   href("?"+linkselect, "/"),
 		Insert:   href("?"+linkinsert, "+"),
-		Info:     href("?"+linkinfo+"TODO", "?"),
+		Info:     href("?"+linkshow, "?"),
 		All:      href("?"+linkall, "."),
 		X:        x,
 		Left:     href("?"+linkleft, "<"),

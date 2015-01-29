@@ -11,12 +11,12 @@ package main
 */
 
 import (
-	"fmt"
-	"strings"
-	"html/template"
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"html/template"
 	"net/http"
+	"strings"
 )
 
 const formA = "<form  action=\"/%s\">\n"
@@ -73,11 +73,6 @@ func actionInsert(w http.ResponseWriter, r *http.Request, database string, table
 	shipForm(w, r, database, table, "insert", "Insert")
 }
 
-// http://jan.newmarch.name/go/template/chapter-template.html
-// http://golang.org/pkg/text/template/
-
-const sqlinsert = `insert into {{.}} set {{range pairs}}`
-
 func insertHandler(w http.ResponseWriter, r *http.Request) {
 	db := r.FormValue("db")
 	t := r.FormValue("t")
@@ -89,14 +84,14 @@ func insertHandler(w http.ResponseWriter, r *http.Request) {
 	checkY(err)
 
 	// Imploding within templates is severly missing!
-    var assignments []string
+	var assignments []string
 	for _, col := range cols {
 		val := r.FormValue(col)
 		if val != "" {
-			assignments = append (assignments, "  " + col + "= \"" + val + "\"")
+			assignments = append(assignments, "  "+col+"= \""+val+"\"")
 		}
 	}
-	
+
 	if len(assignments) > 0 {
 
 		stmt := "INSERT INTO " + t + " SET" + strings.Join(assignments, ",")
@@ -105,12 +100,52 @@ func insertHandler(w http.ResponseWriter, r *http.Request) {
 		conn, err := sql.Open("mysql", dsn(user, pw, h, p, db))
 		checkY(err)
 		defer conn.Close()
-	
+
 		statement, err := conn.Prepare(stmt)
 		checkY(err)
 		_, err = statement.Exec()
 		checkY(err)
-	
-	    http.Redirect(w, r, r.URL.Host + "?db=" + db + "&t=" + t, 302)
+
+		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
+}
+
+/*
++-------+-------------+------+-----+---------+-------+
+| Field | Type        | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| title | varchar(64) | YES  |     | NULL    |       |
+| start | date        | YES  |     | NULL    |       |
++-------+-------------+------+-----+---------+-------+
+*/
+
+func actionShow(w http.ResponseWriter, r *http.Request, database string, table string) {
+
+	rows := getRows(r, database, "show columns from "+template.HTMLEscapeString(table))
+	defer rows.Close()
+
+	records := [][]string{}
+
+	row := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
+	records = append(records, row)
+
+	for rows.Next() {
+		var f, t, n, k, d, e string
+		var kn, dn sql.NullString
+		err := rows.Scan(&f, &t, &n, &kn, &dn, &e)
+		checkY(err)
+
+		if kn.Valid {
+			k = kn.String
+		} else {
+			k = ""
+		}
+		if dn.Valid {
+			d = dn.String
+		} else {
+			d = ""
+		}
+		records = append(records, []string{f, t, n, k, d, e})
+	}
+	tableOut(w, r, records)
 }
