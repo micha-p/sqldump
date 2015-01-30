@@ -35,66 +35,77 @@ func getCount(r *http.Request, database string, table string) string {
 
 func dumpIt(w http.ResponseWriter, r *http.Request) {
 
-	db := r.URL.Query().Get("db")
-	t := r.URL.Query().Get("t")
-	x := r.URL.Query().Get("x")
+	q := r.URL.Query()
+	db := q.Get("db")
+	t := q.Get("t")
+	n := q.Get("n")
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if db == "" {
-		dumpHome(w, r)
+		dumpHome(w, r, "/logout")
 	} else if t == "" {
-		dumpTables(w, r, db)
-	} else if x == "" {
-		dumpRecords(w, r, db, t)
+		q.Del("db")
+		dumpTables(w, r, db, "?"+q.Encode())
+	} else if n == "" {
+		q.Del("t")
+		dumpRecords(w, r, db, t, "?"+q.Encode())
 	} else {
-		dumpFields(w, r, db, t, x)
+		q.Del("n")
+		dumpFields(w, r, db, t, n, "?"+q.Encode())
 	}
 }
 
 // Shows selection of databases at top level
-func dumpHome(w http.ResponseWriter, r *http.Request) {
+func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
 
 	rows := getRows(r, "", "show databases")
 	defer rows.Close()
 
 	var n int = 1
 	records := [][]string{}
+	head := []string{href(back, "[X]"), "Database"}
+	records = append(records, head)
 	for rows.Next() {
 		var field string
 		rows.Scan(&field)
-		row := []string{href(r.URL.Host+"?"+"db="+field, "["+strconv.Itoa(n)+"]"), field}
+		row := []string{href(r.URL.Host+"?"+"db="+field, strconv.Itoa(n)), field}
 		records = append(records, row)
 		n = n + 1
 	}
-
 	tableOut(w, r, records)
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, r *http.Request, database string) {
+func dumpTables(w http.ResponseWriter, r *http.Request, database string, back string) {
 
 	rows := getRows(r, database, "show tables")
 	defer rows.Close()
 
-	records := [][]string{[]string{"rows", "table"}}
+	var n int = 1
+	records := [][]string{}
+	head := []string{href(back, "[X]"), "Table", "Rows"}
+	records = append(records, head)
+
 	for rows.Next() {
 		var field string
 		var row []string
+		var nrows string
 		rows.Scan(&field)
 		if database == "information_schema" {
-			row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, "?"), field}
+			nrows = "?"
 		} else {
-			row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, getCount(r, database, field)), field}
+			nrows = getCount(r, database, field)
 		}
+		row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, strconv.Itoa(n)), field, nrows}
 		records = append(records, row)
+		n = n + 1
 	}
 	tableOut(w, r, records)
-
 }
 
 //  Dump all records of a table, one per row
-func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table string) {
+func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table string, back string) {
 
 	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
 	defer rows.Close()
@@ -113,7 +124,7 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 	}
 
 	var n int = 1
-	head := []string{"#"}
+	head := []string{href(back, "[X]")}
 	for _, column := range cols {
 		head = append(head, column)
 	}
@@ -121,7 +132,7 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 	records = append(records, head)
 	for rows.Next() {
 
-		row := []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&x="+strconv.Itoa(n), strconv.Itoa(n))}
+		row := []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&n="+strconv.Itoa(n), strconv.Itoa(n))}
 
 		err = rows.Scan(raw...)
 		checkY(err)
@@ -138,7 +149,7 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, r *http.Request, database string, table string, num string) {
+func dumpFields(w http.ResponseWriter, r *http.Request, database string, table string, num string, back string) {
 
 	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
 	defer rows.Close()
@@ -157,6 +168,8 @@ func dumpFields(w http.ResponseWriter, r *http.Request, database string, table s
 
 	var n int = 1
 	records := [][]string{}
+	head := []string{href(back, "[X]"), "Field", "Content"}
+	records = append(records, head)
 
 rowLoop:
 	for rows.Next() {
@@ -169,7 +182,7 @@ rowLoop:
 			for i, col := range val {
 				var row []string
 				if col != nil {
-					row = []string{columns[i] + ":", string(col.([]byte))}
+					row = []string{strconv.Itoa(i), columns[i], string(col.([]byte))}
 					records = append(records, row)
 				}
 			}
@@ -177,5 +190,5 @@ rowLoop:
 		}
 		n = n + 1
 	}
-	tableOut(w, r, records)
+	tableOutFields(w, r, records)
 }

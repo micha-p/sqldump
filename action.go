@@ -20,7 +20,7 @@ import (
 )
 
 const formA = "<form  action=\"/%s\">\n"
-const formTempl = "   <label for=\"{{.}}\">{{.}}</label><input type=\"text\" id=\"{{.}}\" name=\"{{.}}\"><br>\n"
+const formTempl = "   <label for=\"{{.}}\">{{.}}</label><input type=\"text\" id=\"{{.}}\" name=\"C{{.}}\"><br>\n"
 const formTemplD = "   <input type=\"hidden\" name=\"db\" value=\"{{.}}\">\n"
 const formTemplT = "   <input type=\"hidden\" name=\"t\"  value=\"{{.}}\">\n"
 const formO = "<button type=\"submit\">%s</button>\n</form>\n"
@@ -46,7 +46,7 @@ func shipFormlineT(w http.ResponseWriter, s string) {
 	checkY(err)
 }
 
-func shipForm(w http.ResponseWriter, r *http.Request, database string, table string, action string, button string) {
+func shipFullForm(w http.ResponseWriter, r *http.Request, database string, table string, action string, button string) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -66,17 +66,16 @@ func shipForm(w http.ResponseWriter, r *http.Request, database string, table str
 }
 
 func actionSelect(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipForm(w, r, database, table, "select", "Select")
+	shipFullForm(w, r, database, table, "select", "Select")
 }
 
 func actionInsert(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipForm(w, r, database, table, "insert", "Insert")
+	shipFullForm(w, r, database, table, "insert", "Insert")
 }
 
 func insertHandler(w http.ResponseWriter, r *http.Request) {
 	db := r.FormValue("db")
 	t := r.FormValue("t")
-
 	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 
@@ -86,7 +85,7 @@ func insertHandler(w http.ResponseWriter, r *http.Request) {
 	// Imploding within templates is severly missing!
 	var assignments []string
 	for _, col := range cols {
-		val := r.FormValue(col)
+		val := r.FormValue("C" + col)
 		if val != "" {
 			assignments = append(assignments, "  "+col+"= \""+val+"\"")
 		}
@@ -125,14 +124,13 @@ func actionShow(w http.ResponseWriter, r *http.Request, database string, table s
 	defer rows.Close()
 
 	records := [][]string{}
-
 	row := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
 	records = append(records, row)
 
 	for rows.Next() {
 		var f, t, n, k, e string
-		var d []byte    // might contain Null
-		err := rows.Scan(&f, &t, &n, &k, &dn, &e)
+		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
+		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
 		records = append(records, []string{f, t, n, k, string(d), e})
 	}

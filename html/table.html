@@ -4,19 +4,7 @@
 <body>
 
 <!-- top menu -->
-<p>
-<a href="/logout">[X]</a>
-&nbsp; 
-<a href="/help">[?]</a>
-&nbsp; 
-<a href="/">[/]</a>
-&nbsp; 
-{{.User}}@{{.Host}}:{{.Port}}
-{{if .Database}}&nbsp;{{.Database}}{{end}}{{if .Table}}.{{.Table}}{{end}}
-{{if .X}}&nbsp; [{{.All}}] [{{.Left}}] [{{.X}}] [{{.Right}}]
-{{else}}{{if .Table}} &nbsp; [{{.Escape}}] [{{.Select}}] [{{.Insert}}] [{{.Info}}]{{end}}
-{{end}}
-</p>
+{{if .Table}}[{{.Insert}}] [{{.Select}}]{{end}}
 
 <table>
 {{range .Records}}         
