@@ -111,6 +111,14 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 	defer rows.Close()
 	cols, err := rows.Columns()
 	checkY(err)
+	
+	q := r.URL.Query()
+	q.Add("action", "insert")
+	linkinsert := "?" + q.Encode()
+	q.Del("action")
+	q.Add("action", "select")
+	linkselect := "?" + q.Encode()
+	q.Del("action")
 
 	/*  credits:
 	 * 	http://stackoverflow.com/questions/19991541/dumping-mysql-tables-to-json-with-golang
@@ -124,7 +132,7 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 	}
 
 	var n int = 1
-	head := []string{href(back, "[X]")}
+	head := []string{href(back, "[X]") + href(linkselect, "[?]") + href(linkinsert, "[+]")}
 	for _, column := range cols {
 		head = append(head, column)
 	}
@@ -132,7 +140,8 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 	records = append(records, head)
 	for rows.Next() {
 
-		row := []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&n="+strconv.Itoa(n), strconv.Itoa(n))}
+		q.Set("n",strconv.Itoa(n))
+		row := []string{href("?" + q.Encode(), strconv.Itoa(n))}
 
 		err = rows.Scan(raw...)
 		checkY(err)
@@ -149,9 +158,9 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, database string, table 
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, r *http.Request, database string, table string, num string, back string) {
+func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num string, back string) {
 
-	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
+	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 	columns, err := rows.Columns()
 	checkY(err)
@@ -165,10 +174,32 @@ func dumpFields(w http.ResponseWriter, r *http.Request, database string, table s
 
 	rec, err := strconv.Atoi(num)
 	checkY(err)
+	nmax, err := strconv.Atoi(getCount(r, db, t))
+	q := r.URL.Query()
+	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
+	linkleft := "?" + q.Encode()
+	q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
+	linkright := "?" + q.Encode()
+
+	q.Add("action", "insert")
+	linkinsert := "?" + q.Encode()
+	q.Del("action")
+	/*q.Add("action", "select")
+	linkselect := "?" + q.Encode()
+	q.Del("action")*/
+	q.Add("action", "show")
+	linkshow := "?" + q.Encode()
+	q.Del("action")
 
 	var n int = 1
 	records := [][]string{}
-	head := []string{href(back, "[X]"), "Field", "Content"}
+	head := []string{href(back, "[X]"), "Field", "Content", href(linkleft, "[<]") + 
+															" [" + num + "] " + 
+															href(linkright, "[>]") + 
+															" "	+ 
+															href(linkinsert, "[+]") + 
+															" " +
+															href(linkshow, "[?]")}
 	records = append(records, head)
 
 rowLoop:

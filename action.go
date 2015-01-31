@@ -17,6 +17,7 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"strconv"
 )
 
 const formA = "<form  action=\"/%s\">\n"
@@ -118,21 +119,22 @@ func insertHandler(w http.ResponseWriter, r *http.Request) {
 +-------+-------------+------+-----+---------+-------+
 */
 
-func actionShow(w http.ResponseWriter, r *http.Request, database string, table string) {
+func actionShow(w http.ResponseWriter, r *http.Request, database string, table string, back string) {
 
 	rows := getRows(r, database, "show columns from "+template.HTMLEscapeString(table))
 	defer rows.Close()
 
 	records := [][]string{}
-	row := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
+	row := []string{href(back, "[X]"),"Field", "Type", "Null", "Key", "Default", "Extra"}
 	records = append(records, row)
 
+	var n int = 1
 	for rows.Next() {
-		var f, t, n, k, e string
+		var f, t, u, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
-		err := rows.Scan(&f, &t, &n, &k, &d, &e)
+		err := rows.Scan(&f, &t, &u, &k, &d, &e)
 		checkY(err)
-		records = append(records, []string{f, t, n, k, string(d), e})
+		records = append(records, []string{strconv.Itoa(n), f, t, u, k, string(d), e})
 	}
 	tableOut(w, r, records)
 }

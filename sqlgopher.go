@@ -25,17 +25,18 @@ func helpHandler(w http.ResponseWriter, r *http.Request) {
 
 func workload(w http.ResponseWriter, r *http.Request) {
 
-	v := r.URL.Query()
-	action := v.Get("action")
-	db := v.Get("db")
-	t := v.Get("t")
+	q := r.URL.Query()
+	action := q.Get("action")
+	db := q.Get("db")
+	t := q.Get("t")
 
 	if action == "select" && db != "" && t != "" {
 		actionSelect(w, r, db, t)
 	} else if action == "insert" && db != "" && t != "" {
 		actionInsert(w, r, db, t)
 	} else if action == "show" && db != "" && t != "" {
-		actionShow(w, r, db, t)
+		q.Del("action")
+		actionShow(w, r, db, t, "?"+q.Encode())
 	} else {
 		dumpIt(w, r)
 	}
