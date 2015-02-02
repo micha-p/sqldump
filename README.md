@@ -37,7 +37,8 @@ or more convenient but not secure
 or on command lineexport GOPATH=$PWD
 
     w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
-    lynx 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
+    lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
+    curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text 
 
 ### Security
 

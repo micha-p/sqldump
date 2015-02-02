@@ -49,8 +49,6 @@ func shipFormlineT(w http.ResponseWriter, s string) {
 
 func shipFullForm(w http.ResponseWriter, r *http.Request, database string, table string, action string, button string) {
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
 	defer rows.Close()
 
@@ -125,8 +123,7 @@ func actionShow(w http.ResponseWriter, r *http.Request, database string, table s
 	defer rows.Close()
 
 	records := [][]string{}
-	row := []string{href(back, "[X]"),"Field", "Type", "Null", "Key", "Default", "Extra"}
-	records = append(records, row)
+	head := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
 
 	var n int = 1
 	for rows.Next() {
@@ -136,5 +133,5 @@ func actionShow(w http.ResponseWriter, r *http.Request, database string, table s
 		checkY(err)
 		records = append(records, []string{strconv.Itoa(n), f, t, u, k, string(d), e})
 	}
-	tableOut(w, r, records)
+	tableOut(w, r, back, head, records)
 }

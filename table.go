@@ -19,8 +19,9 @@ type Context struct {
 	Port     string
 	Database string
 	Table    string
-	Records  [][]string
 	Back     string
+	Head     [] string
+	Records  [][]string
 	Select   string
 	Insert   string
 	Left     string
@@ -29,12 +30,11 @@ type Context struct {
 	Info     string
 }
 
-func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
+func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string) {
 
 	u, _, h, p := getCredentials(r)
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
-	var linkescape string
 	var linkselect string
 	var linkinsert string
 	var linkshow string
@@ -50,8 +50,6 @@ func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
 		q.Add("action", "show")
 		linkshow = q.Encode()
 		q.Del("action")
-		q.Del("t")
-		linkescape = q.Encode()
 	}
 
 	c := Context{
@@ -61,7 +59,8 @@ func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
 		Database: db,
 		Table:    t,
 		Records:  records,
-		Back:     href("?"+linkescape, "."),
+		Head:  	  head,
+		Back:     back,
 		Select:   href("?"+linkselect, "/"),
 		Insert:   href("?"+linkinsert, "+"),
 		Left:     "",
@@ -73,7 +72,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, records [][]string) {
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, r *http.Request, records [][]string) {
+func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string) {
 
 	u, _, h, p := getCredentials(r)
 	db := r.URL.Query().Get("db")
@@ -82,7 +81,6 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, records [][]string) 
 
 	var linkleft string
 	var linkright string
-	var linkall string
 	var linkshow string
 
 	nint, err := strconv.Atoi(n)
@@ -95,8 +93,6 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, records [][]string) 
 	linkleft = q.Encode()
 	q.Set("n", right)
 	linkright = q.Encode()
-	q.Del("n")
-	linkall = q.Encode()
 
 	c := Context{User: u,
 		Host:     h,
@@ -104,7 +100,8 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, records [][]string) 
 		Database: db,
 		Table:    t,
 		Records:  records,
-		Back:     href("?"+linkall, "."),
+		Head:  	  head,
+		Back:     back,
 		Select:   "",
 		Insert:   "",
 		Left:     href("?"+linkleft, "<"),

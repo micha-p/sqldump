@@ -16,33 +16,37 @@ var cookieHandler = securecookie.New(
 	securecookie.GenerateRandomKey(64),
 	securecookie.GenerateRandomKey(32))
 
-func getCredentials(request *http.Request) (userName string, password string, host string, port string) {
-	if cookie, err := request.Cookie("Datasource"); err == nil {
+func getCredentials(r *http.Request) (user string, pass string, host string, port string) {
+	
+	cookie, err := r.Cookie("Datasource")
+	if err == nil {
 		cookieValue := make(map[string]string)
-		if err = cookieHandler.Decode("Datasource", cookie.Value, &cookieValue); err == nil {
-			userName = cookieValue["user"]
-			password = cookieValue["passwd"]
+		err = cookieHandler.Decode("Datasource", cookie.Value, &cookieValue)
+		if err == nil {
+			user = cookieValue["user"]
+			pass = cookieValue["pass"]
 			host = cookieValue["host"]
 			port = cookieValue["port"]
-		}
-	}
-	return userName, password, host, port
+		} // cookieerror suppressed 
+	} 	
+	return user, pass, host, port
 }
 
-func setCredentials(w http.ResponseWriter, userName string, pw string, host string, port string) {
+func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass string, host string, port string) {
 	value := map[string]string{
-		"user":   userName,
-		"passwd": pw,
+		"user":   user,
+		"pass":   pass,
 		"host":   host,
 		"port":   port,
 	}
 	if encoded, err := cookieHandler.Encode("Datasource", value); err == nil {
-		cookie := &http.Cookie{
+		c := &http.Cookie{
 			Name:  "Datasource",
 			Value: encoded,
 			Path:  "/",
 		}
-		http.SetCookie(w, cookie)
+		http.SetCookie(w, c)
+		r.AddCookie(c)
 	}
 }
 
@@ -62,7 +66,7 @@ func loginHandler(w http.ResponseWriter, request *http.Request) {
 	host := request.FormValue("host")
 	port := request.FormValue("port")
 	if user != "" && pass != "" {
-		setCredentials(w, user, pass, host, port)
+		setCredentials(w, request, user, pass, host, port)
 	}
 	http.Redirect(w, request, request.URL.Host, 302)
 }

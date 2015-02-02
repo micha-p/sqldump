@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
+	"fmt"
 )
 
 var database = "information_schema"
@@ -17,11 +17,6 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-func helpHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, helpPage)
-
-}
 
 func workload(w http.ResponseWriter, r *http.Request) {
 
@@ -47,13 +42,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	user, _, host, port := getCredentials(r)
 
 	if user != "" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		workload(w, r)
 	} else {
-		v := r.URL.Query()
-		user = v.Get("user")
-		pass = v.Get("pass")
-		host = v.Get("host")
-		port = v.Get("port")
+		q := r.URL.Query()
+		user = q.Get("user")
+		pass = q.Get("pass")
+		host = q.Get("host")
+		port = q.Get("port")
+		q.Del("user")
+		q.Del("pass")
+		q.Del("host")
+		q.Del("port")
 
 		if user != "" && pass != "" {
 			if host == "" {
@@ -62,8 +62,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			if port == "" {
 				port = "3306"
 			}
-			setCredentials(w, user, pass, host, port)
-			http.Redirect(w, r, r.URL.Host, 302)
+			setCredentials(w, r, user, pass, host, port)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			workload(w, r)
 		} else {
 			loginPageHandler(w, r)
 		}
@@ -73,7 +74,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 
 	http.HandleFunc("/favicon.ico", faviconHandler)
-	http.HandleFunc("/help", helpHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/insert", insertHandler)
