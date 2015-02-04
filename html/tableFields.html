@@ -1,0 +1,20 @@
+<html>
+<head>
+<title>{{.Database}}.{{.Table}}</title> 
+<body>
+
+<!-- top menu 
+<p> 
+[{{.Left}}] [{{.X}}] [{{.Right}}] [{{.Info}}]
+</p>
+-->
+
+<table>
+<tr><tr><th><a href="{{.Back}}">[X]</a></th>{{range .Head}}<th>{{.}}</th>{{end}}</tr>
+{{range .Records}}         
+<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>{{end}}
+</table>
+</body>
+</html>
+
+

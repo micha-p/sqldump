@@ -1,0 +1,16 @@
+<html>
+<head>
+<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}}</title> 
+<body>
+
+<form  action="{{.Action}}">{{range .Columns}}
+   <label for="{{.}}">{{.}}</label><input type="text" id="{{.}}" name="C{{.}}"><br>{{end}}
+   <input type="hidden" name="db" value="{{.Database}}">
+   <input type="hidden" name="t"  value="{{.Table}}">
+   <button type="submit">{{.Button}}</button>
+</form>
+
+</body>
+</html>
+
+

@@ -1,4 +1,4 @@
-package main
+ package main
 
 /*
 <form  action="/login">
@@ -12,7 +12,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
 	"net/http"
@@ -20,48 +19,40 @@ import (
 	"strconv"
 )
 
-const formA = "<form  action=\"/%s\">\n"
-const formTempl = "   <label for=\"{{.}}\">{{.}}</label><input type=\"text\" id=\"{{.}}\" name=\"C{{.}}\"><br>\n"
-const formTemplD = "   <input type=\"hidden\" name=\"db\" value=\"{{.}}\">\n"
-const formTemplT = "   <input type=\"hidden\" name=\"t\"  value=\"{{.}}\">\n"
-const formO = "<button type=\"submit\">%s</button>\n</form>\n"
-
-func shipFormline(w http.ResponseWriter, s string) {
-	t, err := template.New("th").Parse(formTempl)
-	checkY(err)
-	err = t.Execute(w, s)
-	checkY(err)
+type FContext struct {
+	Action   string
+	Button   string
+	Database string
+	Table    string
+	Back     string
+	Columns  [] string
 }
 
-func shipFormlineD(w http.ResponseWriter, s string) {
-	t, err := template.New("th").Parse(formTemplD)
-	checkY(err)
-	err = t.Execute(w, s)
-	checkY(err)
-}
 
-func shipFormlineT(w http.ResponseWriter, s string) {
-	t, err := template.New("th").Parse(formTemplT)
-	checkY(err)
-	err = t.Execute(w, s)
-	checkY(err)
-}
+func shipFullForm(w http.ResponseWriter, r *http.Request, db string, t string, action string, button string) {
 
-func shipFullForm(w http.ResponseWriter, r *http.Request, database string, table string, action string, button string) {
-
-	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
+	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	checkY(err)
 
-	fmt.Fprintf(w, formA, action)
-	shipFormlineD(w, database)
-	shipFormlineT(w, table)
-	for _, col := range cols {
-		shipFormline(w, col)
+	q := r.URL.Query()
+	q.Del("action")
+	linkback := q.Encode()
+
+
+	c := FContext{
+		Action:   action,
+		Button:   button,
+		Database: db,
+		Table:    t,
+		Back:     linkback,
+		Columns:  cols,
 	}
-	fmt.Fprintf(w, formO, button)
+	
+	err = templateFormFields.Execute(w, c)
+	checkY(err)
 }
 
 func actionSelect(w http.ResponseWriter, r *http.Request, database string, table string) {

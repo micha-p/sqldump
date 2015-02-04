@@ -25,6 +25,7 @@ func workload(w http.ResponseWriter, r *http.Request) {
 	db := q.Get("db")
 	t := q.Get("t")
 
+
 	if action == "select" && db != "" && t != "" {
 		actionSelect(w, r, db, t)
 	} else if action == "insert" && db != "" && t != "" {
