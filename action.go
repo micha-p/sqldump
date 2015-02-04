@@ -15,6 +15,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strings"
 	"strconv"
 )
@@ -31,16 +32,10 @@ type FContext struct {
 
 func shipFullForm(w http.ResponseWriter, r *http.Request, db string, t string, action string, button string) {
 
-	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
-	defer rows.Close()
-
-	cols, err := rows.Columns()
-	checkY(err)
-
+	cols := getCols(r, db, t)
 	q := r.URL.Query()
 	q.Del("action")
 	linkback := q.Encode()
-
 
 	c := FContext{
 		Action:   action,
@@ -51,31 +46,53 @@ func shipFullForm(w http.ResponseWriter, r *http.Request, db string, t string, a
 		Columns:  cols,
 	}
 	
-	err = templateFormFields.Execute(w, c)
+	err := templateFormFields.Execute(w, c)
 	checkY(err)
 }
 
 func actionSelect(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipFullForm(w, r, database, table, "select", "Select")
+	shipFullForm(w, r, database, table, "where", "Select")
 }
 
 func actionInsert(w http.ResponseWriter, r *http.Request, database string, table string) {
 	shipFullForm(w, r, database, table, "insert", "Insert")
 }
 
-func insertHandler(w http.ResponseWriter, r *http.Request) {
+func whereHandler(w http.ResponseWriter, r *http.Request) {
+
 	db := r.FormValue("db")
 	t := r.FormValue("t")
-	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
-	defer rows.Close()
+	cols := getCols(r, db, t)
+	v := url.Values{}
+	v.Set("db", db)
+	v.Set("t", t)
+	linkback := "?" + v.Encode()
+	
+	// Imploding within templates is severly missing!
+	var tests []string
+	for _, col := range cols {
+		val := r.FormValue("Z" + col)
+		if val != "" {
+			tests = append(tests, " "+col+"= \""+val+"\"")
+		}
+	}
 
-	cols, err := rows.Columns()
-	checkY(err)
+	if len(tests) > 0 {
+		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
+		dumpRows(w, r, db, t, linkback, query)
+	}
+}
+
+func insertHandler(w http.ResponseWriter, r *http.Request) {
+
+	db := r.FormValue("db")
+	t := r.FormValue("t")
+	cols := getCols(r, db, t)
 
 	// Imploding within templates is severly missing!
 	var assignments []string
 	for _, col := range cols {
-		val := r.FormValue("C" + col)
+		val := r.FormValue("Z" + col)
 		if val != "" {
 			assignments = append(assignments, "  "+col+"= \""+val+"\"")
 		}

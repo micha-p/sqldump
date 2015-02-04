@@ -8,6 +8,16 @@ import (
 	"strconv"
 )
 
+
+func getCols(r *http.Request, database string, table string) []string {
+	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	checkY(err)
+	return cols
+}
+
 func getRows(r *http.Request, database string, stmt string) *sql.Rows {
 	user, pw, h, p := getCredentials(r)
 	conn, err := sql.Open("mysql", dsn(user, pw, h, p, database))
@@ -102,8 +112,12 @@ func dumpTables(w http.ResponseWriter, r *http.Request, database string, back st
 
 //  Dump all records of a table, one per row
 func dumpRecords(w http.ResponseWriter, r *http.Request, db string, t string, back string) {
+	dumpRows(w, r, db, t, back, "select * from "+template.HTMLEscapeString(t))
+}
 
-	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
+func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back string, query string) {
+
+	rows := getRows(r, db, query)
 	defer rows.Close()
 	cols, err := rows.Columns()
 	checkY(err)

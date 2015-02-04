@@ -78,6 +78,7 @@ func main() {
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/insert", insertHandler)
+	http.HandleFunc("/where", whereHandler)
 	http.HandleFunc("/", indexHandler)
 
 	fmt.Println("Listening at http://localhost:8080")

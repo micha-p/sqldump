@@ -4,7 +4,7 @@
 <body>
 
 <form  action="{{.Action}}">{{range .Columns}}
-   <label for="{{.}}">{{.}}</label><input type="text" id="{{.}}" name="C{{.}}"><br>{{end}}
+   <label for="{{.}}">{{.}}</label><input type="text" id="{{.}}" name="Z{{.}}"><br>{{end}}
    <input type="hidden" name="db" value="{{.Database}}">
    <input type="hidden" name="t"  value="{{.Table}}">
    <button type="submit">{{.Button}}</button>

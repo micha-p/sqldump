@@ -35,7 +35,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 	u, _, h, p := getCredentials(r)
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
-	var linkselect string
+	var linkwhere string
 	var linkinsert string
 	var linkshow string
 
@@ -44,8 +44,8 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 		q.Add("action", "insert")
 		linkinsert = q.Encode()
 		q.Del("action")
-		q.Add("action", "select")
-		linkselect = q.Encode()
+		q.Add("action", "where")
+		linkwhere = q.Encode()
 		q.Del("action")
 		q.Add("action", "show")
 		linkshow = q.Encode()
@@ -61,7 +61,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 		Records:  records,
 		Head:  	  head,
 		Back:     back,
-		Select:   href("?"+linkselect, "/"),
+		Select:   href("?"+linkwhere, "/"),
 		Insert:   href("?"+linkinsert, "+"),
 		Left:     "",
 		X:        "",
