@@ -85,10 +85,9 @@ func main() {
 		fmt.Println("cert.pem and key.pem found")
 	} else {
 		fmt.Println("Generating cert.pem and key.pem ...")
-		generate_cert("localhost", 2048, true)
+		generate_cert("localhost", 2048, false)
 	}
-		
-		
+	
 	fmt.Println("Listening at https://localhost:8443")
-	http.ListenAndServe(":8443", nil)
+	http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", nil)
 }
