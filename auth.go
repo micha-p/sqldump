@@ -32,6 +32,17 @@ func getCredentials(r *http.Request) (user string, pass string, host string, por
 	return user, pass, host, port
 }
 
+func checkCredentials(r *http.Request) error {
+	
+	cookie, err := r.Cookie("Datasource")
+	if err == nil {
+		cookieValue := make(map[string]string)
+		return cookieHandler.Decode("Datasource", cookie.Value, &cookieValue)			
+	} else {
+		return err
+	}
+}
+
 func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass string, host string, port string) {
 	value := map[string]string{
 		"user":   user,

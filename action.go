@@ -18,10 +18,12 @@ import (
 	"net/url"
 	"strings"
 	"strconv"
+	"fmt"
 )
 
 type FContext struct {
 	Action   string
+	Selector string
 	Button   string
 	Database string
 	Table    string
@@ -30,15 +32,16 @@ type FContext struct {
 }
 
 
-func shipFullForm(w http.ResponseWriter, r *http.Request, db string, t string, action string, button string) {
+func shipForm(w http.ResponseWriter, r *http.Request, db string, t string, action string, button string, selector string) {
 
 	cols := getCols(r, db, t)
 	q := r.URL.Query()
 	q.Del("action")
-	linkback := q.Encode()
+	linkback := q.Encode() 
 
 	c := FContext{
 		Action:   action,
+		Selector: selector,
 		Button:   button,
 		Database: db,
 		Table:    t,
@@ -50,15 +53,15 @@ func shipFullForm(w http.ResponseWriter, r *http.Request, db string, t string, a
 	checkY(err)
 }
 
-func actionSelect(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipFullForm(w, r, database, table, "where", "Select")
+func actionSubset(w http.ResponseWriter, r *http.Request, database string, table string) {
+	shipForm(w, r, database, table, "query", "Query","true")
 }
 
-func actionInsert(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipFullForm(w, r, database, table, "insert", "Insert")
+func actionAdd(w http.ResponseWriter, r *http.Request, database string, table string) {
+	shipForm(w, r, database, table, "insert", "Insert","")
 }
 
-func whereHandler(w http.ResponseWriter, r *http.Request) {
+func actionQuery(w http.ResponseWriter, r *http.Request) {
 
 	db := r.FormValue("db")
 	t := r.FormValue("t")
@@ -71,37 +74,42 @@ func whereHandler(w http.ResponseWriter, r *http.Request) {
 	// Imploding within templates is severly missing!
 	var tests []string
 	for _, col := range cols {
-		val := r.FormValue("Z" + col)
+		val := r.FormValue(col + "C")
 		if val != "" {
-			tests = append(tests, " "+col+"= \""+val+"\"")
+			comparator := r.FormValue(col + "O")
+			if comparator == "" { 
+				comparator = "="
+			}
+			tests = append(tests, col + comparator + "\""+val+"\"")
 		}
 	}
 
 	if len(tests) > 0 {
+		// Imploding within templates is severly missing!
 		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
+		fmt.Println(query)
 		dumpRows(w, r, db, t, linkback, query)
 	}
 }
 
-func insertHandler(w http.ResponseWriter, r *http.Request) {
+func actionInsert(w http.ResponseWriter, r *http.Request) {
 
 	db := r.FormValue("db")
 	t := r.FormValue("t")
 	cols := getCols(r, db, t)
 
-	// Imploding within templates is severly missing!
+	// Searching for cols within formValues
 	var assignments []string
 	for _, col := range cols {
-		val := r.FormValue("Z" + col)
+		val := r.FormValue(col + "C")
 		if val != "" {
-			assignments = append(assignments, "  "+col+"= \""+val+"\"")
+			assignments = append(assignments, col + "=\""+val+"\"")
 		}
 	}
 
 	if len(assignments) > 0 {
-
-		stmt := "INSERT INTO " + t + " SET" + strings.Join(assignments, ",")
-
+		// Imploding within templates is severly missing!
+		stmt := "INSERT INTO " + t + " SET " + strings.Join(assignments, ",")
 		user, pw, h, p := getCredentials(r)
 		conn, err := sql.Open("mysql", dsn(user, pw, h, p, db))
 		checkY(err)

@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -122,13 +123,13 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 	cols, err := rows.Columns()
 	checkY(err)
 	
-	q := r.URL.Query()
-	q.Add("action", "insert")
-	linkinsert := "?" + q.Encode()
-	q.Del("action")
-	q.Add("action", "select")
-	linkselect := "?" + q.Encode()
-	q.Del("action")
+	q := url.Values{}
+	q.Add("db", db)
+	q.Add("t", t)
+	q.Add("action", "add")
+	linkinsert := "/?" + q.Encode()
+	q.Set("action", "subset")
+	linkselect := "/?" + q.Encode()
 
 	/*  credits:
 	 * 	http://stackoverflow.com/questions/19991541/dumping-mysql-tables-to-json-with-golang
@@ -192,7 +193,7 @@ func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num
 	q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
 	linkright := "?" + q.Encode()
 
-	q.Add("action", "insert")
+	q.Add("action", "add")
 	linkinsert := "?" + q.Encode()
 	q.Del("action")
 	/*q.Add("action", "select")

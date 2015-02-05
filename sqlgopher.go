@@ -25,11 +25,16 @@ func workload(w http.ResponseWriter, r *http.Request) {
 	db := q.Get("db")
 	t := q.Get("t")
 
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if action == "select" && db != "" && t != "" {
-		actionSelect(w, r, db, t)
-	} else if action == "insert" && db != "" && t != "" {
-		actionInsert(w, r, db, t)
+	if action == "subset" && db != "" && t != "" {
+		actionSubset(w, r, db, t)
+	} else if action == "query" && db != "" && t != "" {
+		actionQuery(w, r)
+	} else if action == "add" && db != "" && t != "" {
+		actionAdd(w, r, db, t)
+	} else if action == "Insert" && db != "" && t != "" {
+		actionInsert(w, r)
 	} else if action == "show" && db != "" && t != "" {
 		q.Del("action")
 		actionShow(w, r, db, t, "?"+q.Encode())
@@ -39,18 +44,15 @@ func workload(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	pass := ""
-	user, _, host, port := getCredentials(r)
 
-	if user != "" {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if checkCredentials(r) == nil {
 		workload(w, r)
 	} else {
 		q := r.URL.Query()
-		user = q.Get("user")
-		pass = q.Get("pass")
-		host = q.Get("host")
-		port = q.Get("port")
+		user := q.Get("user")
+		pass := q.Get("pass")
+		host := q.Get("host")
+		port := q.Get("port")
 		q.Del("user")
 		q.Del("pass")
 		q.Del("host")
@@ -64,7 +66,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 				port = "3306"
 			}
 			setCredentials(w, r, user, pass, host, port)
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			workload(w, r)
 		} else {
 			loginPageHandler(w, r)
@@ -72,13 +73,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
 func main() {
 
 	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
-	http.HandleFunc("/insert", insertHandler)
-	http.HandleFunc("/where", whereHandler)
 	http.HandleFunc("/", indexHandler)
 
 	fmt.Println("Listening at http://localhost:8080")

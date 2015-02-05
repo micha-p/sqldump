@@ -3,10 +3,28 @@
 <title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}}</title> 
 <body>
 
-<form  action="{{.Action}}">{{range .Columns}}
-   <label for="{{.}}">{{.}}</label><input type="text" id="{{.}}" name="Z{{.}}"><br>{{end}}
-   <input type="hidden" name="db" value="{{.Database}}">
-   <input type="hidden" name="t"  value="{{.Table}}">
+{{define "selector"}}
+<SELECT name="{{.}}O">
+      <OPTION value=""> = </OPTION>
+      <OPTION value="<>"> &ne; </OPTION>
+      <OPTION value=" LIKE "> &sim; </OPTION>
+      <OPTION value=" NOT LIKE "> !&sim; </OPTION>
+      <OPTION value=">"> &gt; </OPTION>
+      <OPTION value=">="> &ge; </OPTION>
+      <OPTION value="<"> &lt; </OPTION>
+      <OPTION value="<="> &le; </OPTION>
+</SELECT>
+{{end}}
+
+<form action="/">
+	<input type="hidden" name="action" value="{{.Action}}">
+	<input type="hidden" name="db" value="{{.Database}}">
+	<input type="hidden" name="t"  value="{{.Table}}">
+	{{if .Selector}}{{range .Columns}}
+		<label for="{{.}}">{{.}}</label>{{template "selector" .}}<input type="text" id="{{.}}" name="{{.}}C"><br>{{end}}
+	{{else}}{{range .Columns}}
+		<label for="{{.}}">{{.}}</label><input type="text" id="{{.}}" name="{{.}}C"><br>{{end}}
+	{{end}}
    <button type="submit">{{.Button}}</button>
 </form>
 
