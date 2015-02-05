@@ -4,6 +4,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"fmt"
+	"flag"
+	"strconv"
 )
 
 var database = "information_schema"
@@ -76,18 +78,28 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
+	var SECURE = flag.Bool ("s", false, "https Connection TLS")
+	var HOST = flag.String ("h", "localhost", "server name")
+	var PORT = flag.Int ("p", 8080, "server port")
+	flag.Parse()
+	portstring := ":" + strconv.Itoa(*PORT)
+	
 	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/", indexHandler)
 
-	if troubleF("cert.pem")==nil && troubleF("key.pem")==nil  {
-		fmt.Println("cert.pem and key.pem found")
+	if *SECURE {
+		if troubleF("cert.pem")==nil && troubleF("key.pem")==nil  {
+			fmt.Println("cert.pem and key.pem found")
+		} else {
+			fmt.Println("Generating cert.pem and key.pem ...")
+			generate_cert(*HOST, 2048, false)
+		}
+		fmt.Println("Listening at https://" + *HOST + portstring)
+		http.ListenAndServeTLS(portstring, "cert.pem", "key.pem", nil)
 	} else {
-		fmt.Println("Generating cert.pem and key.pem ...")
-		generate_cert("localhost", 2048, false)
+		fmt.Println("Listening at http://" + *HOST + portstring)
+		http.ListenAndServe(portstring, nil)
 	}
-	
-	fmt.Println("Listening at https://localhost:8443")
-	http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", nil)
 }
