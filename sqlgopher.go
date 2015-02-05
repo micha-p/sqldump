@@ -81,6 +81,14 @@ func main() {
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/", indexHandler)
 
-	fmt.Println("Listening at http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	if troubleF("cert.pem")==nil && troubleF("key.pem")==nil  {
+		fmt.Println("cert.pem and key.pem found")
+	} else {
+		fmt.Println("Generating cert.pem and key.pem ...")
+		generate_cert("localhost", 2048, true)
+	}
+		
+		
+	fmt.Println("Listening at https://localhost:8443")
+	http.ListenAndServe(":8443", nil)
 }
