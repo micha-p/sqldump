@@ -13,6 +13,11 @@ import (
  * </table>
  */
 
+type Entry struct {
+	Link string
+	Label string
+}
+
 type Context struct {
 	User     string
 	Host     string
@@ -20,7 +25,7 @@ type Context struct {
 	Database string
 	Table    string
 	Back     string
-	Head     [] string
+	Head     []string
 	Records  [][]string
 	Select   string
 	Insert   string
@@ -28,9 +33,11 @@ type Context struct {
 	X        string
 	Right    string
 	Info     string
+	Trail	 []Entry
+	Menu 	 []Entry
 }
 
-func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string) {
+func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	u, _, h, p := getCredentials(r)
 	db := r.URL.Query().Get("db")
@@ -67,12 +74,14 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 		X:        "",
 		Right:    "",
 		Info:     href("?"+linkshow, "?"),
+		Trail:    trail,    // if trail is missing, menu is shown at the right side of the headline
+		Menu:	  menu,     // always used. location dependent of presence of trail
 	}
 	err := templateTable.Execute(w, c)
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string) {
+func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	u, _, h, p := getCredentials(r)
 	db := r.URL.Query().Get("db")
@@ -107,7 +116,9 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []
 		Left:     href("?"+linkleft, "<"),
 		X:        n,
 		Right:    href("?"+linkright, ">"),
-		Info:     href("?"+linkshow, "?"),
+		Info:     href("?"+linkshow, "?"),	
+		Trail:    trail,
+		Menu:	  menu,
 	}
 
 	err = templateTableFields.Execute(w, c)

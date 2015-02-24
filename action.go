@@ -71,7 +71,6 @@ func actionQuery(w http.ResponseWriter, r *http.Request) {
 	v.Set("t", t)
 	linkback := "?" + v.Encode()
 	
-	// Imploding within templates is severly missing!
 	var tests []string
 	for _, col := range cols {
 		val := r.FormValue(col + "C")
@@ -133,10 +132,27 @@ func actionInsert(w http.ResponseWriter, r *http.Request) {
 +-------+-------------+------+-----+---------+-------+
 */
 
-func actionShow(w http.ResponseWriter, r *http.Request, database string, table string, back string) {
+func actionShow(w http.ResponseWriter, r *http.Request, db string, t string, back string) {
 
-	rows := getRows(r, database, "show columns from "+template.HTMLEscapeString(table))
+	rows := getRows(r, db, "show columns from "+template.HTMLEscapeString(t))
 	defer rows.Close()
+
+	trail := []Entry{}	
+	trail = append(trail, Entry{"/","root"})
+	
+	q := url.Values{}
+	q.Add("db", db)
+	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: db,})
+	q.Add("t", t)
+	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: t,})
+
+	menu := []Entry{}
+	q.Set("action", "add")
+	linkinsert := "/?" + q.Encode()
+	menu = append(menu, Entry{linkinsert,"+"})
+	menu = append(menu, Entry{"/logout","Q"})
+
+
 
 	records := [][]string{}
 	head := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
@@ -149,5 +165,5 @@ func actionShow(w http.ResponseWriter, r *http.Request, database string, table s
 		checkY(err)
 		records = append(records, []string{strconv.Itoa(n), f, t, u, k, string(d), e})
 	}
-	tableOut(w, r, back, head, records)
+	tableOut(w, r, back, head, records, trail, menu)
 }

@@ -47,27 +47,24 @@ func workload(w http.ResponseWriter, r *http.Request) {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	if checkCredentials(r) == nil {
-		workload(w, r)
-	} else {
-		q := r.URL.Query()
-		user := q.Get("user")
-		pass := q.Get("pass")
-		host := q.Get("host")
-		port := q.Get("port")
-		q.Del("user")
-		q.Del("pass")
-		q.Del("host")
-		q.Del("port")
+	q := r.URL.Query()
+	user := q.Get("user")
+	pass := q.Get("pass")
+	host := q.Get("host")
+	port := q.Get("port")
 
-		if user != "" && pass != "" {
-			if host == "" {
-				host = "localhost"
-			}
-			if port == "" {
-				port = "3306"
-			}
-			setCredentials(w, r, user, pass, host, port)
+	if user != "" && pass != "" {
+		if host == "" {
+			host = "localhost"
+		}
+		if port == "" {
+			port = "3306"
+		}
+		newrequest := setCredentials(w, r, user, pass, host, port)
+		workload(w, newrequest)
+		
+	} else {
+		if checkCredentials(r) == nil {
 			workload(w, r)
 		} else {
 			loginPageHandler(w, r)

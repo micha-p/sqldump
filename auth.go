@@ -10,6 +10,7 @@ package main
 import (
 	"github.com/gorilla/securecookie"
 	"net/http"
+	"fmt"
 )
 
 var cookieHandler = securecookie.New(
@@ -27,7 +28,10 @@ func getCredentials(r *http.Request) (user string, pass string, host string, por
 			pass = cookieValue["pass"]
 			host = cookieValue["host"]
 			port = cookieValue["port"]
-		} // cookieerror suppressed 
+			fmt.Println("Credentials taken for " + host + ":" + port)
+		} else { // cookieerror
+			fmt.Println("Cookie error " + host + ":" + port)
+		}
 	} 	
 	return user, pass, host, port
 }
@@ -43,7 +47,7 @@ func checkCredentials(r *http.Request) error {
 	}
 }
 
-func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass string, host string, port string) {
+func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass string, host string, port string) *http.Request{
 	value := map[string]string{
 		"user":   user,
 		"pass":   pass,
@@ -57,8 +61,10 @@ func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass st
 			Path:  "/",
 		}
 		http.SetCookie(w, c)
+		fmt.Println("Credentials set for " + user + "@" + host + ":" + port)
 		r.AddCookie(c)
 	}
+	return r
 }
 
 func clearCredentials(w http.ResponseWriter) {

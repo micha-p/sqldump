@@ -1,48 +1,12 @@
 package main
 
 import (
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
 )
 
-
-func getCols(r *http.Request, database string, table string) []string {
-	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
-	defer rows.Close()
-
-	cols, err := rows.Columns()
-	checkY(err)
-	return cols
-}
-
-func getRows(r *http.Request, database string, stmt string) *sql.Rows {
-	user, pw, h, p := getCredentials(r)
-	conn, err := sql.Open("mysql", dsn(user, pw, h, p, database))
-	checkY(err)
-	defer conn.Close()
-
-	statement, err := conn.Prepare(stmt)
-	checkY(err)
-	rows, err := statement.Query()
-	checkY(err)
-
-	return rows
-}
-
-func getCount(r *http.Request, database string, table string) string {
-
-	rows := getRows(r, database, "select count(*) from "+template.HTMLEscapeString(table))
-	defer rows.Close()
-
-	rows.Next()
-	var field string
-	rows.Scan(&field)
-	return field
-}
 
 func dumpIt(w http.ResponseWriter, r *http.Request) {
 
@@ -71,9 +35,13 @@ func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
 	rows := getRows(r, "", "show databases")
 	defer rows.Close()
 
-	var n int = 1
+	trail := []Entry{}	
+	trail = append(trail, Entry{"/","root"})
+	menu := []Entry{}
+	menu = append(menu, Entry{"/logout","Q"})
 	records := [][]string{}
 	head := []string{"Database"}
+	var n int = 1
 	for rows.Next() {
 		var field string
 		rows.Scan(&field)
@@ -81,34 +49,39 @@ func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOut(w, r, back, head, records)
+	tableOut(w, r, back, head, records, trail, menu)
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, r *http.Request, database string, back string) {
+func dumpTables(w http.ResponseWriter, r *http.Request, db string, back string) {
 
-	rows := getRows(r, database, "show tables")
+	rows := getRows(r, db, "show tables")
 	defer rows.Close()
 
-	var n int = 1
+	trail := []Entry{}	
+	trail = append(trail, Entry{"/","root"})
+	trail = append(trail, Entry{"?db=" + db,db})
+	menu := []Entry{}
+	menu = append(menu, Entry{"/logout","Q"})
 	records := [][]string{}
 	head := []string{"Table", "Rows"}
 
+	var n int = 1
 	for rows.Next() {
 		var field string
 		var row []string
 		var nrows string
 		rows.Scan(&field)
-		if database == "information_schema" {
+		if db == "information_schema" {
 			nrows = "?"
 		} else {
-			nrows = getCount(r, database, field)
+			nrows = getCount(r, db, field)
 		}
 		row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, strconv.Itoa(n)), field, nrows}
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOut(w, r, back, head, records)
+	tableOut(w, r, back, head, records, trail, menu)
 }
 
 //  Dump all records of a table, one per row
@@ -122,14 +95,16 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 	defer rows.Close()
 	cols, err := rows.Columns()
 	checkY(err)
+
+	trail := []Entry{}	
+	trail = append(trail, Entry{"/","root"})
 	
 	q := url.Values{}
 	q.Add("db", db)
+	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: db,})
 	q.Add("t", t)
-	q.Add("action", "add")
-	linkinsert := "/?" + q.Encode()
-	q.Set("action", "subset")
-	linkselect := "/?" + q.Encode()
+	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: t,})
+
 
 	/*  credits:
 	 * 	http://stackoverflow.com/questions/19991541/dumping-mysql-tables-to-json-with-golang
@@ -142,14 +117,13 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 		raw[i] = &val[i]
 	}
 
-	var n int = 1
 	head := []string{}
 	for _, column := range cols {
 		head = append(head, column)
 	}
-	head = append(head, href(linkselect, "[?]") + href(linkinsert, "[+]"))
-	
+		
 	records := [][]string{}
+	var n int = 1
 	for rows.Next() {
 
 		q.Set("n",strconv.Itoa(n))
@@ -166,7 +140,19 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOut(w, r, back, head, records)
+	
+	q.Add("action", "add")
+	linkinsert := "/?" + q.Encode()
+	q.Set("action", "subset")
+	linkselect := "/?" + q.Encode()
+
+	menu := []Entry{}
+	menu = append(menu, Entry{linkselect,"?"})
+	menu = append(menu, Entry{linkinsert,"+"})
+	menu = append(menu, Entry{"/logout","Q"})
+
+	
+	tableOut(w, r, back, head, records, trail, menu)
 }
 
 // Dump all fields of a record, one column per line
@@ -174,8 +160,20 @@ func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num
 
 	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
 	defer rows.Close()
+
 	columns, err := rows.Columns()
 	checkY(err)
+
+	trail := []Entry{}	
+	trail = append(trail, Entry{"/","root"})
+	
+	q := url.Values{}
+	q.Add("db", db)
+	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: db,})
+	q.Add("t", t)
+	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: t,})
+	q.Add("n", num)
+	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: num,})
 
 	raw := make([]interface{}, len(columns))
 	val := make([]interface{}, len(columns))
@@ -184,35 +182,14 @@ func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num
 		raw[i] = &val[i]
 	}
 
-	rec, err := strconv.Atoi(num)
-	checkY(err)
-	nmax, err := strconv.Atoi(getCount(r, db, t))
-	q := r.URL.Query()
-	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
-	linkleft := "?" + q.Encode()
-	q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
-	linkright := "?" + q.Encode()
-
-	q.Add("action", "add")
-	linkinsert := "?" + q.Encode()
-	q.Del("action")
-	/*q.Add("action", "select")
-	linkselect := "?" + q.Encode()
-	q.Del("action")*/
-	q.Add("action", "show")
-	linkshow := "?" + q.Encode()
-	q.Del("action")
-
-	var n int = 1
+    head := []string{"Column", "Data"}
 	records := [][]string{}
-	head := []string{"Field", "Content", href(linkleft, "[<]") + 
-										 " [" + num + "] " + 
-										 href(linkright, "[>]") +
-										 " " +
-										 href(linkinsert, "[+]") +
-										 " " +
-										 href(linkshow, "[?]")}
 
+	rec, err := strconv.Atoi(num)
+	checkY(err)	
+	nmax, err := strconv.Atoi(getCount(r, db, t))
+	checkY(err)	
+	var n int = 1
 rowLoop:
 	for rows.Next() {
 
@@ -232,5 +209,26 @@ rowLoop:
 		}
 		n = n + 1
 	}
-	tableOutFields(w, r, back, head, records)
+	
+	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
+	linkleft := "?" + q.Encode()
+	q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
+	linkright := "?" + q.Encode()
+	
+	q.Add("action", "add")
+	linkinsert := "/?" + q.Encode()
+	q.Set("action", "subset")
+//	linkselect := "/?" + q.Encode()
+	q.Set("action", "show")
+	linkshow := "?" + q.Encode()
+	q.Del("action")
+
+	menu := []Entry{}
+	menu = append(menu, Entry{linkleft,"<"})
+	menu = append(menu, Entry{linkright,">"})
+	menu = append(menu, Entry{linkshow,"?"})
+	menu = append(menu, Entry{linkinsert,"+"})
+	menu = append(menu, Entry{"/logout","Q"})
+	
+	tableOutFields(w, r, back, head, records, trail, menu)
 }

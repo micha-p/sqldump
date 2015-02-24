@@ -3,12 +3,21 @@
 <title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{else}}{{.User}}@{{.Host}}:{{.Port}}{{end}}</title> 
 <body>
 
-<!-- top menu
-{{if .Table}}[{{.Insert}}] [{{.Select}}]{{end}}
--->
+{{if .Trail}}
+<p>
+{{range .Trail}} &gt; <a href="{{.Link}}">{{.Label}}</a> {{end}}
+
+{{if .Menu}}
+&emsp;&emsp;&emsp;
+
+{{range .Menu}} <a href="{{.Link}}">[{{.Label}}]</a> {{end}}
+{{end}}
+</p>
+{{end}}
+
 
 <table>
-<tr><th><a href="{{.Back}}">[X]</a></th>{{range .Head}}<th>{{.}}</th>{{end}}</tr>
+<tr><th>{{if .Trail}}#{{else}}<a href="{{.Back}}">[X]</a>{{end}}</th>{{range .Head}}<th>{{.}}</th>{{end}}</tr>
 {{range .Records}}         
 <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>{{end}}
 </table>
