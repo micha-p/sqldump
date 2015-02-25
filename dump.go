@@ -7,7 +7,6 @@ import (
 	"strconv"
 )
 
-
 func dumpIt(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
@@ -32,20 +31,20 @@ func dumpIt(w http.ResponseWriter, r *http.Request) {
 // Shows selection of databases at top level
 func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
 
-	rows := getRows(r,"", "show databases")
+	rows := getRows(r, "", "show databases")
 	defer rows.Close()
 
-	trail := []Entry{}	
-	trail = append(trail, Entry{"/","root"})
+	trail := []Entry{}
+	trail = append(trail, Entry{"/", "root"})
 	menu := []Entry{}
-	menu = append(menu, Entry{"/logout","Q"})
+	menu = append(menu, Entry{"/logout", "Q"})
 	records := [][]string{}
 	head := []string{"Database"}
 	var n int = 1
 	for rows.Next() {
 		var field string
 		rows.Scan(&field)
-		if (EXPERTFLAG || INFOFLAG || field != "information_schema"){
+		if EXPERTFLAG || INFOFLAG || field != "information_schema" {
 			row := []string{href(r.URL.Host+"?"+"db="+field, strconv.Itoa(n)), field}
 			records = append(records, row)
 			n = n + 1
@@ -60,11 +59,11 @@ func dumpTables(w http.ResponseWriter, r *http.Request, db string, back string) 
 	rows := getRows(r, db, "show tables")
 	defer rows.Close()
 
-	trail := []Entry{}	
-	trail = append(trail, Entry{"/","root"})
-	trail = append(trail, Entry{"?db=" + db,db})
+	trail := []Entry{}
+	trail = append(trail, Entry{"/", "root"})
+	trail = append(trail, Entry{"?db=" + db, db})
 	menu := []Entry{}
-	menu = append(menu, Entry{"/logout","Q"})
+	menu = append(menu, Entry{"/logout", "Q"})
 	records := [][]string{}
 	head := []string{"Table", "Rows"}
 
@@ -98,15 +97,14 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 	cols, err := rows.Columns()
 	checkY(err)
 
-	trail := []Entry{}	
-	trail = append(trail, Entry{"/","root"})
-	
+	trail := []Entry{}
+	trail = append(trail, Entry{"/", "root"})
+
 	q := url.Values{}
 	q.Add("db", db)
-	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: db,})
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: db})
 	q.Add("t", t)
-	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: t,})
-
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: t})
 
 	/*  credits:
 	 * 	http://stackoverflow.com/questions/19991541/dumping-mysql-tables-to-json-with-golang
@@ -123,13 +121,13 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 	for _, column := range cols {
 		head = append(head, column)
 	}
-		
+
 	records := [][]string{}
 	var n int = 1
 	for rows.Next() {
 
-		q.Set("n",strconv.Itoa(n))
-		row := []string{href("?" + q.Encode(), strconv.Itoa(n))}
+		q.Set("n", strconv.Itoa(n))
+		row := []string{href("?"+q.Encode(), strconv.Itoa(n))}
 
 		err = rows.Scan(raw...)
 		checkY(err)
@@ -142,18 +140,17 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 		records = append(records, row)
 		n = n + 1
 	}
-	
+
 	q.Add("action", "add")
 	linkinsert := "/?" + q.Encode()
 	q.Set("action", "subset")
 	linkselect := "/?" + q.Encode()
 
 	menu := []Entry{}
-	menu = append(menu, Entry{linkselect,"?"})
-	menu = append(menu, Entry{linkinsert,"+"})
-	menu = append(menu, Entry{"/logout","Q"})
+	menu = append(menu, Entry{linkselect, "?"})
+	menu = append(menu, Entry{linkinsert, "+"})
+	menu = append(menu, Entry{"/logout", "Q"})
 
-	
 	tableOut(w, r, back, head, records, trail, menu)
 }
 
@@ -166,16 +163,16 @@ func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num
 	columns, err := rows.Columns()
 	checkY(err)
 
-	trail := []Entry{}	
-	trail = append(trail, Entry{"/","root"})
-	
+	trail := []Entry{}
+	trail = append(trail, Entry{"/", "root"})
+
 	q := url.Values{}
 	q.Add("db", db)
-	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: db,})
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: db})
 	q.Add("t", t)
-	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: t,})
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: t})
 	q.Add("n", num)
-	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: num,})
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: num})
 
 	raw := make([]interface{}, len(columns))
 	val := make([]interface{}, len(columns))
@@ -184,13 +181,13 @@ func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num
 		raw[i] = &val[i]
 	}
 
-    head := []string{"Column", "Data"}
+	head := []string{"Column", "Data"}
 	records := [][]string{}
 
 	rec, err := strconv.Atoi(num)
-	checkY(err)	
+	checkY(err)
 	nmax, err := strconv.Atoi(getCount(r, db, t))
-	checkY(err)	
+	checkY(err)
 	var n int = 1
 rowLoop:
 	for rows.Next() {
@@ -211,26 +208,26 @@ rowLoop:
 		}
 		n = n + 1
 	}
-	
+
 	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
 	linkleft := "?" + q.Encode()
 	q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
 	linkright := "?" + q.Encode()
-	
+
 	q.Add("action", "add")
 	linkinsert := "/?" + q.Encode()
 	q.Set("action", "subset")
-//	linkselect := "/?" + q.Encode()
+	//	linkselect := "/?" + q.Encode()
 	q.Set("action", "show")
 	linkshow := "?" + q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
-	menu = append(menu, Entry{linkleft,"<"})
-	menu = append(menu, Entry{linkright,">"})
-	menu = append(menu, Entry{linkshow,"?"})
-	menu = append(menu, Entry{linkinsert,"+"})
-	menu = append(menu, Entry{"/logout","Q"})
-	
+	menu = append(menu, Entry{linkleft, "<"})
+	menu = append(menu, Entry{linkright, ">"})
+	menu = append(menu, Entry{linkshow, "?"})
+	menu = append(menu, Entry{linkinsert, "+"})
+	menu = append(menu, Entry{"/logout", "Q"})
+
 	tableOutFields(w, r, back, head, records, trail, menu)
 }

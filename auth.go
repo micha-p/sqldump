@@ -8,9 +8,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gorilla/securecookie"
 	"net/http"
-	"fmt"
 )
 
 var cookieHandler = securecookie.New(
@@ -18,7 +18,7 @@ var cookieHandler = securecookie.New(
 	securecookie.GenerateRandomKey(32))
 
 func getCredentials(r *http.Request) (user string, pass string, host string, port string) {
-	
+
 	cookie, err := r.Cookie("Datasource")
 	if err == nil {
 		cookieValue := make(map[string]string)
@@ -32,27 +32,27 @@ func getCredentials(r *http.Request) (user string, pass string, host string, por
 		} else { // cookieerror
 			fmt.Println("Cookie error " + host + ":" + port)
 		}
-	} 	
+	}
 	return user, pass, host, port
 }
 
 func checkCredentials(r *http.Request) error {
-	
+
 	cookie, err := r.Cookie("Datasource")
 	if err == nil {
 		cookieValue := make(map[string]string)
-		return cookieHandler.Decode("Datasource", cookie.Value, &cookieValue)			
+		return cookieHandler.Decode("Datasource", cookie.Value, &cookieValue)
 	} else {
 		return err
 	}
 }
 
-func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass string, host string, port string) *http.Request{
+func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass string, host string, port string) *http.Request {
 	value := map[string]string{
-		"user":   user,
-		"pass":   pass,
-		"host":   host,
-		"port":   port,
+		"user": user,
+		"pass": pass,
+		"host": host,
+		"port": port,
 	}
 	if encoded, err := cookieHandler.Encode("Datasource", value); err == nil {
 		c := &http.Cookie{

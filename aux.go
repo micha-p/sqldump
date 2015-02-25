@@ -5,12 +5,11 @@ import (
 	"os"
 )
 
-
 func troubleF(filename string) error {
-  _, err := os.Stat(filename)
-  return err
+	_, err := os.Stat(filename)
+	return err
 }
- 
+
 // simple error checker
 func checkY(err error) {
 	if err != nil {

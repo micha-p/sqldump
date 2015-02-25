@@ -21,7 +21,6 @@ import (
 	"time"
 )
 
-
 func publicKey(priv interface{}) interface{} {
 	switch k := priv.(type) {
 	case *rsa.PrivateKey:
@@ -50,9 +49,8 @@ func generate_cert(host string, rsaBits int, isCA bool) {
 		log.Fatalf("failed to generate private key: %s", err)
 	}
 
-
 	notBefore := time.Now()
-	notAfter :=  notBefore.AddDate(1,0,0)
+	notAfter := notBefore.AddDate(1, 0, 0)
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)

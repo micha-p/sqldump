@@ -1,4 +1,4 @@
- package main
+package main
 
 /*
 <form  action="/login">
@@ -12,13 +12,13 @@
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
 	"net/http"
 	"net/url"
-	"strings"
 	"strconv"
-	"fmt"
+	"strings"
 )
 
 type FContext struct {
@@ -28,16 +28,15 @@ type FContext struct {
 	Database string
 	Table    string
 	Back     string
-	Columns  [] string
+	Columns  []string
 }
-
 
 func shipForm(w http.ResponseWriter, r *http.Request, db string, t string, action string, button string, selector string) {
 
 	cols := getCols(r, db, t)
 	q := r.URL.Query()
 	q.Del("action")
-	linkback := q.Encode() 
+	linkback := q.Encode()
 
 	c := FContext{
 		Action:   action,
@@ -48,17 +47,17 @@ func shipForm(w http.ResponseWriter, r *http.Request, db string, t string, actio
 		Back:     linkback,
 		Columns:  cols,
 	}
-	
+
 	err := templateFormFields.Execute(w, c)
 	checkY(err)
 }
 
 func actionSubset(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipForm(w, r, database, table, "query", "Query","true")
+	shipForm(w, r, database, table, "query", "Query", "true")
 }
 
 func actionAdd(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipForm(w, r, database, table, "insert", "Insert","")
+	shipForm(w, r, database, table, "insert", "Insert", "")
 }
 
 func actionQuery(w http.ResponseWriter, r *http.Request) {
@@ -70,16 +69,16 @@ func actionQuery(w http.ResponseWriter, r *http.Request) {
 	v.Set("db", db)
 	v.Set("t", t)
 	linkback := "?" + v.Encode()
-	
+
 	var tests []string
 	for _, col := range cols {
 		val := r.FormValue(col + "C")
 		if val != "" {
 			comparator := r.FormValue(col + "O")
-			if comparator == "" { 
+			if comparator == "" {
 				comparator = "="
 			}
-			tests = append(tests, col + comparator + "\""+val+"\"")
+			tests = append(tests, col+comparator+"\""+val+"\"")
 		}
 	}
 
@@ -102,7 +101,7 @@ func actionInsert(w http.ResponseWriter, r *http.Request) {
 	for _, col := range cols {
 		val := r.FormValue(col + "C")
 		if val != "" {
-			assignments = append(assignments, col + "=\""+val+"\"")
+			assignments = append(assignments, col+"=\""+val+"\"")
 		}
 	}
 
@@ -137,22 +136,20 @@ func actionShow(w http.ResponseWriter, r *http.Request, db string, t string, bac
 	rows := getRows(r, db, "show columns from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 
-	trail := []Entry{}	
-	trail = append(trail, Entry{"/","root"})
-	
+	trail := []Entry{}
+	trail = append(trail, Entry{"/", "root"})
+
 	q := url.Values{}
 	q.Add("db", db)
-	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: db,})
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: db})
 	q.Add("t", t)
-	trail = append (trail, Entry{Link:"/?" + q.Encode() , Label: t,})
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: t})
 
 	menu := []Entry{}
 	q.Set("action", "add")
 	linkinsert := "/?" + q.Encode()
-	menu = append(menu, Entry{linkinsert,"+"})
-	menu = append(menu, Entry{"/logout","Q"})
-
-
+	menu = append(menu, Entry{linkinsert, "+"})
+	menu = append(menu, Entry{"/logout", "Q"})
 
 	records := [][]string{}
 	head := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}

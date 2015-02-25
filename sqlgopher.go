@@ -1,26 +1,38 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
-	"fmt"
-	"flag"
 	"strconv"
 )
 
 var database = "information_schema"
 var EXPERTFLAG bool
 var INFOFLAG bool
+var CSS_FILE string
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
-	http.StatusText(404)
+	if troubleF("favicon.ico") == nil {
+		http.ServeFile(w, r, "favicon.ico")
+	} else {
+		http.StatusText(404)
+	}
+}
+
+func cssHandler(w http.ResponseWriter, r *http.Request) {
+	if troubleF(CSS_FILE) == nil {
+		http.ServeFile(w, r, CSS_FILE)
+	} else {
+		http.StatusText(404)
+	}
 }
 
 func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, loginPage)
 }
-
 
 func workload(w http.ResponseWriter, r *http.Request) {
 
@@ -65,7 +77,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		newrequest := setCredentials(w, r, user, pass, host, port)
 		workload(w, newrequest)
-		
+
 	} else {
 		if checkCredentials(r) == nil {
 			workload(w, r)
@@ -75,15 +87,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func main() {
 
-	var SECURE = flag.Bool ("s", false, "https Connection TLS")
-	var HOST = flag.String ("h", "localhost", "server name")
-	var PORT = flag.Int ("p", 8080, "server port")
-	var INFO = flag.Bool ("i", false, "include INFORMATION_SCHEMA in overview")
-	var EXPERT = flag.Bool ("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
-	var CSS	   = flag.String("c","", "supply customized style in CSS file") // TODO
+	var SECURE = flag.Bool("s", false, "https Connection TLS")
+	var HOST = flag.String("h", "localhost", "server name")
+	var PORT = flag.Int("p", 8080, "server port")
+	var INFO = flag.Bool("i", false, "include INFORMATION_SCHEMA in overview")
+	var EXPERT = flag.Bool("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
+	var CSS = flag.String("c", "", "supply customized style in CSS file")
 
 	flag.Parse()
 
@@ -92,14 +103,17 @@ func main() {
 	CSS_FILE = *CSS
 
 	portstring := ":" + strconv.Itoa(*PORT)
-	
+
+	if CSS_FILE != "" && troubleF(CSS_FILE) == nil {
+		http.HandleFunc("/"+CSS_FILE, cssHandler)
+	}
 	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/", indexHandler)
 
 	if *SECURE {
-		if troubleF("cert.pem")==nil && troubleF("key.pem")==nil  {
+		if troubleF("cert.pem") == nil && troubleF("key.pem") == nil {
 			fmt.Println("cert.pem and key.pem found")
 		} else {
 			fmt.Println("Generating cert.pem and key.pem ...")

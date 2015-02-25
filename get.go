@@ -1,10 +1,10 @@
 package main
 
 import (
-	"html/template"
-	"net/http"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"html/template"
+	"net/http"
 )
 
 func getCols(r *http.Request, database string, table string) []string {

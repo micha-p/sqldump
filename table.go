@@ -14,7 +14,7 @@ import (
  */
 
 type Entry struct {
-	Link string
+	Link  string
 	Label string
 }
 
@@ -33,8 +33,8 @@ type Context struct {
 	X        string
 	Right    string
 	Info     string
-	Trail	 []Entry
-	Menu 	 []Entry
+	Trail    []Entry
+	Menu     []Entry
 }
 
 func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
@@ -66,7 +66,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 		Database: db,
 		Table:    t,
 		Records:  records,
-		Head:  	  head,
+		Head:     head,
 		Back:     back,
 		Select:   href("?"+linkwhere, "/"),
 		Insert:   href("?"+linkinsert, "+"),
@@ -74,8 +74,8 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 		X:        "",
 		Right:    "",
 		Info:     href("?"+linkshow, "?"),
-		Trail:    trail,    // if trail is missing, menu is shown at the right side of the headline
-		Menu:	  menu,     // always used. location dependent of presence of trail
+		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
+		Menu:     menu,  // always used. location dependent of presence of trail
 	}
 	err := templateTable.Execute(w, c)
 	checkY(err)
@@ -109,16 +109,16 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []
 		Database: db,
 		Table:    t,
 		Records:  records,
-		Head:  	  head,
+		Head:     head,
 		Back:     back,
 		Select:   "",
 		Insert:   "",
 		Left:     href("?"+linkleft, "<"),
 		X:        n,
 		Right:    href("?"+linkright, ">"),
-		Info:     href("?"+linkshow, "?"),	
+		Info:     href("?"+linkshow, "?"),
 		Trail:    trail,
-		Menu:	  menu,
+		Menu:     menu,
 	}
 
 	err = templateTableFields.Execute(w, c)
