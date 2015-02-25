@@ -9,7 +9,7 @@ This tool is made for administration of these by browsers on the command-line or
 - access via login mask or bookmarks
 - credentials stored in secure cookies
 - fast dumping of database content
-- inserting (DONE) and querying data (TODO)
+- inserting and querying data
 - potentially changing database driver (TODO)
 - templates for html
 
@@ -24,6 +24,7 @@ This tool is made for administration of these by browsers on the command-line or
 
 Run server for web interface
 
+    export GOPATH=$PWD
     bin/sqlgopher
 
 Access via browser
@@ -34,7 +35,7 @@ or more convenient but not secure
 
 [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306)
 
-or on command lineexport GOPATH=$PWD
+or on command line
 
     w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'

@@ -32,7 +32,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request) {
 // Shows selection of databases at top level
 func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
 
-	rows := getRows(r, "", "show databases")
+	rows := getRows(r,"", "show databases")
 	defer rows.Close()
 
 	trail := []Entry{}	
@@ -45,9 +45,11 @@ func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
 	for rows.Next() {
 		var field string
 		rows.Scan(&field)
-		row := []string{href(r.URL.Host+"?"+"db="+field, strconv.Itoa(n)), field}
-		records = append(records, row)
-		n = n + 1
+		if (EXPERTFLAG || INFOFLAG || field != "information_schema"){
+			row := []string{href(r.URL.Host+"?"+"db="+field, strconv.Itoa(n)), field}
+			records = append(records, row)
+			n = n + 1
+		}
 	}
 	tableOut(w, r, back, head, records, trail, menu)
 }

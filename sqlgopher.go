@@ -9,6 +9,8 @@ import (
 )
 
 var database = "information_schema"
+var EXPERTFLAG bool
+var INFOFLAG bool
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.StatusText(404)
@@ -48,6 +50,7 @@ func workload(w http.ResponseWriter, r *http.Request) {
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
+	fmt.Println(r.URL)
 	user := q.Get("user")
 	pass := q.Get("pass")
 	host := q.Get("host")
@@ -78,7 +81,16 @@ func main() {
 	var SECURE = flag.Bool ("s", false, "https Connection TLS")
 	var HOST = flag.String ("h", "localhost", "server name")
 	var PORT = flag.Int ("p", 8080, "server port")
+	var INFO = flag.Bool ("i", false, "include INFORMATION_SCHEMA in overview")
+	var EXPERT = flag.Bool ("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
+	var CSS	   = flag.String("c","", "supply customized style in CSS file") // TODO
+
 	flag.Parse()
+
+	INFOFLAG = *INFO
+	EXPERTFLAG = *EXPERT
+	CSS_FILE = *CSS
+
 	portstring := ":" + strconv.Itoa(*PORT)
 	
 	http.HandleFunc("/favicon.ico", faviconHandler)
