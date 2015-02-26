@@ -49,7 +49,7 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionQuery(w, r, cred)
 	} else if action == "add" && db != "" && t != "" {
 		actionAdd(w, r, cred, db, t)
-	} else if action == "Insert" && db != "" && t != "" {
+	} else if action == "insert" && db != "" && t != "" {
 		actionInsert(w, r, cred)
 	} else if action == "show" && db != "" && t != "" {
 		q.Del("action")

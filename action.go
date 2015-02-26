@@ -69,6 +69,15 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 	v.Set("t", t)
 	linkback := "?" + v.Encode()
 
+	trail := []Entry{}
+	trail = append(trail, Entry{"/", cred.Host})
+
+	q := url.Values{}
+	q.Add("db", db)
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: db})
+	q.Add("t", t)
+	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: t})
+
 	var tests []string
 	for _, col := range cols {
 		val := r.FormValue(col + "C")
@@ -81,11 +90,13 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 		}
 	}
 
+
 	if len(tests) > 0 {
 		// Imploding within templates is severly missing!
 		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
 		fmt.Println(query)
-		dumpRows(w, r, cred, db, t, linkback, query)
+		trail = append(trail, Entry{Link: "/?" + r.URL.RawQuery, Label: strings.Join(tests, " ")})
+		dumpRows(w, r, cred, trail, db, t, linkback, query)
 	}
 }
 
@@ -107,14 +118,14 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 	if len(assignments) > 0 {
 		// Imploding within templates is severly missing!
 		stmt := "INSERT INTO " + t + " SET " + strings.Join(assignments, ",")
-		conn := getConnection(cred, database)
+		conn := getConnection(cred, db)
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
 		checkY(err)
 		_, err = statement.Exec()
 		checkY(err)
-
+		fmt.Println(stmt)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
@@ -134,7 +145,7 @@ func actionShow(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	defer rows.Close()
 
 	trail := []Entry{}
-	trail = append(trail, Entry{"/", "root"})
+	trail = append(trail, Entry{"/", cred.Host})
 
 	q := url.Values{}
 	q.Add("db", db)
