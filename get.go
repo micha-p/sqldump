@@ -4,22 +4,17 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
-	"net/http"
 )
 
-func getCols(r *http.Request, database string, table string) []string {
-	rows := getRows(r, database, "select * from "+template.HTMLEscapeString(table))
-	defer rows.Close()
-
-	cols, err := rows.Columns()
+func getConnection(cred Access, database string) *sql.DB {
+	conn, err := sql.Open(cred.Dbms, dsn(cred.User, cred.Pass, cred.Host, cred.Port, database))
 	checkY(err)
-	return cols
+	return conn
 }
+	
 
-func getRows(r *http.Request, database string, stmt string) *sql.Rows {
-	user, pw, h, p := getCredentials(r)
-	conn, err := sql.Open("mysql", dsn(user, pw, h, p, database))
-	checkY(err)
+func getRows(cred Access, database string, stmt string) *sql.Rows {
+	conn := getConnection(cred, database)
 	defer conn.Close()
 
 	statement, err := conn.Prepare(stmt)
@@ -30,9 +25,18 @@ func getRows(r *http.Request, database string, stmt string) *sql.Rows {
 	return rows
 }
 
-func getCount(r *http.Request, database string, table string) string {
+func getCols(cred Access, database string, table string) []string {
+	rows := getRows(cred, database, "select * from "+template.HTMLEscapeString(table))
+	defer rows.Close()
 
-	rows := getRows(r, database, "select count(*) from "+template.HTMLEscapeString(table))
+	cols, err := rows.Columns()
+	checkY(err)
+	return cols
+}
+
+func getCount(cred Access, database string, table string) string {
+
+	rows := getRows(cred, database, "select count(*) from "+template.HTMLEscapeString(table))
 	defer rows.Close()
 
 	rows.Next()

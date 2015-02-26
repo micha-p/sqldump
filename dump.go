@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func dumpIt(w http.ResponseWriter, r *http.Request) {
+func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	q := r.URL.Query()
 	db := q.Get("db")
@@ -15,23 +15,23 @@ func dumpIt(w http.ResponseWriter, r *http.Request) {
 	n := q.Get("n")
 
 	if db == "" {
-		dumpHome(w, r, "/logout")
+		dumpHome(w, r, cred,  "/logout")
 	} else if t == "" {
 		q.Del("db")
-		dumpTables(w, r, db, "?"+q.Encode())
+		dumpTables(w, r, cred, db, "?"+q.Encode())
 	} else if n == "" {
 		q.Del("t")
-		dumpRecords(w, r, db, t, "?"+q.Encode())
+		dumpRecords(w, r, cred, db, t, "?"+q.Encode())
 	} else {
 		q.Del("n")
-		dumpFields(w, r, db, t, n, "?"+q.Encode())
+		dumpFields(w, r, cred, db, t, n, "?"+q.Encode())
 	}
 }
 
 // Shows selection of databases at top level
-func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
+func dumpHome(w http.ResponseWriter, r *http.Request, cred Access, back string) {
 
-	rows := getRows(r, "", "show databases")
+	rows := getRows(cred, "", "show databases")
 	defer rows.Close()
 
 	trail := []Entry{}
@@ -50,13 +50,13 @@ func dumpHome(w http.ResponseWriter, r *http.Request, back string) {
 			n = n + 1
 		}
 	}
-	tableOut(w, r, back, head, records, trail, menu)
+	tableOut(w, r, cred, back, head, records, trail, menu)
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, r *http.Request, db string, back string) {
+func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, db string, back string) {
 
-	rows := getRows(r, db, "show tables")
+	rows := getRows(cred, db, "show tables")
 	defer rows.Close()
 
 	trail := []Entry{}
@@ -76,23 +76,23 @@ func dumpTables(w http.ResponseWriter, r *http.Request, db string, back string) 
 		if db == "information_schema" {
 			nrows = "?"
 		} else {
-			nrows = getCount(r, db, field)
+			nrows = getCount(cred, db, field)
 		}
 		row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, strconv.Itoa(n)), field, nrows}
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOut(w, r, back, head, records, trail, menu)
+	tableOut(w, r, cred, back, head, records, trail, menu)
 }
 
 //  Dump all records of a table, one per row
-func dumpRecords(w http.ResponseWriter, r *http.Request, db string, t string, back string) {
-	dumpRows(w, r, db, t, back, "select * from "+template.HTMLEscapeString(t))
+func dumpRecords(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, back string) {
+	dumpRows(w, r, cred, db, t, back, "select * from "+template.HTMLEscapeString(t))
 }
 
-func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back string, query string) {
+func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, back string, query string) {
 
-	rows := getRows(r, db, query)
+	rows := getRows(cred, db, query)
 	defer rows.Close()
 	cols, err := rows.Columns()
 	checkY(err)
@@ -151,13 +151,13 @@ func dumpRows(w http.ResponseWriter, r *http.Request, db string, t string, back 
 	menu = append(menu, Entry{linkinsert, "+"})
 	menu = append(menu, Entry{"/logout", "Q"})
 
-	tableOut(w, r, back, head, records, trail, menu)
+	tableOut(w, r, cred, back, head, records, trail, menu)
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num string, back string) {
+func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, num string, back string) {
 
-	rows := getRows(r, db, "select * from "+template.HTMLEscapeString(t))
+	rows := getRows(cred, db, "select * from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 
 	columns, err := rows.Columns()
@@ -186,7 +186,7 @@ func dumpFields(w http.ResponseWriter, r *http.Request, db string, t string, num
 
 	rec, err := strconv.Atoi(num)
 	checkY(err)
-	nmax, err := strconv.Atoi(getCount(r, db, t))
+	nmax, err := strconv.Atoi(getCount(cred, db, t))
 	checkY(err)
 	var n int = 1
 rowLoop:
@@ -229,5 +229,5 @@ rowLoop:
 	menu = append(menu, Entry{linkinsert, "+"})
 	menu = append(menu, Entry{"/logout", "Q"})
 
-	tableOutFields(w, r, back, head, records, trail, menu)
+	tableOutFields(w, r, cred, back, head, records, trail, menu)
 }

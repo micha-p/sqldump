@@ -11,7 +11,6 @@ package main
 */
 
 import (
-	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
@@ -31,9 +30,9 @@ type FContext struct {
 	Columns  []string
 }
 
-func shipForm(w http.ResponseWriter, r *http.Request, db string, t string, action string, button string, selector string) {
+func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
 
-	cols := getCols(r, db, t)
+	cols := getCols(cred, db, t)
 	q := r.URL.Query()
 	q.Del("action")
 	linkback := q.Encode()
@@ -52,19 +51,19 @@ func shipForm(w http.ResponseWriter, r *http.Request, db string, t string, actio
 	checkY(err)
 }
 
-func actionSubset(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipForm(w, r, database, table, "query", "Query", "true")
+func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
+	shipForm(w, r, cred, database, table, "query", "Query", "true")
 }
 
-func actionAdd(w http.ResponseWriter, r *http.Request, database string, table string) {
-	shipForm(w, r, database, table, "insert", "Insert", "")
+func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
+	shipForm(w, r, cred, database, table, "insert", "Insert", "")
 }
 
-func actionQuery(w http.ResponseWriter, r *http.Request) {
+func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	db := r.FormValue("db")
 	t := r.FormValue("t")
-	cols := getCols(r, db, t)
+	cols := getCols(cred, db, t)
 	v := url.Values{}
 	v.Set("db", db)
 	v.Set("t", t)
@@ -86,15 +85,15 @@ func actionQuery(w http.ResponseWriter, r *http.Request) {
 		// Imploding within templates is severly missing!
 		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
 		fmt.Println(query)
-		dumpRows(w, r, db, t, linkback, query)
+		dumpRows(w, r, cred, db, t, linkback, query)
 	}
 }
 
-func actionInsert(w http.ResponseWriter, r *http.Request) {
+func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	db := r.FormValue("db")
 	t := r.FormValue("t")
-	cols := getCols(r, db, t)
+	cols := getCols(cred, db, t)
 
 	// Searching for cols within formValues
 	var assignments []string
@@ -108,9 +107,7 @@ func actionInsert(w http.ResponseWriter, r *http.Request) {
 	if len(assignments) > 0 {
 		// Imploding within templates is severly missing!
 		stmt := "INSERT INTO " + t + " SET " + strings.Join(assignments, ",")
-		user, pw, h, p := getCredentials(r)
-		conn, err := sql.Open("mysql", dsn(user, pw, h, p, db))
-		checkY(err)
+		conn := getConnection(cred, database)
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
@@ -131,9 +128,9 @@ func actionInsert(w http.ResponseWriter, r *http.Request) {
 +-------+-------------+------+-----+---------+-------+
 */
 
-func actionShow(w http.ResponseWriter, r *http.Request, db string, t string, back string) {
+func actionShow(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, back string) {
 
-	rows := getRows(r, db, "show columns from "+template.HTMLEscapeString(t))
+	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 
 	trail := []Entry{}
@@ -162,5 +159,5 @@ func actionShow(w http.ResponseWriter, r *http.Request, db string, t string, bac
 		checkY(err)
 		records = append(records, []string{strconv.Itoa(n), f, t, u, k, string(d), e})
 	}
-	tableOut(w, r, back, head, records, trail, menu)
+	tableOut(w, r, cred, back, head, records, trail, menu)
 }

@@ -34,7 +34,7 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-func workload(w http.ResponseWriter, r *http.Request) {
+func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	q := r.URL.Query()
 	action := q.Get("action")
@@ -44,18 +44,18 @@ func workload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if action == "subset" && db != "" && t != "" {
-		actionSubset(w, r, db, t)
+		actionSubset(w, r, cred, db, t)
 	} else if action == "query" && db != "" && t != "" {
-		actionQuery(w, r)
+		actionQuery(w, r, cred)
 	} else if action == "add" && db != "" && t != "" {
-		actionAdd(w, r, db, t)
+		actionAdd(w, r, cred, db, t)
 	} else if action == "Insert" && db != "" && t != "" {
-		actionInsert(w, r)
+		actionInsert(w, r, cred)
 	} else if action == "show" && db != "" && t != "" {
 		q.Del("action")
-		actionShow(w, r, db, t, "?"+q.Encode())
+		actionShow(w, r, cred, db, t, "?"+q.Encode())
 	} else {
-		dumpIt(w, r)
+		dumpIt(w, r, cred)
 	}
 }
 
@@ -67,6 +67,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	pass := q.Get("pass")
 	host := q.Get("host")
 	port := q.Get("port")
+	dbms := q.Get("dbms")
 
 	if user != "" && pass != "" {
 		if host == "" {
@@ -75,12 +76,16 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		if port == "" {
 			port = "3306"
 		}
-		newrequest := setCredentials(w, r, user, pass, host, port)
-		workload(w, newrequest)
+		if dbms == "" {
+			dbms = "mysql"
+		}
+		cred := Access{user, pass, host, port, dbms}
+		setCredentials(w, r, cred)
+		workload(w, r, cred)
 
 	} else {
-		if checkCredentials(r) == nil {
-			workload(w, r)
+		if cred, err := getCredentials(r); err == nil {
+			workload(w, r, cred)
 		} else {
 			loginPageHandler(w, r)
 		}

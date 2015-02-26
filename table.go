@@ -37,9 +37,8 @@ type Context struct {
 	Menu     []Entry
 }
 
-func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
-	u, _, h, p := getCredentials(r)
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
 	var linkwhere string
@@ -60,9 +59,9 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 	}
 
 	c := Context{
-		User:     u,
-		Host:     h,
-		Port:     p,
+		User:     cred.User,
+		Host:     cred.Host,
+		Port:     cred.Port,
 		Database: db,
 		Table:    t,
 		Records:  records,
@@ -81,9 +80,8 @@ func tableOut(w http.ResponseWriter, r *http.Request, back string, head []string
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
-	u, _, h, p := getCredentials(r)
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
 	n := r.URL.Query().Get("n")
@@ -93,7 +91,7 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []
 	var linkshow string
 
 	nint, err := strconv.Atoi(n)
-	nmax, err := strconv.Atoi(getCount(r, db, t))
+	nmax, err := strconv.Atoi(getCount(cred, db, t))
 	left := strconv.Itoa(maxI(nint-1, 1))
 	right := strconv.Itoa(minI(nint+1, nmax))
 
@@ -103,9 +101,10 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, back string, head []
 	q.Set("n", right)
 	linkright = q.Encode()
 
-	c := Context{User: u,
-		Host:     h,
-		Port:     p,
+	c := Context{
+		User:     cred.User,
+		Host:     cred.Host,
+		Port:     cred.Port,
 		Database: db,
 		Table:    t,
 		Records:  records,

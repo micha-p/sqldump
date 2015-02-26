@@ -13,12 +13,22 @@ import (
 	"net/http"
 )
 
+type Access struct {
+	User     string
+	Pass     string
+	Host     string
+	Port     string
+	Dbms     string
+}
+
 var cookieHandler = securecookie.New(
 	securecookie.GenerateRandomKey(64),
 	securecookie.GenerateRandomKey(32))
 
-func getCredentials(r *http.Request) (user string, pass string, host string, port string) {
+func getCredentials(r *http.Request) (Access, error) {
 
+	var user, pass, host, port, dbms string
+	
 	cookie, err := r.Cookie("Datasource")
 	if err == nil {
 		cookieValue := make(map[string]string)
@@ -28,31 +38,21 @@ func getCredentials(r *http.Request) (user string, pass string, host string, por
 			pass = cookieValue["pass"]
 			host = cookieValue["host"]
 			port = cookieValue["port"]
-			fmt.Println("Credentials taken for " + host + ":" + port)
+			dbms = cookieValue["dbms"]
 		} else { // cookieerror
-			fmt.Println("Cookie error " + host + ":" + port)
+			fmt.Println("Cookie error " + host + ":" + port + "(" + dbms + ")" )
 		}
 	}
-	return user, pass, host, port
+	return Access{user, pass, host, port, dbms}, err
 }
 
-func checkCredentials(r *http.Request) error {
-
-	cookie, err := r.Cookie("Datasource")
-	if err == nil {
-		cookieValue := make(map[string]string)
-		return cookieHandler.Decode("Datasource", cookie.Value, &cookieValue)
-	} else {
-		return err
-	}
-}
-
-func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass string, host string, port string) *http.Request {
+func setCredentials(w http.ResponseWriter, r *http.Request, cred Access) {
 	value := map[string]string{
-		"user": user,
-		"pass": pass,
-		"host": host,
-		"port": port,
+		"user": cred.User,
+		"pass": cred.Pass,
+		"host": cred.Host,
+		"port": cred.Port,
+		"dbms": cred.Dbms,
 	}
 	if encoded, err := cookieHandler.Encode("Datasource", value); err == nil {
 		c := &http.Cookie{
@@ -61,10 +61,8 @@ func setCredentials(w http.ResponseWriter, r *http.Request, user string, pass st
 			Path:  "/",
 		}
 		http.SetCookie(w, c)
-		fmt.Println("Credentials set for " + user + "@" + host + ":" + port)
-		r.AddCookie(c)
+		fmt.Println("Cookie set: " + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")" )
 	}
-	return r
 }
 
 func clearCredentials(w http.ResponseWriter) {
@@ -82,8 +80,9 @@ func loginHandler(w http.ResponseWriter, request *http.Request) {
 	pass := request.FormValue("pass")
 	host := request.FormValue("host")
 	port := request.FormValue("port")
+	dbms := request.FormValue("dbms")
 	if user != "" && pass != "" {
-		setCredentials(w, request, user, pass, host, port)
+		setCredentials(w, request, Access{user, pass, host, port, dbms})
 	}
 	http.Redirect(w, request, request.URL.Host, 302)
 }
