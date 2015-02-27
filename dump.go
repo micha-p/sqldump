@@ -199,7 +199,7 @@ rowLoop:
 			for i, col := range val {
 				var row []string
 				if col != nil {
-					row = []string{strconv.Itoa(i), columns[i], string(col.([]byte))}
+					row = []string{strconv.Itoa(i+1), columns[i], string(col.([]byte))}
 					records = append(records, row)
 				}
 			}
