@@ -39,6 +39,7 @@ type Context struct {
 
 func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
+	initTemplate()
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
 	var linkwhere string
@@ -82,6 +83,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 
 func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
+	initTemplate()
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
 	n := r.URL.Query().Get("n")
@@ -120,6 +122,6 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 		Menu:     menu,
 	}
 
-	err = templateTableFields.Execute(w, c)
+	err = templateTable.Execute(w, c)
 	checkY(err)
 }

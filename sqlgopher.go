@@ -106,7 +106,8 @@ func main() {
 	INFOFLAG = *INFO
 	EXPERTFLAG = *EXPERT
 	CSS_FILE = *CSS
-
+	initTemplate()
+	
 	portstring := ":" + strconv.Itoa(*PORT)
 
 	if CSS_FILE != "" && troubleF(CSS_FILE) == nil {
