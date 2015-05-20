@@ -25,7 +25,8 @@ This tool is made for administration of these by browsers on the command-line or
 Run server for web interface
 
     export GOPATH=$PWD
-    bin/sqlgopher
+    go build init.go sqlgopher.go dump.go aux.go auth.go table.go action.go cert.go get.go
+    ./sqlgopher -c="html/table.css"
 
 Access via browser
 

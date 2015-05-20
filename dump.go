@@ -5,6 +5,7 @@ import (
 	"net/http"	
 	"net/url"
 	"strconv"
+	"fmt"
 )
 
 func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
@@ -104,63 +105,79 @@ func dumpRecords(w http.ResponseWriter, r *http.Request, cred Access, trail []En
 	dumpRows(w, r, cred, trail, db, t, back, "select * from "+template.HTMLEscapeString(t))
 }
 
+
+// http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
+// http://blog.golang.org/laws-of-reflection
+
+func dumpValue(val interface{}) string {
+	
+	var r string
+    b, ok := val.([]byte)
+
+    if b != nil {
+		if (ok) {
+			r = string(b)
+		} else {
+			r = fmt.Sprint(val)
+		}
+	} else {
+		r = "NIL"
+	}
+	return r
+}
+
+
 func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, back string, query string) {
 
 	q := url.Values{}
-	rows := getRows(cred, db, query)
-	defer rows.Close()
-	cols, err := rows.Columns()
-	checkY(err)
-
-	/*  credits:
-	 * 	http://stackoverflow.com/questions/19991541/dumping-mysql-tables-to-json-with-golang
-	 * 	http://go-database-sql.org/varcols.html
-	 */
-	raw := make([]interface{}, len(cols))
-	val := make([]interface{}, len(cols))
-
-	for i := range val {
-		raw[i] = &val[i]
-	}
-
-	head := []string{}
-	for _, column := range cols {
-		head = append(head, column)
-	}
-
 	q.Add("db", db)
 	q.Add("t", t)
 	q.Add("action", "add")
 	linkinsert := "/?" + q.Encode()
 	q.Set("action", "subset")
 	linkselect := "/?" + q.Encode()
+	q.Set("action", "show")
+	linkshow := "?" + q.Encode()
 	q.Del("action")
 	menu := []Entry{}
 	menu = append(menu, Entry{linkselect, "?"})
 	menu = append(menu, Entry{linkinsert, "+"})
+	menu = append(menu, Entry{linkshow, "i"})
 	menu = append(menu, Entry{"/logout", "Q"})
 
+	rows := getRows(cred, db, query)
+	defer rows.Close()
+	columns, err := rows.Columns()
+	checkY(err)
+    count := len(columns)
+    values := make([]interface{}, count)
+    valuePtrs := make([]interface{}, count)
+    for i, _ := range columns {
+        valuePtrs[i] = &values[i]
+    }
+
+	head := []string{}
 	records := [][]string{}
-	var n int = 1
-	for rows.Next() {
+	for _, title := range columns {
+		head = append(head, title)
+	}
+
+ 	var n int = 1
+    for rows.Next() {
 
 		q.Set("n", strconv.Itoa(n))
 		row := []string{href("?"+q.Encode(), strconv.Itoa(n))}
 
-		err = rows.Scan(raw...)
+		err=rows.Scan(valuePtrs...)
 		checkY(err)
-
-		for _, col := range val {
-			if col != nil {
-				row = append(row, string(col.([]byte)))
-			}
-		}
+		
+        for i, _ := range columns {
+			row = append(row, dumpValue(values[i]))
+        }
+        
 		records = append(records, row)
 		n = n + 1
 	}
-
-
-
 	tableOut(w, r, cred, back, head, records, trail, menu)
 }
 
@@ -169,15 +186,13 @@ func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 
 	rows := getRows(cred, db, "select * from "+template.HTMLEscapeString(t))
 	defer rows.Close()
-
 	columns, err := rows.Columns()
 	checkY(err)
-
-	raw := make([]interface{}, len(columns))
-	val := make([]interface{}, len(columns))
-
-	for i := range val {
-		raw[i] = &val[i]
+    count := len(columns)
+    values := make([]interface{}, count)
+    valuePtrs := make([]interface{}, count)
+	for i, _ := range columns {
+		valuePtrs[i] = &values[i]
 	}
 
 	head := []string{"Column", "Data"}
@@ -193,15 +208,12 @@ rowLoop:
 
 		// unfortunately we have to iterate up to row of interest
 		if n == rec {
-			err = rows.Scan(raw...)
+			err=rows.Scan(valuePtrs...)
 			checkY(err)
-
-			for i, col := range val {
+			for i, _ := range columns {
 				var row []string
-				if col != nil {
-					row = []string{strconv.Itoa(i+1), columns[i], string(col.([]byte))}
-					records = append(records, row)
-				}
+				row = []string{strconv.Itoa(i+1), columns[i], dumpValue(values[i])}
+				records = append(records, row)
 			}
 			break rowLoop
 		}
@@ -227,7 +239,7 @@ rowLoop:
 	menu := []Entry{}
 	menu = append(menu, Entry{linkleft, "<"})
 	menu = append(menu, Entry{linkright, ">"})
-	menu = append(menu, Entry{linkshow, "?"})
+	menu = append(menu, Entry{linkshow, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 	menu = append(menu, Entry{"/logout", "Q"})
 
