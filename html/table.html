@@ -5,16 +5,14 @@
 <body>
 
 
-<div class="top" align="justify">
 {{if .Trail}}
-   <span class="left" align="left">
-	   <a class="trail" href="logout">[X]</a>
-       {{range .Trail}}&nbsp;&gt;&nbsp;<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
-   </span>
-   <span class="right" align="right">{{if .Menu}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{range .Menu}}<a href="{{.Link}}">[{{.Label}}]</a>{{end}}{{end}}</span>
-   <span class="center" align="center">&nbsp;</span>
+	<div class="breadcrumb" align="left">
+	    <a class="trail" href="logout">x</a></li>			
+	    {{range .Trail}}<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
+	</div>
+   <div class="right" align="right">{{if .Menu}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{range .Menu}}<a href="{{.Link}}">[{{.Label}}]</a>{{end}}{{end}}</div>
+   <div class="center" align="center">&nbsp;</div>
 {{end}}
-</div>
 
 
 <table>
