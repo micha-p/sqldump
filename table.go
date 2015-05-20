@@ -22,6 +22,7 @@ type Context struct {
 	User     string
 	Host     string
 	Port     string
+	CSS		 string
 	Database string
 	Table    string
 	Back     string
@@ -63,6 +64,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 		User:     cred.User,
 		Host:     cred.Host,
 		Port:     cred.Port,
+		CSS:      CSS_FILE,
 		Database: db,
 		Table:    t,
 		Records:  records,
@@ -107,6 +109,7 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 		User:     cred.User,
 		Host:     cred.Host,
 		Port:     cred.Port,
+		CSS:      CSS_FILE,
 		Database: db,
 		Table:    t,
 		Records:  records,

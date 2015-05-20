@@ -1,14 +1,17 @@
 <html>
 <head>
 <title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{else}}{{.User}}@{{.Host}}:{{.Port}}{{end}}</title>
-<link rel="stylesheet" type="text/css" href="html/table.css"/>
+{{if .CSS}}<link rel="stylesheet" type="text/css" href="html/table.css"/>{{end}}
 <body>
 
 
 <div class="top" align="justify">
 {{if .Trail}}
-   <span class="left" align="left">{{range .Trail}}<a href="{{.Link}}">{{.Label}}</a>&gt;&nbsp;&nbsp;{{end}}</span>
-   <span class="right" align="right">{{if .Menu}}{{range .Menu}}<a href="{{.Link}}">[{{.Label}}]</a>{{end}}{{end}}</span>
+   <span class="left" align="left">
+	   <a class="trail" href="logout">[X]</a>
+       {{range .Trail}}&nbsp;&gt;&nbsp;<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
+   </span>
+   <span class="right" align="right">{{if .Menu}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{range .Menu}}<a href="{{.Link}}">[{{.Label}}]</a>{{end}}{{end}}</span>
    <span class="center" align="center">&nbsp;</span>
 {{end}}
 </div>

@@ -24,6 +24,7 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 func cssHandler(w http.ResponseWriter, r *http.Request) {
 	if troubleF(CSS_FILE) == nil {
 		http.ServeFile(w, r, CSS_FILE)
+		fmt.Println("get css: " + CSS_FILE)
 	} else {
 		http.StatusText(404)
 	}
@@ -126,9 +127,11 @@ func main() {
 			generate_cert(*HOST, 2048, false)
 		}
 		fmt.Println("Listening at https://" + *HOST + portstring)
+		if CSS_FILE != "" { fmt.Println("using style in " + CSS_FILE)}
 		http.ListenAndServeTLS(portstring, "cert.pem", "key.pem", nil)
 	} else {
 		fmt.Println("Listening at http://" + *HOST + portstring)
+		if CSS_FILE != "" { fmt.Println("using style in " + CSS_FILE)}
 		http.ListenAndServe(portstring, nil)
 	}
 }

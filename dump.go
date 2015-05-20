@@ -55,7 +55,7 @@ func dumpHome(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 	defer rows.Close()
 
 	menu := []Entry{}
-	menu = append(menu, Entry{"/logout", "Q"})
+	//menu = append(menu, Entry{"/logout", "Q"})
 	records := [][]string{}
 	head := []string{"Database"}
 	var n int = 1
@@ -78,7 +78,7 @@ func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 	defer rows.Close()
 
 	menu := []Entry{}
-	menu = append(menu, Entry{"/logout", "Q"})
+	//menu = append(menu, Entry{"/logout", "Q"})
 	records := [][]string{}
 	head := []string{"Table", "Rows"}
 
@@ -143,7 +143,7 @@ func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 	menu = append(menu, Entry{linkselect, "?"})
 	menu = append(menu, Entry{linkinsert, "+"})
 	menu = append(menu, Entry{linkshow, "i"})
-	menu = append(menu, Entry{"/logout", "Q"})
+	//menu = append(menu, Entry{"/logout", "Q"})
 
 	rows := getRows(cred, db, query)
 	defer rows.Close()
@@ -241,7 +241,7 @@ rowLoop:
 	menu = append(menu, Entry{linkright, ">"})
 	menu = append(menu, Entry{linkshow, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
-	menu = append(menu, Entry{"/logout", "Q"})
+	//menu = append(menu, Entry{"/logout", "Q"})
 
 	tableOutFields(w, r, cred, back, head, records, trail, menu)
 }

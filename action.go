@@ -157,7 +157,7 @@ func actionShow(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	q.Set("action", "add")
 	linkinsert := "/?" + q.Encode()
 	menu = append(menu, Entry{linkinsert, "+"})
-	menu = append(menu, Entry{"/logout", "Q"})
+	//menu = append(menu, Entry{"/logout", "Q"})
 
 	records := [][]string{}
 	head := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}

@@ -20,10 +20,29 @@
 
 .column {
     text-align: left;
-    padding: 5px;
+    border-right: 1px solid #715524;
+	border-bottom: 1px solid #715524;
+	padding: 6px 6px 6px 12px;
+    font-family: sans-serif;
+    font-weight: bold;
+    color: #74AD6E;
 }
 
 .cell {
     text-align: left;
-    padding: 0px 5px;
+    border-right: 1px solid #715524;
+	border-bottom: 1px solid #715524;
+	background: #fff;
+	padding: 6px 6px 6px 12px;
+    font-family: sans-serif;
+	color: #715524;
 }
+
+a {text-decoration: none}
+a:link {color: #715524;}
+a:visited {color: #715524;}
+a:active {color: #715524;}
+a:hover {color: red;text-decoration: underline}
+a.trail:link {color: blue;}
+a.trail:visited {color: blue;}
+a.trail:hover {color: red;text-decoration: underline}
