@@ -60,6 +60,7 @@ button:active { color: red;}
 .counter a.count:first-child {border-radius: 5px 0 0 5px;}
 .counter a.count:last-child {border-radius: 0 5px 5px 0;}
 .counter a.count:active, .counter a.count:hover{	background: #715524;}
+.counter a.count:active {color:red;}
 
 .right {	
     margin-left: auto;	
@@ -83,6 +84,7 @@ button:active { color: red;}
 .right a.count:first-child {border-radius: 5px 0 0 5px;}
 .right a.count:last-child {border-radius: 0 5px 5px 0;}
 .right a.count:active, .right a.count:hover{	background: #715524;}
+.right a.count:active {color:red;}
 
 
 .top {
@@ -96,8 +98,8 @@ button:active { color: red;}
 a {text-decoration: none}
 a:link {color: #715524;}
 a:visited {color: #715524;}
-a:active {color: #715524;}
-a:hover {color: red;text-decoration: underline}
+a:hover {color: orange;text-decoration: underline}
+a:active {color: red;}
 
 
 /* http://thecodeplayer.com/walkthrough/css3-breadcrumb-navigation */
@@ -135,6 +137,7 @@ a:hover {color: red;text-decoration: underline}
 }
 
 .breadcrumb a.trail:active, .breadcrumb a.trail:hover{	background: #715524;}
+.breadcrumb a.trail:active {color: red;}
 .breadcrumb a.trail:active:after, .breadcrumb a.trail:hover:after {	background: #715524;}
 .breadcrumb a.trail:after {
 	content: '';
