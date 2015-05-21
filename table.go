@@ -30,8 +30,9 @@ type Context struct {
 	Records  [][]string
 	Select   string
 	Insert   string
-	Left     string
-	X        string
+	Left	 string
+	Counter  string
+	This  	 string
 	Right    string
 	Info     string
 	Trail    []Entry
@@ -72,9 +73,10 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 		Back:     back,
 		Select:   href("?"+linkwhere, "/"),
 		Insert:   href("?"+linkinsert, "+"),
-		Left:     "",
-		X:        "",
-		Right:    "",
+		Left:       "",
+		Counter:  "",
+		This:     "",
+		Right:     "",
 		Info:     href("?"+linkshow, "?"),
 		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
 		Menu:     menu,  // always used. location dependent of presence of trail
@@ -91,6 +93,7 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 	n := r.URL.Query().Get("n")
 
 	var linkleft string
+	var linkthis string
 	var linkright string
 	var linkshow string
 
@@ -101,9 +104,11 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 
 	q := r.URL.Query()
 	q.Set("n", left)
-	linkleft = q.Encode()
+	linkleft = "?" + q.Encode()
+	q.Set("n", n)
+	linkthis = "?" + q.Encode()
 	q.Set("n", right)
-	linkright = q.Encode()
+	linkright = "?" + q.Encode()
 
 	c := Context{
 		User:     cred.User,
@@ -117,9 +122,10 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 		Back:     back,
 		Select:   "",
 		Insert:   "",
-		Left:     href("?"+linkleft, "<"),
-		X:        n,
-		Right:    href("?"+linkright, ">"),
+		Left:     linkleft,
+		Counter:  n,
+		This: 	  linkthis,
+		Right:    linkright,
 		Info:     href("?"+linkshow, "?"),
 		Trail:    trail,
 		Menu:     menu,

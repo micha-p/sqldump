@@ -9,12 +9,10 @@ import (
 )
 
 func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
-
 	q := r.URL.Query()
 	db := q.Get("db")
 	t := q.Get("t")
 	n := q.Get("n")
-
 	
 	v := url.Values{}
 	trail := []Entry{}
@@ -40,8 +38,8 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 		return
 	} 
 
-	v.Add("n",n)
-	trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: n})
+	/*v.Add("n",n)
+	trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: n })*/
 	if n != "" {
 		dumpFields(w, r, cred, trail, db, t, n, "?"+q.Encode())
 		return
@@ -200,8 +198,8 @@ func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 
 	rec, err := strconv.Atoi(num)
 	checkY(err)
-	nmax, err := strconv.Atoi(getCount(cred, db, t))
-	checkY(err)
+/*	nmax, err := strconv.Atoi(getCount(cred, db, t))
+	checkY(err) */
 	var n int = 1
 rowLoop:
 	for rows.Next() {
@@ -231,15 +229,15 @@ rowLoop:
 	q.Set("action", "show")
 	linkshow := "?" + q.Encode()
 	q.Del("action")
-	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
+/*	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
 	linkleft := "?" + q.Encode()
 	q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
-	linkright := "?" + q.Encode()
+	linkright := "?" + q.Encode()*/
 
 	menu := []Entry{}
-	menu = append(menu, Entry{linkleft, "<"})
+/*	menu = append(menu, Entry{linkleft, "<"})
 	menu = append(menu, Entry{linkright, ">"})
-	menu = append(menu, Entry{linkshow, "i"})
+*/	menu = append(menu, Entry{linkshow, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 	//menu = append(menu, Entry{"/logout", "Q"})
 
