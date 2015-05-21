@@ -139,9 +139,8 @@ func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 	q.Del("action")
 	menu := []Entry{}
 	menu = append(menu, Entry{linkselect, "?"})
-	menu = append(menu, Entry{linkinsert, "+"})
 	menu = append(menu, Entry{linkshow, "i"})
-	//menu = append(menu, Entry{"/logout", "Q"})
+	menu = append(menu, Entry{linkinsert, "+"})
 
 	rows := getRows(cred, db, query)
 	defer rows.Close()

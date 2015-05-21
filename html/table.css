@@ -1,5 +1,4 @@
 .counter {
-    float: left;
 	border-radius: 5px;
 	margin-left: auto;
 	margin-right: auto;
@@ -23,8 +22,27 @@
 .counter a.count:active, .counter a.count:hover{	background: #715524;}
 
 .right {	
-    margin-left: auto;
+    margin-left: auto;	
+    border-radius: 5px;
+
 }
+
+.right a.count {
+	text-decoration: none;
+	outline: none;
+	display: block;
+	float: left;
+	font-family: sans-serif;
+	line-height: 36px;
+	color: white;
+	padding: 0 10px 0 10px;
+	background: #74AD6E;
+	position: relative;
+}
+
+.right a.count:first-child {border-radius: 5px 0 0 5px;}
+.right a.count:last-child {border-radius: 0 5px 5px 0;}
+.right a.count:active, .right a.count:hover{	background: #715524;}
 
 
 .top {

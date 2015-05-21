@@ -131,6 +131,7 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 }
 
 /*
+ show columns from posts;
 +-------+-------------+------+-----+---------+-------+
 | Field | Type        | Null | Key | Default | Extra |
 +-------+-------------+------+-----+---------+-------+
@@ -157,7 +158,6 @@ func actionShow(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	q.Set("action", "add")
 	linkinsert := "/?" + q.Encode()
 	menu = append(menu, Entry{linkinsert, "+"})
-	//menu = append(menu, Entry{"/logout", "Q"})
 
 	records := [][]string{}
 	head := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
@@ -169,6 +169,7 @@ func actionShow(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 		err := rows.Scan(&f, &t, &u, &k, &d, &e)
 		checkY(err)
 		records = append(records, []string{strconv.Itoa(n), f, t, u, k, string(d), e})
+		n = n + 1
 	}
 	tableOut(w, r, cred, back, head, records, trail, menu)
 }

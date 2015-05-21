@@ -44,16 +44,17 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 	initTemplate()
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
-	var linkwhere string
-	var linkinsert string
+
 	var linkshow string
+	var linkinsert string
+	var linkwhere string
 
 	if t != "" {
 		q := r.URL.Query()
-		q.Add("action", "insert")
+		q.Add("action", "add")
 		linkinsert = q.Encode()
 		q.Del("action")
-		q.Add("action", "where")
+		q.Add("action", "select")
 		linkwhere = q.Encode()
 		q.Del("action")
 		q.Add("action", "show")
@@ -92,23 +93,24 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 	t := r.URL.Query().Get("t")
 	n := r.URL.Query().Get("n")
 
-	var linkleft string
-	var linkthis string
-	var linkright string
-	var linkshow string
-
 	nint, err := strconv.Atoi(n)
 	nmax, err := strconv.Atoi(getCount(cred, db, t))
 	left := strconv.Itoa(maxI(nint-1, 1))
 	right := strconv.Itoa(minI(nint+1, nmax))
 
 	q := r.URL.Query()
+	q.Add("action", "add")
+	linkinsert := q.Encode()
+	q.Del("action")
+    q.Add("action", "show")
+	linkshow := q.Encode()
+	q.Del("action")
 	q.Set("n", left)
-	linkleft = "?" + q.Encode()
+	linkleft := "?" + q.Encode()
 	q.Set("n", n)
-	linkthis = "?" + q.Encode()
+	linkthis := "?" + q.Encode()
 	q.Set("n", right)
-	linkright = "?" + q.Encode()
+	linkright := "?" + q.Encode()
 
 	c := Context{
 		User:     cred.User,
@@ -121,7 +123,7 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 		Head:     head,
 		Back:     back,
 		Select:   "",
-		Insert:   "",
+		Insert:   linkinsert,
 		Left:     linkleft,
 		Counter:  n,
 		This: 	  linkthis,
