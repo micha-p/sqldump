@@ -11,7 +11,6 @@ func getConnection(cred Access, database string) *sql.DB {
 	checkY(err)
 	return conn
 }
-	
 
 func getRows(cred Access, database string, stmt string) *sql.Rows {
 	conn := getConnection(cred, database)

@@ -21,7 +21,7 @@ import (
 )
 
 type FContext struct {
-	CSS		 string
+	CSS      string
 	Action   string
 	Selector string
 	Button   string
@@ -36,11 +36,11 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 
 	v := url.Values{}
 	trail := []Entry{}
-    trail = append(trail, Entry{"/", cred.Host})
-	v.Add("db",db)
-	trail = append(trail, Entry{Link: "?"+ v.Encode(), Label: db})
-	v.Add("t",t)
-	trail = append(trail, Entry{Link: "?"+ v.Encode(), Label: t})
+	trail = append(trail, Entry{"/", cred.Host})
+	v.Add("db", db)
+	trail = append(trail, Entry{Link: "?" + v.Encode(), Label: db})
+	v.Add("t", t)
+	trail = append(trail, Entry{Link: "?" + v.Encode(), Label: t})
 
 	cols := getCols(cred, db, t)
 	q := r.URL.Query()
@@ -59,13 +59,15 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 		Trail:    trail,
 	}
 
-	if DEBUGFLAG {initTemplate()}
+	if DEBUGFLAG {
+		initTemplate()
+	}
 	err := templateFormFields.Execute(w, c)
 	checkY(err)
 }
 
 func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
-	
+
 	shipForm(w, r, cred, database, table, "query", "Query", "true")
 }
 
@@ -105,13 +107,12 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 		}
 	}
 
-
 	if len(tests) > 0 {
 		// Imploding within templates is severly missing!
 		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
 		fmt.Println(query)
 		trail = append(trail, Entry{Link: "/?" + r.URL.RawQuery, Label: strings.Join(tests, " ")})
-		dumpRows(w, r, cred, trail, db, t, linkback, query)
+		dumpRows(w, r, cred, trail, db, t, "", linkback, query)
 	}
 }
 

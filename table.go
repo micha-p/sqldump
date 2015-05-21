@@ -22,7 +22,7 @@ type Context struct {
 	User     string
 	Host     string
 	Port     string
-	CSS		 string
+	CSS      string
 	Database string
 	Table    string
 	Back     string
@@ -30,9 +30,9 @@ type Context struct {
 	Records  [][]string
 	Select   string
 	Insert   string
-	Left	 string
+	Left     string
 	Counter  string
-	This  	 string
+	This     string
 	Right    string
 	Info     string
 	Trail    []Entry
@@ -73,15 +73,17 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 		Back:     back,
 		Select:   href("?"+linkwhere, "/"),
 		Insert:   href("?"+linkinsert, "+"),
-		Left:       "",
+		Left:     "",
 		Counter:  "",
 		This:     "",
-		Right:     "",
+		Right:    "",
 		Info:     href("?"+linkshow, "?"),
 		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
 		Menu:     menu,  // always used. location dependent of presence of trail
 	}
-	if DEBUGFLAG {initTemplate()}
+	if DEBUGFLAG {
+		initTemplate()
+	}
 	err := templateTable.Execute(w, c)
 	checkY(err)
 }
@@ -102,7 +104,7 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 	q.Add("action", "add")
 	linkinsert := q.Encode()
 	q.Del("action")
-    q.Add("action", "show")
+	q.Add("action", "show")
 	linkshow := q.Encode()
 	q.Del("action")
 	q.Set("n", left)
@@ -126,7 +128,7 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 		Insert:   linkinsert,
 		Left:     linkleft,
 		Counter:  n,
-		This: 	  linkthis,
+		This:     linkthis,
 		Right:    linkright,
 		Info:     href("?"+linkshow, "?"),
 		Trail:    trail,

@@ -1,48 +1,67 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
-	"net/http"	
+	"net/http"
 	"net/url"
 	"strconv"
-	"fmt"
 )
 
 func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 	q := r.URL.Query()
 	db := q.Get("db")
 	t := q.Get("t")
+	o := q.Get("o")
 	n := q.Get("n")
-	
+
 	v := url.Values{}
 	trail := []Entry{}
 	trail = append(trail, Entry{"/", cred.Host})
+
 	if db == "" {
 		q.Del("t")
+		q.Del("o")
+		q.Del("n")
 		dumpHome(w, r, cred, trail, "/logout")
 		return
-	} 
+	} else {
+		v.Add("db", db)
+		trail = append(trail, Entry{Link: "?" + v.Encode(), Label: db})
+	}
 
-	v.Add("db",db)
-	trail = append(trail, Entry{Link: "?"+ v.Encode(), Label: db})
 	if t == "" {
+		q.Del("o")
 		q.Del("n")
 		dumpTables(w, r, cred, trail, db, "?"+v.Encode())
 		return
-	} 
-	
-	v.Add("t",t)
-	trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: t})
-	if n == "" {
-		dumpRecords(w, r, cred, trail, db, t, "?"+q.Encode())
-		return
-	} 
+	} else {
+		v.Add("t", t)
+		trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: t})
+	}
 
-	/*v.Add("n",n)
-	trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: n })*/
+	if n == "" {
+		if o == "" {
+			dumpRecords(w, r, cred, trail, db, t, o, "?"+q.Encode())
+			return
+		} else {
+			v.Add("o", o)
+			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o})
+			dumpOrdered(w, r, cred, trail, db, t, o, "?"+q.Encode())
+			return
+		}
+	}
+
 	if n != "" {
-		dumpFields(w, r, cred, trail, db, t, n, "?"+q.Encode())
-		return
+		if o == "" {
+			dumpOne(w, r, cred, trail, db, t, o, n, "?"+q.Encode())
+			return
+		} else {
+			v.Add("o", o)
+			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o})
+			dumpOneOrdered(w, r, cred, trail, db, t, o, n, "?"+q.Encode())
+			return
+		}
 	}
 }
 
@@ -99,21 +118,35 @@ func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 }
 
 //  Dump all records of a table, one per row
-func dumpRecords(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, back string) {
-	dumpRows(w, r, cred, trail, db, t, back, "select * from "+template.HTMLEscapeString(t))
+func dumpRecords(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string) {
+	dumpRows(w, r, cred, trail, db, t, o, back, "select * from "+template.HTMLEscapeString(t))
 }
 
+//  Dump all records of a table, one per row, ordered by one column
+func dumpOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string) {
+	dumpRows(w, r, cred, trail, db, t, o, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
+}
+
+//  Dump one record of a table
+func dumpOne(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, n string, back string) {
+	dumpFields(w, r, cred, trail, db, t, o, n, back, "select * from "+template.HTMLEscapeString(t))
+}
+
+//  Dump one record of a table, ordered by one column
+func dumpOneOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, n string, back string) {
+	dumpFields(w, r, cred, trail, db, t, o, n, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
+}
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
 // http://blog.golang.org/laws-of-reflection
 
 func dumpValue(val interface{}) string {
-	
-	var r string
-    b, ok := val.([]byte)
 
-    if b != nil {
-		if (ok) {
+	var r string
+	b, ok := val.([]byte)
+
+	if b != nil {
+		if ok {
 			r = string(b)
 		} else {
 			r = fmt.Sprint(val)
@@ -124,8 +157,7 @@ func dumpValue(val interface{}) string {
 	return r
 }
 
-
-func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, back string, query string) {
+func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string, query string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -146,32 +178,37 @@ func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 	defer rows.Close()
 	columns, err := rows.Columns()
 	checkY(err)
-    count := len(columns)
-    values := make([]interface{}, count)
-    valuePtrs := make([]interface{}, count)
-    for i, _ := range columns {
-        valuePtrs[i] = &values[i]
-    }
+	count := len(columns)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
+	for i, _ := range columns {
+		valuePtrs[i] = &values[i]
+	}
 
 	head := []string{}
 	records := [][]string{}
 	for _, title := range columns {
-		head = append(head, title)
+		q.Set("o", title)
+		head = append(head, href("?"+q.Encode(), title))
 	}
+	q.Del("o")
 
- 	var n int = 1
-    for rows.Next() {
+	var n int = 1
+	for rows.Next() {
 
+		if o != "" {
+			q.Set("o", o)
+		}
 		q.Set("n", strconv.Itoa(n))
 		row := []string{href("?"+q.Encode(), strconv.Itoa(n))}
 
-		err=rows.Scan(valuePtrs...)
+		err = rows.Scan(valuePtrs...)
 		checkY(err)
-		
-        for i, _ := range columns {
+
+		for i, _ := range columns {
 			row = append(row, dumpValue(values[i]))
-        }
-        
+		}
+
 		records = append(records, row)
 		n = n + 1
 	}
@@ -179,15 +216,15 @@ func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, num string, back string) {
+func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, num string, back string, query string) {
 
-	rows := getRows(cred, db, "select * from "+template.HTMLEscapeString(t))
+	rows := getRows(cred, db, query)
 	defer rows.Close()
 	columns, err := rows.Columns()
 	checkY(err)
-    count := len(columns)
-    values := make([]interface{}, count)
-    valuePtrs := make([]interface{}, count)
+	count := len(columns)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
 	for i, _ := range columns {
 		valuePtrs[i] = &values[i]
 	}
@@ -197,19 +234,19 @@ func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 
 	rec, err := strconv.Atoi(num)
 	checkY(err)
-/*	nmax, err := strconv.Atoi(getCount(cred, db, t))
-	checkY(err) */
+	/*	nmax, err := strconv.Atoi(getCount(cred, db, t))
+		checkY(err) */
 	var n int = 1
 rowLoop:
 	for rows.Next() {
 
 		// unfortunately we have to iterate up to row of interest
 		if n == rec {
-			err=rows.Scan(valuePtrs...)
+			err = rows.Scan(valuePtrs...)
 			checkY(err)
 			for i, _ := range columns {
 				var row []string
-				row = []string{strconv.Itoa(i+1), columns[i], dumpValue(values[i])}
+				row = []string{strconv.Itoa(i + 1), columns[i], dumpValue(values[i])}
 				records = append(records, row)
 			}
 			break rowLoop
@@ -228,15 +265,15 @@ rowLoop:
 	q.Set("action", "show")
 	linkshow := "?" + q.Encode()
 	q.Del("action")
-/*	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
-	linkleft := "?" + q.Encode()
-	q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
-	linkright := "?" + q.Encode()*/
+	/*	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
+		linkleft := "?" + q.Encode()
+		q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
+		linkright := "?" + q.Encode()*/
 
 	menu := []Entry{}
-/*	menu = append(menu, Entry{linkleft, "<"})
-	menu = append(menu, Entry{linkright, ">"})
-*/	menu = append(menu, Entry{linkshow, "i"})
+	/*	menu = append(menu, Entry{linkleft, "<"})
+		menu = append(menu, Entry{linkright, ">"})
+	*/menu = append(menu, Entry{linkshow, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 	//menu = append(menu, Entry{"/logout", "Q"})
 

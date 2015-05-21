@@ -28,8 +28,8 @@
 
 <div class="main">
 <table>
-<tr><th class="column">{{if .Trail}}#{{else}}<a href="{{.Back}}">[X]</a>{{end}}</th>{{range .Head}}<th class="column">{{.}}</th>{{end}}</tr>
-{{range .Records}}<tr>{{range .}}<td class="cell">{{.}}</td>{{end}}</tr>
+<tr><th>{{if .Trail}}#{{else}}<a href="{{.Back}}">[X]</a>{{end}}</th>{{range .Head}}<th>{{.}}</th>{{end}}</tr>
+{{range .Records}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
 {{end}}
 </table>
 </div>

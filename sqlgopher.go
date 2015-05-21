@@ -111,7 +111,7 @@ func main() {
 	EXPERTFLAG = *EXPERT
 	CSS_FILE = *CSS
 	initTemplate()
-	
+
 	portstring := ":" + strconv.Itoa(*PORT)
 
 	if CSS_FILE != "" && troubleF(CSS_FILE) == nil {
@@ -130,13 +130,21 @@ func main() {
 			generate_cert(*HOST, 2048, false)
 		}
 		fmt.Println("Listening at https://" + *HOST + portstring)
-		if CSS_FILE != "" { fmt.Println("using style in " + CSS_FILE)}
-		if DEBUGFLAG { fmt.Println("dynamically loading html templates and css (DEBUG)")}
+		if CSS_FILE != "" {
+			fmt.Println("using style in " + CSS_FILE)
+		}
+		if DEBUGFLAG {
+			fmt.Println("dynamically loading html templates and css (DEBUG)")
+		}
 		http.ListenAndServeTLS(portstring, "cert.pem", "key.pem", nil)
 	} else {
 		fmt.Println("Listening at http://" + *HOST + portstring)
-		if CSS_FILE != "" { fmt.Println("using style in " + CSS_FILE)}
-		if DEBUGFLAG { fmt.Println("dynamically loading html templates and css (DEBUG)")}
+		if CSS_FILE != "" {
+			fmt.Println("using style in " + CSS_FILE)
+		}
+		if DEBUGFLAG {
+			fmt.Println("dynamically loading html templates and css (DEBUG)")
+		}
 		http.ListenAndServe(portstring, nil)
 	}
 }

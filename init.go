@@ -7,7 +7,6 @@ var templateFormFields = template.New("formfields")
 var templateTable = template.New("table")
 var loginPage string
 
-
 // init is a reserved function!
 func initTemplate() {
 	templateFormFields = template.New("formfields")

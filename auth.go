@@ -14,11 +14,11 @@ import (
 )
 
 type Access struct {
-	User     string
-	Pass     string
-	Host     string
-	Port     string
-	Dbms     string
+	User string
+	Pass string
+	Host string
+	Port string
+	Dbms string
 }
 
 var cookieHandler = securecookie.New(
@@ -28,7 +28,7 @@ var cookieHandler = securecookie.New(
 func getCredentials(r *http.Request) (Access, error) {
 
 	var user, pass, host, port, dbms string
-	
+
 	cookie, err := r.Cookie("Datasource")
 	if err == nil {
 		cookieValue := make(map[string]string)
@@ -40,7 +40,7 @@ func getCredentials(r *http.Request) (Access, error) {
 			port = cookieValue["port"]
 			dbms = cookieValue["dbms"]
 		} else { // cookieerror
-			fmt.Println("Cookie error " + host + ":" + port + "(" + dbms + ")" )
+			fmt.Println("Cookie error " + host + ":" + port + "(" + dbms + ")")
 		}
 	}
 	return Access{user, pass, host, port, dbms}, err
@@ -61,7 +61,7 @@ func setCredentials(w http.ResponseWriter, r *http.Request, cred Access) {
 			Path:  "/",
 		}
 		http.SetCookie(w, c)
-		fmt.Println("Cookie set: " + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")" )
+		fmt.Println("Cookie set: " + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")")
 	}
 }
 

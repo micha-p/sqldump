@@ -1,5 +1,12 @@
+a {text-decoration: none}
+a:link {color: #715524;}							/* my brown */
+a:visited {color: #715524;} 						/* my brown */
+a:hover {color: orange;text-decoration: underline}
+a:active {color: red;}
+
 th {
     text-align: left;
+    text-decoration: none;
     border-right: 1px solid #715524;
 	border-bottom: 1px solid #715524;
 	padding: 6px 6px 6px 12px;
@@ -7,6 +14,12 @@ th {
     font-weight: bold;
     color: #74AD6E;                					/* my green */
 }
+
+th > a:link {color: #74AD6E;}              			/* my green */
+th > a:visited {color: #74AD6E;}               		/* my green */
+th > a:hover {color: orange;text-decoration: underline}
+th > a:active {color: red;}
+
 
 td {
     text-align: left;
@@ -17,6 +30,7 @@ td {
     font-family: sans-serif;
 	color: #715524;        							/* my brown */
 }
+
 
 input.cell
     {
@@ -29,7 +43,7 @@ input[type=text]:active {background:#74AD6E;}		/* my green */
 
 button {
 	color: white; 
-	background: #715524;			/* my brown */
+	background: #715524;							/* my brown */
     border: none;
     border-radius: 5px;
     height: 36px;
@@ -60,7 +74,7 @@ button:active { color: red;}
 .counter a.count:first-child {border-radius: 5px 0 0 5px;}
 .counter a.count:last-child {border-radius: 0 5px 5px 0;}
 .counter a.count:active, .counter a.count:hover{	background: #715524;}
-.counter a.count:active {color:red;}
+.counter a.count:active {color:orange;}
 
 .right {	
     margin-left: auto;	
@@ -84,7 +98,7 @@ button:active { color: red;}
 .right a.count:first-child {border-radius: 5px 0 0 5px;}
 .right a.count:last-child {border-radius: 0 5px 5px 0;}
 .right a.count:active, .right a.count:hover{	background: #715524;}
-.right a.count:active {color:red;}
+.right a.count:active {color:orange;}
 
 
 .top {
@@ -95,11 +109,6 @@ button:active { color: red;}
 }
 
 
-a {text-decoration: none}
-a:link {color: #715524;}
-a:visited {color: #715524;}
-a:hover {color: orange;text-decoration: underline}
-a:active {color: red;}
 
 
 /* http://thecodeplayer.com/walkthrough/css3-breadcrumb-navigation */
@@ -137,7 +146,7 @@ a:active {color: red;}
 }
 
 .breadcrumb a.trail:active, .breadcrumb a.trail:hover{	background: #715524;}
-.breadcrumb a.trail:active {color: red;}
+.breadcrumb a.trail:active {color: orange;}
 .breadcrumb a.trail:active:after, .breadcrumb a.trail:hover:after {	background: #715524;}
 .breadcrumb a.trail:after {
 	content: '';
