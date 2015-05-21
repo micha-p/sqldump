@@ -4,27 +4,24 @@
 {{if .CSS}}<link rel="stylesheet" type="text/css" href="html/table.css"/>{{end}}
 <body>
 
-<div class="top">
 {{if .Trail}}
+<div class="top">
 	<div class="breadcrumb">
-	    <a class="trail" href="logout">[]</a></li>			
+	    <a class="trail" href="logout">&times;</a></li>			
 	    {{range .Trail}}<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
 	</div>
-{{end}}
-
-{{if .Counter}}
-   <div class="counter">
+	{{if .Counter}}
+	<div class="counter">
 	    <a class="count" href="{{.Left}}"> &lt; </a></li>			
 	    <a class="count" href="{{.This}}">{{.Counter}}</a></li>			
 	    <a class="count" href="{{.Right}}"> &gt; </a></li>			
-    <!--<a class="count" href="{{.Insert}}"> + </a></li> -->			
-   </div>
-{{end}}
-
-{{if .Menu}}
-   <div class="right">{{range .Menu}}<a class="count" href="{{.Link}}">[{{.Label}}]</a>{{end}}</div>
-{{end}}
+	</div>
+	{{end}}
+	{{if .Menu}}
+	<div class="right">{{range .Menu}}<a class="count" href="{{.Link}}">[{{.Label}}]</a>{{end}}</div>
+	{{end}}
 </div>
+{{end}}
 
 <div class="main">
 <table>

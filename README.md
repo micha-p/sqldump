@@ -44,7 +44,7 @@ or on command line
 
 ### Security
 
-- No encrypted connection to database
+- no encrypted connection to mysql server
 - use only in trusted environments
 - just basic protection against sql injection via database and table names
 - insert and query limited by request length

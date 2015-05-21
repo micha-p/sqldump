@@ -13,6 +13,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 	db := q.Get("db")
 	t := q.Get("t")
 	o := q.Get("o")
+	od := q.Get("od")
 	n := q.Get("n")
 
 	v := url.Values{}
@@ -22,6 +23,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 	if db == "" {
 		q.Del("t")
 		q.Del("o")
+		q.Del("od")
 		q.Del("n")
 		dumpHome(w, r, cred, trail, "/logout")
 		return
@@ -32,6 +34,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	if t == "" {
 		q.Del("o")
+		q.Del("od")
 		q.Del("n")
 		dumpTables(w, r, cred, trail, db, "?"+v.Encode())
 		return
@@ -41,25 +44,33 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 	}
 
 	if n == "" {
-		if o == "" {
-			dumpRecords(w, r, cred, trail, db, t, o, "?"+q.Encode())
-			return
-		} else {
+		if o != "" {
 			v.Add("o", o)
-			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o})
+			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
 			dumpOrdered(w, r, cred, trail, db, t, o, "?"+q.Encode())
 			return
-		}
-	}
-
-	if n != "" {
-		if o == "" {
-			dumpOne(w, r, cred, trail, db, t, o, n, "?"+q.Encode())
+		} else if od != ""{
+			v.Add("od", od)
+			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
+			dumpOrderedDesc(w, r, cred, trail, db, t, od, "?"+q.Encode())
 			return
 		} else {
+			dumpRecords(w, r, cred, trail, db, t, o, "?"+q.Encode())
+			return
+		}
+	} else {
+		if o != "" {
 			v.Add("o", o)
-			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o})
+			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
 			dumpOneOrdered(w, r, cred, trail, db, t, o, n, "?"+q.Encode())
+			return
+		} else if od != ""{
+			v.Add("od", od)
+			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
+			dumpOneOrderedDesc(w, r, cred, trail, db, t, od, n, "?"+q.Encode())
+			return
+		} else {
+			dumpOne(w, r, cred, trail, db, t, o, n,"?"+q.Encode())
 			return
 		}
 	}
@@ -80,7 +91,8 @@ func dumpHome(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 		var field string
 		rows.Scan(&field)
 		if EXPERTFLAG || INFOFLAG || field != "information_schema" {
-			row := []string{href(r.URL.Host+"?"+"db="+field, strconv.Itoa(n)), field}
+			link := r.URL.Host+"?"+"db="+field
+			row := []string{href(link, strconv.Itoa(n)), href(link,field)}
 			records = append(records, row)
 			n = n + 1
 		}
@@ -102,7 +114,6 @@ func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 	var n int = 1
 	for rows.Next() {
 		var field string
-		var row []string
 		var nrows string
 		rows.Scan(&field)
 		if db == "information_schema" {
@@ -110,7 +121,8 @@ func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 		} else {
 			nrows = getCount(cred, db, field)
 		}
-		row = []string{href(r.URL.Host+"?"+r.URL.RawQuery+"&t="+field, strconv.Itoa(n)), field, nrows}
+		link := r.URL.Host+"?"+r.URL.RawQuery+"&t="+field
+		row := []string{href(link, strconv.Itoa(n)), href(link, field), nrows}
 		records = append(records, row)
 		n = n + 1
 	}
@@ -119,12 +131,17 @@ func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 
 //  Dump all records of a table, one per row
 func dumpRecords(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string) {
-	dumpRows(w, r, cred, trail, db, t, o, back, "select * from "+template.HTMLEscapeString(t))
+	dumpRows(w, r, cred, trail, db, t, "", "", back, "select * from "+template.HTMLEscapeString(t))
 }
 
 //  Dump all records of a table, one per row, ordered by one column
 func dumpOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string) {
-	dumpRows(w, r, cred, trail, db, t, o, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
+	dumpRows(w, r, cred, trail, db, t, o, "", back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
+}
+
+//  Dump all records of a table, one per row, ordered by one column DESC
+func dumpOrderedDesc(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, od string, back string) {
+	dumpRows(w, r, cred, trail, db, t, "", od, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od) +" desc")
 }
 
 //  Dump one record of a table
@@ -135,6 +152,11 @@ func dumpOne(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry,
 //  Dump one record of a table, ordered by one column
 func dumpOneOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, n string, back string) {
 	dumpFields(w, r, cred, trail, db, t, o, n, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
+}
+
+//  Dump one record of a table, ordered by one column DESC
+func dumpOneOrderedDesc(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, od string, n string, back string) {
+	dumpFields(w, r, cred, trail, db, t, od, n, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od)+" desc")
 }
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -157,7 +179,7 @@ func dumpValue(val interface{}) string {
 	return r
 }
 
-func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string, query string) {
+func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, od string, back string, query string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -188,8 +210,18 @@ func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 	head := []string{}
 	records := [][]string{}
 	for _, title := range columns {
-		q.Set("o", title)
-		head = append(head, href("?"+q.Encode(), title))
+		if o == title {
+			q.Set("od", title)
+			q.Del("o")
+			head = append(head, href("?"+q.Encode(), title + "&uarr;"))
+		} else if od == title {
+			q.Set("o", title)
+			q.Del("od")
+			head = append(head, href("?"+q.Encode(), title + "&darr;"))
+		} else {
+			q.Set("o", title)
+			head = append(head, href("?"+q.Encode(), title))
+		}
 	}
 	q.Del("o")
 
