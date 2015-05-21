@@ -21,6 +21,7 @@ import (
 )
 
 type FContext struct {
+	CSS		 string
 	Action   string
 	Selector string
 	Button   string
@@ -28,16 +29,23 @@ type FContext struct {
 	Table    string
 	Back     string
 	Columns  []string
+	Trail    []Entry
 }
 
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
 
+	v := url.Values{}
+	trail := []Entry{}
+    trail = append(trail, Entry{"/", cred.Host})
+	trail = append(trail, Entry{Link: "?"+ v.Encode(), Label: db})
+	trail = append(trail, Entry{Link: "?"+ v.Encode(), Label: t})
 	cols := getCols(cred, db, t)
 	q := r.URL.Query()
 	q.Del("action")
 	linkback := q.Encode()
 
 	c := FContext{
+		CSS:      CSS_FILE,
 		Action:   action,
 		Selector: selector,
 		Button:   button,
@@ -45,17 +53,21 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 		Table:    t,
 		Back:     linkback,
 		Columns:  cols,
+		Trail:    trail,
 	}
 
+	if DEBUGFLAG {initTemplate()}
 	err := templateFormFields.Execute(w, c)
 	checkY(err)
 }
 
 func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
+	
 	shipForm(w, r, cred, database, table, "query", "Query", "true")
 }
 
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
+
 	shipForm(w, r, cred, database, table, "insert", "Insert", "")
 }
 

@@ -11,6 +11,7 @@ import (
 var database = "information_schema"
 var EXPERTFLAG bool
 var INFOFLAG bool
+var DEBUGFLAG bool
 var CSS_FILE string
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -101,10 +102,12 @@ func main() {
 	var INFO = flag.Bool("i", false, "include INFORMATION_SCHEMA in overview")
 	var EXPERT = flag.Bool("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
 	var CSS = flag.String("c", "", "supply customized style in CSS file")
+	var DEBUG = flag.Bool("d", false, "dynamically load html templates and css (DEBUG)")
 
 	flag.Parse()
 
 	INFOFLAG = *INFO
+	DEBUGFLAG = *DEBUG
 	EXPERTFLAG = *EXPERT
 	CSS_FILE = *CSS
 	initTemplate()
@@ -128,10 +131,12 @@ func main() {
 		}
 		fmt.Println("Listening at https://" + *HOST + portstring)
 		if CSS_FILE != "" { fmt.Println("using style in " + CSS_FILE)}
+		if DEBUGFLAG { fmt.Println("dynamically loading html templates and css (DEBUG)")}
 		http.ListenAndServeTLS(portstring, "cert.pem", "key.pem", nil)
 	} else {
 		fmt.Println("Listening at http://" + *HOST + portstring)
 		if CSS_FILE != "" { fmt.Println("using style in " + CSS_FILE)}
+		if DEBUGFLAG { fmt.Println("dynamically loading html templates and css (DEBUG)")}
 		http.ListenAndServe(portstring, nil)
 	}
 }

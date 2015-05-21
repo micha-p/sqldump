@@ -41,7 +41,6 @@ type Context struct {
 
 func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
-	initTemplate()
 	db := r.URL.Query().Get("db")
 	t := r.URL.Query().Get("t")
 
@@ -82,6 +81,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
 		Menu:     menu,  // always used. location dependent of presence of trail
 	}
+	if DEBUGFLAG {initTemplate()}
 	err := templateTable.Execute(w, c)
 	checkY(err)
 }

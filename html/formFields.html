@@ -1,6 +1,7 @@
 <html>
 <head>
-<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}}</title> 
+<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}} -- {{.Action}}</title> 
+{{if .CSS}}<link rel="stylesheet" type="text/css" href="html/table.css"/>{{end}}
 <body>
 
 {{define "selector"}}
@@ -16,17 +17,32 @@
 </SELECT>
 {{end}}
 
-<form action="/">
-	<input type="hidden" name="action" value="{{.Action}}">
-	<input type="hidden" name="db" value="{{.Database}}">
-	<input type="hidden" name="t"  value="{{.Table}}">
-	{{if .Selector}}{{range .Columns}}
-		<label for="{{.}}">{{.}}</label>{{template "selector" .}}<input type="text" id="{{.}}" name="{{.}}C"><br>{{end}}
-	{{else}}{{range .Columns}}
-		<label for="{{.}}">{{.}}</label><input type="text" id="{{.}}" name="{{.}}C"><br>{{end}}
-	{{end}}
-   <button type="submit">{{.Button}}</button>
-</form>
+<div class="top">
+{{if .Trail}}
+	<div class="breadcrumb">
+	    <a class="trail" href="logout">x</a></li>			
+	    {{range .Trail}}<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
+	</div>
+{{end}}
+</div>
+
+<div class="main">
+	<form action="/">
+		<input type="hidden" name="action" value="{{.Action}}">
+		<input type="hidden" name="db" value="{{.Database}}">
+		<input type="hidden" name="t"  value="{{.Table}}">
+		<table>
+			<tr><td class="column">#</td><td class="column">Column</td><td class="column">Data</td><tr>
+			{{if .Selector}}
+					{{range .Columns}}<label for="{{.}}">{{.}}</label>{{template "selector" .}}<input type="text" id="{{.}}" name="{{.}}C"><br>{{end}}
+				{{else}}
+					{{range .Columns}}<tr><td class="cell">1</td><td class="cell">{{.}}</td> <td class="cell"><input type="text" id="{{.}}" name="{{.}}C"></td><tr>
+					{{end}}
+			{{end}}
+		</table>
+		<button type="submit">{{.Button}}</button>
+	</form>
+</div>
 
 </body>
 </html>
