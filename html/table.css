@@ -1,3 +1,43 @@
+th {
+    text-align: left;
+    border-right: 1px solid #715524;
+	border-bottom: 1px solid #715524;
+	padding: 6px 6px 6px 12px;
+    font-family: sans-serif;
+    font-weight: bold;
+    color: #74AD6E;                					/* my green */
+}
+
+td {
+    text-align: left;
+    border-right: 1px solid #715524;
+	border-bottom: 1px solid #715524;
+	background: #fff;
+	padding: 6px 6px 6px 12px;
+    font-family: sans-serif;
+	color: #715524;        							/* my brown */
+}
+
+input.cell
+    {
+    border: 0px none;
+    color: #715524;        							/* my brown */
+    }
+    
+input[type=text]:hover {background:#F0F0F0;}
+input[type=text]:active {background:#74AD6E;}		/* my green */
+
+button {
+	color: white; 
+	background: #715524;			/* my brown */
+    border: none;
+    border-radius: 5px;
+    height: 36px;
+}
+button:hover { color: orange;}
+button:active { color: red;}
+
+
 .counter {
 	border-radius: 5px;
 	margin-left: auto;
@@ -52,26 +92,6 @@
     display: flex;
 }
 
-.column {
-    text-align: left;
-    border-right: 1px solid #715524;
-	border-bottom: 1px solid #715524;
-	padding: 6px 6px 6px 12px;
-    font-family: sans-serif;
-    font-weight: bold;
-    color: #74AD6E;                					/* my green */
-}
-
-.cell {
-    text-align: left;
-    border-right: 1px solid #715524;
-	border-bottom: 1px solid #715524;
-	background: #fff;
-	padding: 6px 6px 6px 12px;
-    font-family: sans-serif;
-	color: #715524;        							/* my brown */
-}
-
 
 a {text-decoration: none}
 a:link {color: #715524;}
@@ -123,7 +143,7 @@ a:hover {color: red;text-decoration: underline}
 	right: -18px; /*half of square's length*/
 	/*same dimension as the line-height of .breadcrumb a */
 	width: 36px; 
-	height: 36px;
+	height: 35px;
 	transform: scale(0.707) rotate(45deg);
 	z-index: 1;
 	background: #74AD6E;

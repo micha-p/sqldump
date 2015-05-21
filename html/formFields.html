@@ -20,7 +20,7 @@
 <div class="top">
 {{if .Trail}}
 	<div class="breadcrumb">
-	    <a class="trail" href="logout">x</a></li>			
+	    <a class="trail" href="logout">[]</a></li>			
 	    {{range .Trail}}<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
 	</div>
 {{end}}
@@ -32,14 +32,14 @@
 		<input type="hidden" name="db" value="{{.Database}}">
 		<input type="hidden" name="t"  value="{{.Table}}">
 		<table>
-			<tr><td class="column">#</td><td class="column">Column</td><td class="column">Data</td><tr>
-			{{if .Selector}}
-					{{range .Columns}}<label for="{{.}}">{{.}}</label>{{template "selector" .}}<input type="text" id="{{.}}" name="{{.}}C"><br>{{end}}
-				{{else}}
-					{{range .Columns}}<tr><td class="cell">1</td><td class="cell">{{.}}</td> <td class="cell"><input type="text" id="{{.}}" name="{{.}}C"></td><tr>
-					{{end}}
+			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> <tr>
+			{{range .Columns}}<tr> <td>1</td> <td>{{.}}</td> <td>{{template "selector" .}}</td> <td><input class="cell" type="text" id="{{.}}" name="{{.}}C"></td> <tr>
 			{{end}}
+			{{else}}<tr> <th>#</th> <th>Column</th> <th>Data</th> <tr>
+			{{range .Columns}}<tr> <td>1</td> <td>{{.}}</td> <td><input class="cell" type="text" id="{{.}}" name="{{.}}C"></td> <tr>
+			{{end}}{{end}}
 		</table>
+		<br>
 		<button type="submit">{{.Button}}</button>
 	</form>
 </div>

@@ -37,8 +37,11 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 	v := url.Values{}
 	trail := []Entry{}
     trail = append(trail, Entry{"/", cred.Host})
+	v.Add("db",db)
 	trail = append(trail, Entry{Link: "?"+ v.Encode(), Label: db})
+	v.Add("t",t)
 	trail = append(trail, Entry{Link: "?"+ v.Encode(), Label: t})
+
 	cols := getCols(cred, db, t)
 	q := r.URL.Query()
 	q.Del("action")
