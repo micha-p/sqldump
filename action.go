@@ -112,7 +112,7 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
 		fmt.Println(query)
 		trail = append(trail, Entry{Link: "/?" + r.URL.RawQuery, Label: strings.Join(tests, " ")})
-		dumpRows(w, r, cred, trail, db, t, "", "", linkback, query)
+		dumpRows(w, r, cred, trail, linkback, query)
 	}
 }
 

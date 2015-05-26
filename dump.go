@@ -8,14 +8,12 @@ import (
 	"strconv"
 )
 
-func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
-	q := r.URL.Query()
-	db := q.Get("db")
-	t := q.Get("t")
-	o := q.Get("o")
-	od := q.Get("od")
-	n := q.Get("n")
 
+    
+func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
+
+	db,t,o,od,n := readRequest(r)
+	q := r.URL.Query()
 	v := url.Values{}
 	trail := []Entry{}
 	trail = append(trail, Entry{"/", cred.Host})
@@ -36,7 +34,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 		q.Del("o")
 		q.Del("od")
 		q.Del("n")
-		dumpTables(w, r, cred, trail, db, "?"+v.Encode())
+		dumpTables(w, r, cred, trail, "?"+v.Encode())
 		return
 	} else {
 		v.Add("t", t)
@@ -47,30 +45,30 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access) {
 		if o != "" {
 			v.Add("o", o)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
-			dumpOrdered(w, r, cred, trail, db, t, o, "?"+q.Encode())
+			dumpOrdered(w, r, cred, trail, "?"+q.Encode())
 			return
 		} else if od != ""{
 			v.Add("od", od)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
-			dumpOrderedDesc(w, r, cred, trail, db, t, od, "?"+q.Encode())
+			dumpOrderedDesc(w, r, cred, trail, "?"+q.Encode())
 			return
 		} else {
-			dumpRecords(w, r, cred, trail, db, t, o, "?"+q.Encode())
+			dumpRecords(w, r, cred, trail, "?"+q.Encode())
 			return
 		}
 	} else {
 		if o != "" {
 			v.Add("o", o)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
-			dumpOneOrdered(w, r, cred, trail, db, t, o, n, "?"+q.Encode())
+			dumpOneOrdered(w, r, cred, trail, "?"+q.Encode())
 			return
 		} else if od != ""{
 			v.Add("od", od)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
-			dumpOneOrderedDesc(w, r, cred, trail, db, t, od, n, "?"+q.Encode())
+			dumpOneOrderedDesc(w, r, cred, trail, "?"+q.Encode())
 			return
 		} else {
-			dumpOne(w, r, cred, trail, db, t, o, n,"?"+q.Encode())
+			dumpOne(w, r, cred, trail, "?"+q.Encode())
 			return
 		}
 	}
@@ -83,7 +81,6 @@ func dumpHome(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 	defer rows.Close()
 
 	menu := []Entry{}
-	//menu = append(menu, Entry{"/logout", "Q"})
 	records := [][]string{}
 	head := []string{"Database"}
 	var n int = 1
@@ -101,8 +98,9 @@ func dumpHome(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, back string) {
+func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string) {
 
+	db,_,_,_,_ := readRequest(r)
 	rows := getRows(cred, db, "show tables")
 	defer rows.Close()
 
@@ -130,33 +128,39 @@ func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 }
 
 //  Dump all records of a table, one per row
-func dumpRecords(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string) {
-	dumpRows(w, r, cred, trail, db, t, "", "", back, "select * from "+template.HTMLEscapeString(t))
+func dumpRecords(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string) {
+	_,t,_,_,_ := readRequest(r)
+	dumpRows(w, r, cred, trail, back, "select * from "+template.HTMLEscapeString(t))
 }
 
 //  Dump all records of a table, one per row, ordered by one column
-func dumpOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, back string) {
-	dumpRows(w, r, cred, trail, db, t, o, "", back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
+func dumpOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string) {
+	_,t,o,_,_ := readRequest(r)
+	dumpRows(w, r, cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
 }
 
 //  Dump all records of a table, one per row, ordered by one column DESC
-func dumpOrderedDesc(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, od string, back string) {
-	dumpRows(w, r, cred, trail, db, t, "", od, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od) +" desc")
+func dumpOrderedDesc(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string) {
+	_,t,_,od,_ := readRequest(r)
+	dumpRows(w, r, cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od) +" desc")
 }
 
 //  Dump one record of a table
-func dumpOne(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, n string, back string) {
-	dumpFields(w, r, cred, trail, db, t, o, n, back, "select * from "+template.HTMLEscapeString(t))
+func dumpOne(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string) {
+	_,t,_,_,_ := readRequest(r)
+	dumpFields(w, r, cred, trail, back, "select * from "+template.HTMLEscapeString(t))
 }
 
 //  Dump one record of a table, ordered by one column
-func dumpOneOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, n string, back string) {
-	dumpFields(w, r, cred, trail, db, t, o, n, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
+func dumpOneOrdered(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string) {
+	_,t,o,_,_ := readRequest(r)
+	dumpFields(w, r, cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
 }
 
 //  Dump one record of a table, ordered by one column DESC
-func dumpOneOrderedDesc(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, od string, n string, back string) {
-	dumpFields(w, r, cred, trail, db, t, od, n, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od)+" desc")
+func dumpOneOrderedDesc(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string) {
+	_,t,_,od,_ := readRequest(r)
+	dumpFields(w, r, cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od)+" desc")
 }
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -179,8 +183,9 @@ func dumpValue(val interface{}) string {
 	return r
 }
 
-func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, od string, back string, query string) {
+func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string, query string) {
 
+	db,t,o,od,_ := readRequest(r)
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
@@ -249,8 +254,9 @@ func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, db string, t string, o string, num string, back string, query string) {
+func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry, back string, query string) {
 
+	db,t,_,_,n := readRequest(r)
 	rows := getRows(cred, db, query)
 	defer rows.Close()
 	columns, err := rows.Columns()
@@ -265,16 +271,14 @@ func dumpFields(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 	head := []string{"Column", "Data"}
 	records := [][]string{}
 
-	rec, err := strconv.Atoi(num)
+	rec, err := strconv.Atoi(n)
 	checkY(err)
-	/*	nmax, err := strconv.Atoi(getCount(cred, db, t))
-		checkY(err) */
-	var n int = 1
+	var iter int = 1
 rowLoop:
 	for rows.Next() {
 
 		// unfortunately we have to iterate up to row of interest
-		if n == rec {
+		if iter == rec {
 			err = rows.Scan(valuePtrs...)
 			checkY(err)
 			for i, _ := range columns {
@@ -284,7 +288,7 @@ rowLoop:
 			}
 			break rowLoop
 		}
-		n = n + 1
+		iter = iter + 1
 	}
 
 	q := url.Values{}

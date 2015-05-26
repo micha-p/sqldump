@@ -36,12 +36,22 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	q := r.URL.Query()
-	action := q.Get("action")
+func readRequest(request *http.Request) (string,string,string,string,string) {
+	q := request.URL.Query()
 	db := q.Get("db")
 	t := q.Get("t")
+	o := q.Get("o")
+	od := q.Get("od")
+	n := q.Get("n")
+    return db,t,o,od,n
+}
+
+func workload(w http.ResponseWriter, r *http.Request, cred Access) {
+
+	db,t,_,_,n := readRequest(r)
+	q := r.URL.Query()
+	action := q.Get("action")
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
