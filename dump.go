@@ -191,6 +191,7 @@ func dumpRows(w http.ResponseWriter, r *http.Request, cred Access, trail []Entry
 	q.Set("action", "show")
 	linkshow := "?" + q.Encode()
 	q.Del("action")
+
 	menu := []Entry{}
 	menu = append(menu, Entry{linkselect, "?"})
 	menu = append(menu, Entry{linkshow, "i"})
@@ -292,22 +293,13 @@ rowLoop:
 
 	q.Add("action", "add")
 	linkinsert := "/?" + q.Encode()
-	q.Set("action", "subset")
-	//	linkselect := "/?" + q.Encode()
 	q.Set("action", "show")
 	linkshow := "?" + q.Encode()
 	q.Del("action")
-	/*	q.Set("n", strconv.Itoa(maxI(rec-1, 1)))
-		linkleft := "?" + q.Encode()
-		q.Set("n", strconv.Itoa(minI(rec+1, nmax)))
-		linkright := "?" + q.Encode()*/
 
 	menu := []Entry{}
-	/*	menu = append(menu, Entry{linkleft, "<"})
-		menu = append(menu, Entry{linkright, ">"})
-	*/menu = append(menu, Entry{linkshow, "i"})
+    menu = append(menu, Entry{linkshow, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
-	//menu = append(menu, Entry{"/logout", "Q"})
 
 	tableOutFields(w, r, cred, back, head, records, trail, menu)
 }

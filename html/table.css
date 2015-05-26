@@ -37,9 +37,28 @@ input.cell
     border: 0px none;
     color: #715524;        							/* my brown */
     }
-    
-input[type=text]:hover {background:#F0F0F0;}
-input[type=text]:active {background:#74AD6E;}		/* my green */
+
+input.range {
+	text-decoration: none;
+	outline: none;
+	display: block;
+	float: left;
+	font-family: sans-serif;
+	font-size: 16px;
+	line-height: 36px;
+	color: white;
+	padding: 0 10px 0 10px;
+	background: #74AD6E;							/* my green */
+	position: relative;
+	border: none;  
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: auto;
+	margin-top: auto;
+}   
+
+input[type=text]:hover {background:#F0F0F0;color: #715524;        							/* my brown */}
+input[type=text]:active {background:#74AD6E;color: #715524;        							/* my brown */}		/* my green */
 
 button {
 	color: white; 

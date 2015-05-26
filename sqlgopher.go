@@ -56,7 +56,11 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 	} else if action == "show" && db != "" && t != "" {
 		q.Del("action")
 		actionShow(w, r, cred, db, t, "?"+q.Encode())
+	} else if action == "go" && db != "" && t != "" && n != "" {
+		q.Del("action")
+		dumpIt(w, r, cred)
 	} else {
+		q.Del("action")
 		dumpIt(w, r, cred)
 	}
 }
