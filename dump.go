@@ -105,7 +105,6 @@ func dumpTables(w http.ResponseWriter, r *http.Request, cred Access, trail []Ent
 	defer rows.Close()
 
 	menu := []Entry{}
-	//menu = append(menu, Entry{"/logout", "Q"})
 	records := [][]string{}
 	head := []string{"Table", "Rows"}
 

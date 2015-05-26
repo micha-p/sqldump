@@ -78,8 +78,8 @@ func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database str
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	db := r.FormValue("db")
-	t := r.FormValue("t")
+	db := sqlprotect(r.FormValue("db"))
+	t := sqlprotect(r.FormValue("t"))
 	cols := getCols(cred, db, t)
 	v := url.Values{}
 	v.Set("db", db)
@@ -97,9 +97,9 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	var tests []string
 	for _, col := range cols {
-		val := r.FormValue(col + "C")
+		val := sqlprotect(r.FormValue(col + "C"))
 		if val != "" {
-			comparator := r.FormValue(col + "O")
+			comparator := sqlprotect(r.FormValue(col + "O"))
 			if comparator == "" {
 				comparator = "="
 			}
@@ -118,14 +118,14 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 
 func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	db := r.FormValue("db")
-	t := r.FormValue("t")
+	db := sqlprotect(r.FormValue("db"))
+	t := sqlprotect(r.FormValue("t"))
 	cols := getCols(cred, db, t)
 
 	// Searching for cols within formValues
 	var assignments []string
 	for _, col := range cols {
-		val := r.FormValue(col + "C")
+		val := sqlprotect(r.FormValue(col + "C"))
 		if val != "" {
 			assignments = append(assignments, col+"=\""+val+"\"")
 		}

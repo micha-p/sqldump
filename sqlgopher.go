@@ -6,6 +6,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"strconv"
+	"strings"
+	"log"
 )
 
 var database = "information_schema"
@@ -36,15 +38,25 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
+func sqlprotect(s string) (string) {
+	if s != "" && strings.ContainsAny(s,"\"\\;"){
+		r := strings.Replace(strings.Replace(strings.Replace(s,"\\","",-1),";","",-1),"\"","",-1)
+		log.Println("SQL INJECTION! :" + s + "->" + r)
+		return r
+	} else {
+		return s
+	}
+}
+
 
 func readRequest(request *http.Request) (string,string,string,string,string) {
 	q := request.URL.Query()
-	db := q.Get("db")
-	t := q.Get("t")
-	o := q.Get("o")
-	od := q.Get("od")
-	n := q.Get("n")
-    return db,t,o,od,n
+	db := sqlprotect(q.Get("db"))
+	t := sqlprotect(q.Get("t"))
+	o := sqlprotect(q.Get("o"))
+	od := sqlprotect(q.Get("od"))
+	n := sqlprotect(q.Get("n"))	
+	return db,t,o,od,n
 }
 
 func workload(w http.ResponseWriter, r *http.Request, cred Access) {

@@ -41,9 +41,7 @@ type Context struct {
 
 func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
-	db := r.URL.Query().Get("db")
-	t := r.URL.Query().Get("t")
-
+	db,t,_,_,_ := readRequest(r)
 	var linkshow string
 	var linkinsert string
 	var linkwhere string
@@ -91,9 +89,7 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	initTemplate()
-	db := r.URL.Query().Get("db")
-	t := r.URL.Query().Get("t")
-	n := r.URL.Query().Get("n")
+	db,t,_,_,n := readRequest(r)
 
 	nint, err := strconv.Atoi(n)
 	nmax, err := strconv.Atoi(getCount(cred, db, t))

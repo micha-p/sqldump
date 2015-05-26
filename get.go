@@ -6,14 +6,14 @@ import (
 	"html/template"
 )
 
-func getConnection(cred Access, database string) *sql.DB {
-	conn, err := sql.Open(cred.Dbms, dsn(cred.User, cred.Pass, cred.Host, cred.Port, database))
+func getConnection(cred Access, db string) *sql.DB {
+	conn, err := sql.Open(cred.Dbms, dsn(cred.User, cred.Pass, cred.Host, cred.Port, db))
 	checkY(err)
 	return conn
 }
 
-func getRows(cred Access, database string, stmt string) *sql.Rows {
-	conn := getConnection(cred, database)
+func getRows(cred Access, db string, stmt string) *sql.Rows {
+	conn := getConnection(cred, db)
 	defer conn.Close()
 
 	statement, err := conn.Prepare(stmt)
@@ -24,8 +24,8 @@ func getRows(cred Access, database string, stmt string) *sql.Rows {
 	return rows
 }
 
-func getCols(cred Access, database string, table string) []string {
-	rows := getRows(cred, database, "select * from "+template.HTMLEscapeString(table))
+func getCols(cred Access, db string, t string) []string {
+	rows := getRows(cred, db, "select * from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 
 	cols, err := rows.Columns()
@@ -33,9 +33,8 @@ func getCols(cred Access, database string, table string) []string {
 	return cols
 }
 
-func getCount(cred Access, database string, table string) string {
-
-	rows := getRows(cred, database, "select count(*) from "+template.HTMLEscapeString(table))
+func getCount(cred Access, db string, t string) string {
+	rows := getRows(cred, db, "select count(*) from "+template.HTMLEscapeString(t))
 	defer rows.Close()
 
 	rows.Next()
