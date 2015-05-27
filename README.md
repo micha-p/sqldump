@@ -1,10 +1,6 @@
 # sqlgopher
 
-A small web-based tool for database administration. Started during Gopher Gala 2015.
-
-
-Go is well suitable for working close to the back-end accessing a wide choice of sql databases. 
-This tool is made for administration of these by browsers on the command-line or with minimalistic html formating on screen.
+A small web-based tool for database administration.
 
 - access via login mask or bookmark
 - credentials stored in secure cookies

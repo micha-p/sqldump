@@ -13,6 +13,7 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, o
 	v := url.Values{}
 	trail := []Entry{}
 	trail = append(trail, Entry{"/", cred.Host})
+	var query string
 
 	if db == "" {
 		dumpHome(w, cred, trail, "/logout")
@@ -34,32 +35,28 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, o
 		if o != "" {
 			v.Add("o", o)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
-			dumpOrdered(w, cred, db, t, o, od, trail, "?"+v.Encode())
-			return
+			query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o)
 		} else if od != "" {
 			v.Add("od", od)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
-			dumpOrderedDesc(w, cred, db, t, o, od, trail, "?"+v.Encode())
-			return
+			query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od)+" desc"
 		} else {
-			dumpRecords(w, cred, db, t, o, od, trail, "?"+v.Encode())
-			return
+			query = "select * from "+template.HTMLEscapeString(t)
 		}
+		dumpRows(w, db, t, o, od, cred, trail, "?"+v.Encode(),query)
 	} else {
 		if o != "" {
 			v.Add("o", o)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
-			dumpOneOrdered(w, cred, db, t, o, od, n, trail, "?"+v.Encode())
-			return
+	        query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o)
 		} else if od != "" {
 			v.Add("od", od)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
-			dumpOneOrderedDesc(w, cred, db, t, o, od, n, trail, "?"+v.Encode())
-			return
+	        query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o) + " desc"
 		} else {
-			dumpOne(w, cred, db, t, o, od, n, trail, "?"+v.Encode())
-			return
+	        query = "select * from "+template.HTMLEscapeString(t)
 		}
+		dumpFields(w, db, t, o, od, n, cred, trail, "?"+v.Encode(), query)
 	}
 }
 
@@ -117,36 +114,6 @@ func dumpTables(w http.ResponseWriter, db string, cred Access, trail []Entry, ba
 		n = n + 1
 	}
 	tableOut(w, cred, db, "", back, head, records, trail, menu)
-}
-
-//  Dump all records of a table, one per row
-func dumpRecords(w http.ResponseWriter, cred Access, db string, t string, o string, od string, trail []Entry, back string) {
-	dumpRows(w, db, t, "", "", cred, trail, back, "select * from "+template.HTMLEscapeString(t))
-}
-
-//  Dump all records of a table, one per row, ordered by one column
-func dumpOrdered(w http.ResponseWriter, cred Access, db string, t string, o string, od string, trail []Entry, back string) {
-	dumpRows(w, db, t, o, "", cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
-}
-
-//  Dump all records of a table, one per row, ordered by one column DESC
-func dumpOrderedDesc(w http.ResponseWriter, cred Access, db string, t string, o string, od string, trail []Entry, back string) {
-	dumpRows(w, db, t, "", od, cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od)+" desc")
-}
-
-//  Dump one record of a table
-func dumpOne(w http.ResponseWriter, cred Access, db string, t string, o string, od string, n string, trail []Entry, back string) {
-	dumpFields(w, db, t, o, od, n, cred, trail, back, "select * from "+template.HTMLEscapeString(t))
-}
-
-//  Dump one record of a table, ordered by one column
-func dumpOneOrdered(w http.ResponseWriter, cred Access, db string, t string, o string, od string, n string, trail []Entry, back string) {
-	dumpFields(w, db, t, o, od, n, cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o))
-}
-
-//  Dump one record of a table, ordered by one column DESC
-func dumpOneOrderedDesc(w http.ResponseWriter, cred Access, db string, t string, o string, od string, n string, trail []Entry, back string) {
-	dumpFields(w, db, t, o, od, n, cred, trail, back, "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od)+" desc")
 }
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
