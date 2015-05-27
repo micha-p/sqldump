@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"log"
 )
 
 var database = "information_schema"
@@ -38,9 +38,9 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-func sqlprotect(s string) (string) {
-	if s != "" && strings.ContainsAny(s,"\"\\;"){
-		r := strings.Replace(strings.Replace(strings.Replace(s,"\\","",-1),";","",-1),"\"","",-1)
+func sqlprotect(s string) string {
+	if s != "" && strings.ContainsAny(s, "\"\\;") {
+		r := strings.Replace(strings.Replace(strings.Replace(s, "\\", "", -1), ";", "", -1), "\"", "", -1)
 		log.Println("SQL INJECTION! :" + s + "->" + r)
 		return r
 	} else {
@@ -48,20 +48,19 @@ func sqlprotect(s string) (string) {
 	}
 }
 
-
-func readRequest(request *http.Request) (string,string,string,string,string) {
+func readRequest(request *http.Request) (string, string, string, string, string) {
 	q := request.URL.Query()
 	db := sqlprotect(q.Get("db"))
 	t := sqlprotect(q.Get("t"))
 	o := sqlprotect(q.Get("o"))
 	od := sqlprotect(q.Get("od"))
-	n := sqlprotect(q.Get("n"))	
-	return db,t,o,od,n
+	n := sqlprotect(q.Get("n"))
+	return db, t, o, od, n
 }
 
 func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	db,t,_,_,n := readRequest(r)
+	db, t, o, od, n := readRequest(r)
 	q := r.URL.Query()
 	action := q.Get("action")
 
@@ -79,11 +78,9 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		q.Del("action")
 		actionShow(w, r, cred, db, t, "?"+q.Encode())
 	} else if action == "go" && db != "" && t != "" && n != "" {
-		q.Del("action")
-		dumpIt(w, r, cred)
+		dumpIt(w, cred, db, t, o, od, n)
 	} else {
-		q.Del("action")
-		dumpIt(w, r, cred)
+		dumpIt(w, cred, db, t, o, od, n)
 	}
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"strconv"
 )
 
 /*
@@ -28,36 +27,14 @@ type Context struct {
 	Back     string
 	Head     []string
 	Records  [][]string
-	Select   string
-	Insert   string
-	Left     string
 	Counter  string
-	This     string
+	Left     string
 	Right    string
-	Info     string
 	Trail    []Entry
 	Menu     []Entry
 }
 
-func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
-
-	db,t,_,_,_ := readRequest(r)
-	var linkshow string
-	var linkinsert string
-	var linkwhere string
-
-	if t != "" {
-		q := r.URL.Query()
-		q.Add("action", "add")
-		linkinsert = q.Encode()
-		q.Del("action")
-		q.Add("action", "select")
-		linkwhere = q.Encode()
-		q.Del("action")
-		q.Add("action", "show")
-		linkshow = q.Encode()
-		q.Del("action")
-	}
+func tableOut(w http.ResponseWriter, cred Access, db string, t string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	c := Context{
 		User:     cred.User,
@@ -69,13 +46,9 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 		Records:  records,
 		Head:     head,
 		Back:     back,
-		Select:   href("?"+linkwhere, "/"),
-		Insert:   href("?"+linkinsert, "+"),
-		Left:     "",
 		Counter:  "",
-		This:     "",
+		Left:     "",
 		Right:    "",
-		Info:     href("?"+linkshow, "?"),
 		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
 		Menu:     menu,  // always used. location dependent of presence of trail
 	}
@@ -86,29 +59,9 @@ func tableOut(w http.ResponseWriter, r *http.Request, cred Access, back string, 
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	initTemplate()
-	db,t,_,_,n := readRequest(r)
-
-	nint, err := strconv.Atoi(n)
-	nmax, err := strconv.Atoi(getCount(cred, db, t))
-	left := strconv.Itoa(maxI(nint-1, 1))
-	right := strconv.Itoa(minI(nint+1, nmax))
-
-	q := r.URL.Query()
-	q.Add("action", "add")
-	linkinsert := q.Encode()
-	q.Del("action")
-	q.Add("action", "show")
-	linkshow := q.Encode()
-	q.Del("action")
-	q.Set("n", left)
-	linkleft := "?" + q.Encode()
-	q.Set("n", n)
-	linkthis := "?" + q.Encode()
-	q.Set("n", right)
-	linkright := "?" + q.Encode()
 
 	c := Context{
 		User:     cred.User,
@@ -120,17 +73,13 @@ func tableOutFields(w http.ResponseWriter, r *http.Request, cred Access, back st
 		Records:  records,
 		Head:     head,
 		Back:     back,
-		Select:   "",
-		Insert:   linkinsert,
-		Left:     linkleft,
 		Counter:  n,
-		This:     linkthis,
+		Left:     linkleft,
 		Right:    linkright,
-		Info:     href("?"+linkshow, "?"),
 		Trail:    trail,
 		Menu:     menu,
 	}
 
-	err = templateTable.Execute(w, c)
+	err := templateTable.Execute(w, c)
 	checkY(err)
 }
