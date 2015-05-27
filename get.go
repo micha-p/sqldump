@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"html/template"
+	"log"
 )
 
 func getConnection(cred Access, db string) *sql.DB {
@@ -16,6 +17,7 @@ func getRows(cred Access, db string, stmt string) *sql.Rows {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
+	log.Println("SQL: " + stmt)
 	statement, err := conn.Prepare(stmt)
 	checkY(err)
 	rows, err := statement.Query()

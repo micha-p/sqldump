@@ -24,6 +24,8 @@ type Context struct {
 	CSS      string
 	Database string
 	Table    string
+	Order    string
+	OrderD   string
 	Back     string
 	Head     []string
 	Records  [][]string
@@ -43,6 +45,8 @@ func tableOut(w http.ResponseWriter, cred Access, db string, t string, back stri
 		CSS:      CSS_FILE,
 		Database: db,
 		Table:    t,
+		Order:    "",
+		OrderD:   "",
 		Records:  records,
 		Head:     head,
 		Back:     back,
@@ -59,7 +63,7 @@ func tableOut(w http.ResponseWriter, cred Access, db string, t string, back stri
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, od string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	initTemplate()
 
@@ -70,6 +74,35 @@ func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, n s
 		CSS:      CSS_FILE,
 		Database: db,
 		Table:    t,
+		Order:    o,
+		OrderD:   od,
+		Records:  records,
+		Head:     head,
+		Back:     back,
+		Counter:  n,
+		Left:     linkleft,
+		Right:    linkright,
+		Trail:    trail,
+		Menu:     menu,
+	}
+
+	err := templateTable.Execute(w, c)
+	checkY(err)
+}
+
+func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, od string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+
+	initTemplate()
+
+	c := Context{
+		User:     cred.User,
+		Host:     cred.Host,
+		Port:     cred.Port,
+		CSS:      CSS_FILE,
+		Database: db,
+		Table:    t,
+		Order:    o,
+		OrderD:   od,
 		Records:  records,
 		Head:     head,
 		Back:     back,

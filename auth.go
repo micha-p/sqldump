@@ -41,6 +41,7 @@ func getCredentials(r *http.Request) (Access, error) {
 			dbms = cookieValue["dbms"]
 		} else { // cookieerror
 			fmt.Println("Cookie error " + host + ":" + port + "(" + dbms + ")")
+			return Access{user, pass, host, port, dbms}, err
 		}
 	}
 	return Access{user, pass, host, port, dbms}, err

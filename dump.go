@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 )
 
@@ -31,32 +32,54 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, o
 		trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: t})
 	}
 
-	if n == "" {
+	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
+	checkY(err)
+
+	if nnumber {
 		if o != "" {
 			v.Add("o", o)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
-			query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o)
+			query = "select * from " + template.HTMLEscapeString(t) + " order by " + template.HTMLEscapeString(o)
 		} else if od != "" {
 			v.Add("od", od)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
-			query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(od)+" desc"
+			query = "select * from " + template.HTMLEscapeString(t) + " order by " + template.HTMLEscapeString(od) + " desc"
 		} else {
-			query = "select * from "+template.HTMLEscapeString(t)
+			query = "select * from " + template.HTMLEscapeString(t)
 		}
-		dumpRows(w, db, t, o, od, cred, trail, "?"+v.Encode(),query)
+		dumpFields(w, db, t, o, od, n, cred, trail, "?"+v.Encode(), query)
 	} else {
 		if o != "" {
 			v.Add("o", o)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: o + "&uarr;"})
-	        query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o)
+			query = "select * from " + template.HTMLEscapeString(t) + " order by " + template.HTMLEscapeString(o)
 		} else if od != "" {
 			v.Add("od", od)
 			trail = append(trail, Entry{Link: "/?" + v.Encode(), Label: od + "&darr;"})
-	        query = "select * from "+template.HTMLEscapeString(t)+" order by "+template.HTMLEscapeString(o) + " desc"
+			query = "select * from " + template.HTMLEscapeString(t) + " order by " + template.HTMLEscapeString(od) + " desc"
 		} else {
-	        query = "select * from "+template.HTMLEscapeString(t)
+			query = "select * from " + template.HTMLEscapeString(t)
 		}
-		dumpFields(w, db, t, o, od, n, cred, trail, "?"+v.Encode(), query)
+		re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
+		limits := re.FindStringSubmatch(n)
+		var startint int
+		var endint int
+		var err error
+
+		if len(limits) == 3 {
+			startint, err = strconv.Atoi(limits[1])
+			checkY(err)
+			startint = maxI(startint, 1)
+			endint, err = strconv.Atoi(limits[2])
+			checkY(err)
+			maxint, err := strconv.Atoi(getCount(cred, db, t))
+			checkY(err)
+			endint = minI(endint, maxint)
+			query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
+			dumpRowRange(w, db, t, o, od, startint, endint, maxint, cred, trail, "?"+v.Encode(), query)
+		} else {
+			dumpRows(w, db, t, o, od, cred, trail, "?"+v.Encode(), query)
+		}
 	}
 }
 
@@ -177,6 +200,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 			q.Del("od")
 			head = append(head, href("?"+q.Encode(), title+"&darr;"))
 		} else {
+			q.Del("od")
 			q.Set("o", title)
 			head = append(head, href("?"+q.Encode(), title))
 		}
@@ -189,14 +213,15 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 	if od != "" {
 		q.Set("od", od)
 	}
-	var n int = 1
+
+	rownum := 1
 	for rows.Next() {
 
 		if o != "" {
 			q.Set("o", o)
 		}
-		q.Set("n", strconv.Itoa(n))
-		row := []string{href("?"+q.Encode(), strconv.Itoa(n))}
+		q.Set("n", strconv.Itoa(rownum))
+		row := []string{href("?"+q.Encode(), strconv.Itoa(rownum))}
 
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
@@ -206,9 +231,100 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 		}
 
 		records = append(records, row)
-		n = n + 1
+		rownum = rownum + 1
 	}
-	tableOut(w, cred, db, t, back, head, records, trail, menu)
+
+	limitstring := "1-" + strconv.Itoa(rownum-1)
+	q.Set("n", limitstring)
+	linkleft := "?" + q.Encode()
+	tableOutRows(w, cred, db, t, o, od, limitstring, linkleft, linkleft, back, head, records, trail, menu)
+}
+
+func dumpRowRange(w http.ResponseWriter, db string, t string, o string, od string, start int, end int, max int, cred Access, trail []Entry, back string, query string) {
+
+	q := url.Values{}
+	q.Add("db", db)
+	q.Add("t", t)
+	q.Add("action", "add")
+	linkinsert := "/?" + q.Encode()
+	q.Set("action", "subset")
+	linkselect := "/?" + q.Encode()
+	q.Set("action", "show")
+	linkshow := "?" + q.Encode()
+	q.Del("action")
+
+	menu := []Entry{}
+	menu = append(menu, Entry{linkselect, "?"})
+	menu = append(menu, Entry{linkshow, "i"})
+	menu = append(menu, Entry{linkinsert, "+"})
+
+	limitstring := strconv.Itoa(start) + "-" + strconv.Itoa(end)
+	q.Add("n", limitstring)
+
+	rows := getRows(cred, db, query)
+	defer rows.Close()
+	columns, err := rows.Columns()
+	checkY(err)
+	count := len(columns)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
+	for i, _ := range columns {
+		valuePtrs[i] = &values[i]
+	}
+
+	head := []string{}
+	records := [][]string{}
+	for _, title := range columns {
+		if o == title {
+			q.Set("od", title)
+			q.Del("o")
+			head = append(head, href("?"+q.Encode(), title+"&uarr;"))
+		} else if od == title {
+			q.Set("o", title)
+			q.Del("od")
+			head = append(head, href("?"+q.Encode(), title+"&darr;"))
+		} else {
+			q.Set("o", title)
+			head = append(head, href("?"+q.Encode(), title))
+		}
+	}
+	q.Del("o")
+	q.Del("od")
+	if o != "" {
+		q.Set("o", o)
+	}
+	if od != "" {
+		q.Set("od", od)
+	}
+
+	rowrange := 1 + end - start
+	rownum := start
+	for rows.Next() && rownum <= end {
+
+		if o != "" {
+			q.Set("o", o)
+		}
+		q.Set("n", strconv.Itoa(rownum))
+		row := []string{href("?"+q.Encode(), strconv.Itoa(rownum))}
+
+		err = rows.Scan(valuePtrs...)
+		checkY(err)
+
+		for i, _ := range columns {
+			row = append(row, dumpValue(values[i]))
+		}
+
+		records = append(records, row)
+		rownum = rownum + 1
+	}
+
+	left := maxI(start-rowrange, 1)
+	right := minI(end+rowrange, max)
+	q.Set("n", strconv.Itoa(left)+"-"+strconv.Itoa(left+rowrange-1))
+	linkleft := "?" + q.Encode()
+	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
+	linkright := "?" + q.Encode()
+	tableOutRows(w, cred, db, t, o, od, limitstring, linkleft, linkright, back, head, records, trail, menu)
 }
 
 // Dump all fields of a record, one column per line
@@ -263,7 +379,9 @@ rowLoop:
 	menu = append(menu, Entry{linkinsert, "+"})
 
 	nint, err := strconv.Atoi(n)
+	checkY(err)
 	nmax, err := strconv.Atoi(getCount(cred, db, t))
+	checkY(err)
 	left := strconv.Itoa(maxI(nint-1, 1))
 	right := strconv.Itoa(minI(nint+1, nmax))
 
@@ -278,5 +396,5 @@ rowLoop:
 	v.Set("n", right)
 	linkright := "?" + v.Encode()
 
-	tableOutFields(w, cred, db, t, n, linkleft, linkright, back, head, records, trail, menu)
+	tableOutFields(w, cred, db, t, o, od, n, linkleft, linkright, back, head, records, trail, menu)
 }

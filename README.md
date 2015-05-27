@@ -21,8 +21,14 @@ A small web-based tool for database administration.
 Run server for web interface
 
     export GOPATH=$PWD
+    go run sqlgopher.go init.go dump.go aux.go auth.go table.go action.go cert.go get.go -d -c="html/table.css"
+
+or using a prebuilt binary
+
+    export GOPATH=$PWD
     go build sqlgopher.go init.go dump.go aux.go auth.go table.go action.go cert.go get.go
-    ./sqlgopher -c="html/table.css"
+    ./sqlgopher -d -c="html/table.css"
+
 
 Access via browser
 
