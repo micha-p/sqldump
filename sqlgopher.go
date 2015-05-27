@@ -48,19 +48,21 @@ func sqlprotect(s string) string {
 	}
 }
 
-func readRequest(request *http.Request) (string, string, string, string, string) {
+func readRequest(request *http.Request) (string, string, string, string, string, string, string) {
 	q := request.URL.Query()
 	db := sqlprotect(q.Get("db"))
 	t := sqlprotect(q.Get("t"))
 	o := sqlprotect(q.Get("o"))
 	od := sqlprotect(q.Get("od"))
 	n := sqlprotect(q.Get("n"))
-	return db, t, o, od, n
+	k := sqlprotect(q.Get("k"))
+	v := sqlprotect(q.Get("v"))
+	return db, t, o, od, n, k, v
 }
 
 func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	db, t, o, od, n := readRequest(r)
+	db, t, o, od, n, k, v := readRequest(r)
 	q := r.URL.Query()
 	action := q.Get("action")
 
@@ -78,9 +80,9 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		q.Del("action")
 		actionInfo(w, r, cred, db, t, "?"+q.Encode())
 	} else if action == "go" && db != "" && t != "" && n != "" {
-		dumpIt(w, cred, db, t, o, od, n)
+		dumpIt(w, cred, db, t, o, od, n, k, v)
 	} else {
-		dumpIt(w, cred, db, t, o, od, n)
+		dumpIt(w, cred, db, t, o, od, n, k, v)
 	}
 }
 

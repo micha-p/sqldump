@@ -91,3 +91,21 @@ func getNumericBool(cred Access, db string, t string, c string) bool {
 	log.Fatalln("column " + c+ " not found")
 	return false
 }
+
+func getSingle(cred Access, db string, q string) string {
+
+	rows := getRows(cred, db, q)
+	defer rows.Close()	
+	var value interface{}
+	var valuePtr interface{}
+	valuePtr = &value
+
+rowLoop:
+	for rows.Next() { 
+		// just one row
+		err := rows.Scan(valuePtr)
+		checkY(err)
+		break rowLoop
+	}
+	return dumpValue(value)
+}

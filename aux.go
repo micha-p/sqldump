@@ -19,7 +19,7 @@ func checkY(err error) {
 }
 
 func href(base string, name string) string {
-	return "<a href=\"" + base + "\">" + name + "</a>"
+	return "<a href=\"" + "?" + base + "\">" + name + "</a>"
 }
 
 // Compose dataSourceName from components and globals
