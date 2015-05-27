@@ -74,9 +74,9 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionAdd(w, r, cred, db, t)
 	} else if action == "insert" && db != "" && t != "" {
 		actionInsert(w, r, cred)
-	} else if action == "show" && db != "" && t != "" {
+	} else if action == "info" && db != "" && t != "" {
 		q.Del("action")
-		actionShow(w, r, cred, db, t, "?"+q.Encode())
+		actionInfo(w, r, cred, db, t, "?"+q.Encode())
 	} else if action == "go" && db != "" && t != "" && n != "" {
 		dumpIt(w, cred, db, t, o, od, n)
 	} else {

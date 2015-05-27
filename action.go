@@ -156,7 +156,7 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 +-------+-------------+------+-----+---------+-------+
 */
 
-func actionShow(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, back string) {
+func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, back string) {
 
 	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
 	defer rows.Close()
@@ -178,14 +178,14 @@ func actionShow(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	records := [][]string{}
 	head := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
 
-	var n int = 1
+	var i int = 1
 	for rows.Next() {
-		var f, t, u, k, e string
+		var f, t, n, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
-		err := rows.Scan(&f, &t, &u, &k, &d, &e)
+		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
-		records = append(records, []string{strconv.Itoa(n), f, t, u, k, string(d), e})
-		n = n + 1
+		records = append(records, []string{strconv.Itoa(i), f, t, n, k, string(d), e})
+		i = i + 1
 	}
 	tableOut(w, cred, db, t, back, head, records, trail, menu)
 }

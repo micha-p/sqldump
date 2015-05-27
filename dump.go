@@ -147,14 +147,10 @@ func dumpValue(val interface{}) string {
 	var r string
 	b, ok := val.([]byte)
 
-	if b != nil {
-		if ok {
-			r = string(b)
-		} else {
-			r = fmt.Sprint(val)
-		}
+	if ok {
+		r = string(b)
 	} else {
-		r = "NIL"
+		r = fmt.Sprint(val)
 	}
 	return r
 }
@@ -168,17 +164,18 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 	linkinsert := "/?" + q.Encode()
 	q.Set("action", "subset")
 	linkselect := "/?" + q.Encode()
-	q.Set("action", "show")
-	linkshow := "?" + q.Encode()
+	q.Set("action", "info")
+	linkinfo:= "?" + q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
 	menu = append(menu, Entry{linkselect, "?"})
-	menu = append(menu, Entry{linkshow, "i"})
+	menu = append(menu, Entry{linkinfo, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 
 	rows := getRows(cred, db, query)
 	defer rows.Close()
+	primary := getPrimary(cred, db, t)
 	columns, err := rows.Columns()
 	checkY(err)
 	count := len(columns)
@@ -191,18 +188,24 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 	head := []string{}
 	records := [][]string{}
 	for _, title := range columns {
+		var titlestring string
+		if primary == title {
+			titlestring = title + " (ID)"
+		} else {
+			titlestring = title
+		}
 		if o == title {
 			q.Set("od", title)
 			q.Del("o")
-			head = append(head, href("?"+q.Encode(), title+"&uarr;"))
+			head = append(head, href("?"+q.Encode(), titlestring+"&uarr;"))
 		} else if od == title {
 			q.Set("o", title)
 			q.Del("od")
-			head = append(head, href("?"+q.Encode(), title+"&darr;"))
+			head = append(head, href("?"+q.Encode(), titlestring+"&darr;"))
 		} else {
 			q.Del("od")
 			q.Set("o", title)
-			head = append(head, href("?"+q.Encode(), title))
+			head = append(head, href("?"+q.Encode(), titlestring))
 		}
 	}
 	q.Del("o")
@@ -249,13 +252,13 @@ func dumpRowRange(w http.ResponseWriter, db string, t string, o string, od strin
 	linkinsert := "/?" + q.Encode()
 	q.Set("action", "subset")
 	linkselect := "/?" + q.Encode()
-	q.Set("action", "show")
-	linkshow := "?" + q.Encode()
+	q.Set("action", "info")
+	linkinfo := "?" + q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
 	menu = append(menu, Entry{linkselect, "?"})
-	menu = append(menu, Entry{linkshow, "i"})
+	menu = append(menu, Entry{linkinfo, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 
 	limitstring := strconv.Itoa(start) + "-" + strconv.Itoa(end)
@@ -370,12 +373,12 @@ rowLoop:
 
 	v.Add("action", "add")
 	linkinsert := "/?" + v.Encode()
-	v.Set("action", "show")
-	linkshow := "?" + v.Encode()
+	v.Set("action", "info")
+	linkinfo := "?" + v.Encode()
 	v.Del("action")
 
 	menu := []Entry{}
-	menu = append(menu, Entry{linkshow, "i"})
+	menu = append(menu, Entry{linkinfo, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 
 	nint, err := strconv.Atoi(n)
