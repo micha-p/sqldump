@@ -35,12 +35,12 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, o
 	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
 	checkY(err)
 
-	if k != "" && v != "" && k == getPrimary(cred, db, t){
+	if k != "" && v != "" && k == getPrimary(cred, db, t) {
 		q.Add("k", k)
 		q.Add("v", v)
 		trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: k + " (ID)"})
-		query = "select * from " + template.HTMLEscapeString(t) + " where " + template.HTMLEscapeString(k) +"="+ template.HTMLEscapeString(v)
-		dumpKeyValue(w, db, t, k,v, cred, trail, "?"+q.Encode(), query)
+		query = "select * from " + template.HTMLEscapeString(t) + " where " + template.HTMLEscapeString(k) + "=" + template.HTMLEscapeString(v)
+		dumpKeyValue(w, db, t, k, v, cred, trail, "?"+q.Encode(), query)
 	} else if nnumber {
 		if o != "" {
 			q.Add("o", o)
@@ -82,7 +82,7 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, o
 			checkY(err)
 			endint = minI(endint, maxint)
 			query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
-			dumpRowRange(w, db, t, o, od, startint, endint, maxint, cred, trail, "?"+q.Encode(), query)
+			dumpRange(w, db, t, o, od, startint, endint, maxint, cred, trail, "?"+q.Encode(), query)
 		} else {
 			dumpRows(w, db, t, o, od, cred, trail, "?"+q.Encode(), query)
 		}
@@ -98,7 +98,7 @@ func dumpHome(w http.ResponseWriter, cred Access, trail []Entry, back string) {
 
 	menu := []Entry{}
 	records := [][]string{}
-	head := []string{"Database"}
+	head := []string{"#", "Database"}
 	var n int = 1
 	for rows.Next() {
 		var field string
@@ -124,7 +124,7 @@ func dumpTables(w http.ResponseWriter, db string, cred Access, trail []Entry, ba
 
 	menu := []Entry{}
 	records := [][]string{}
-	head := []string{"Table", "Rows"}
+	head := []string{"#", "Table", "Rows"}
 
 	var n int = 1
 	for rows.Next() {
@@ -155,20 +155,32 @@ func dumpValue(val interface{}) string {
 
 	if ok {
 		r = string(b)
-		if r=="" {
-			r="NIL"
+		if r == "" {
+			r = "NULL"
 		}
 	} else {
 		r = fmt.Sprint(val)
-		if r=="" {
-			r="NIL NOT OK"
+		if r == "" {
+			r = "NULL NOT OK"
 		}
 	}
 	return r
 }
 
+func showNumsBool(primary string, o string, od string) bool {
+	if primary == "" || (o != "" && o != primary) || (od != "" && od != primary) {
+		return true
+	} else {
+		return false
+	}
+}
+
 func createHead(db string, t string, o string, od string, primary string, columns []string, q url.Values) []string {
 	head := []string{}
+
+	if showNumsBool(primary, o, od) {
+		head = append(head, "#")
+	}
 	for _, title := range columns {
 		var titlestring string
 		if primary == title {
@@ -176,6 +188,7 @@ func createHead(db string, t string, o string, od string, primary string, column
 		} else {
 			titlestring = title
 		}
+
 		if o == title {
 			q.Set("od", title)
 			q.Del("o")
@@ -193,7 +206,6 @@ func createHead(db string, t string, o string, od string, primary string, column
 	return head
 }
 
-
 func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, cred Access, trail []Entry, back string, query string) {
 
 	q := url.Values{}
@@ -204,7 +216,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 	q.Set("action", "subset")
 	linkselect := "/?" + q.Encode()
 	q.Set("action", "info")
-	linkinfo:= "?" + q.Encode()
+	linkinfo := "?" + q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
@@ -223,16 +235,8 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 		valuePtrs[i] = &values[i]
 	}
 
-	primary := getPrimary(cred, db, t)	
-	head := createHead(db,t,o,od,primary,columns,q)
-	q.Del("o")
-	q.Del("od")
-	if o != "" {
-		q.Set("o", o)
-	}
-	if od != "" {
-		q.Set("od", od)
-	}
+	primary := getPrimary(cred, db, t)
+	head := createHead(db, t, o, od, primary, columns, q)
 
 	records := [][]string{}
 	rownum := 1
@@ -241,8 +245,15 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 		if o != "" {
 			q.Set("o", o)
 		}
-		q.Set("n", strconv.Itoa(rownum))
-		row := []string{href(q.Encode(), strconv.Itoa(rownum))}
+		if od != "" {
+			q.Set("od", od)
+		}
+
+		row := []string{}
+		if showNumsBool(primary, o, od) {
+			q.Set("n", strconv.Itoa(rownum))
+			row = append(row, href(q.Encode(), strconv.Itoa(rownum)))
+		}
 
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
@@ -255,10 +266,10 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 				q.Del("n")
 				q.Set("k", primary)
 				q.Set("v", v)
-				row = append(row,href(q.Encode(),v))
+				row = append(row, href(q.Encode(), v))
 			} else {
 				row = append(row, v)
-			}	
+			}
 		}
 
 		records = append(records, row)
@@ -267,13 +278,11 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, od string, c
 
 	limitstring := "1-" + strconv.Itoa(rownum-1)
 	q.Set("n", limitstring)
-	linkleft := "?" + q.Encode()
-	tableOutRows(w, cred, db, t, o, od, limitstring, linkleft, linkleft, back, head, records, trail, menu)
+	link := "?" + q.Encode()
+	tableOutRows(w, cred, db, t, o, od, limitstring, link, link, back, head, records, trail, menu)
 }
 
-
-
-func dumpRowRange(w http.ResponseWriter, db string, t string, o string, od string, start int, end int, max int, cred Access, trail []Entry, back string, query string) {
+func dumpRange(w http.ResponseWriter, db string, t string, o string, od string, start int, end int, max int, cred Access, trail []Entry, back string, query string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -305,16 +314,8 @@ func dumpRowRange(w http.ResponseWriter, db string, t string, o string, od strin
 		valuePtrs[i] = &values[i]
 	}
 
-	primary := getPrimary(cred, db, t)	
-	head := createHead(db,t,o,od,primary,columns, q)
-	q.Del("o")
-	q.Del("od")
-	if o != "" {
-		q.Set("o", o)
-	}
-	if od != "" {
-		q.Set("od", od)
-	}
+	primary := getPrimary(cred, db, t)
+	head := createHead(db, t, o, od, "", columns, q)
 
 	records := [][]string{}
 	rowrange := 1 + end - start
@@ -324,8 +325,12 @@ func dumpRowRange(w http.ResponseWriter, db string, t string, o string, od strin
 		if o != "" {
 			q.Set("o", o)
 		}
+		if od != "" {
+			q.Set("od", od)
+		}
+		row := []string{}
 		q.Set("n", strconv.Itoa(rownum))
-		row := []string{href(q.Encode(), strconv.Itoa(rownum))}
+		row = append(row, href(q.Encode(), strconv.Itoa(rownum)))
 
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
@@ -338,10 +343,10 @@ func dumpRowRange(w http.ResponseWriter, db string, t string, o string, od strin
 				q.Del("n")
 				q.Set("k", primary)
 				q.Set("v", v)
-				row = append(row,href(q.Encode(),v))
+				row = append(row, href(q.Encode(), v))
 			} else {
 				row = append(row, v)
-			}	
+			}
 		}
 
 		records = append(records, row)
@@ -356,8 +361,6 @@ func dumpRowRange(w http.ResponseWriter, db string, t string, o string, od strin
 	linkright := "?" + q.Encode()
 	tableOutRows(w, cred, db, t, o, od, limitstring, linkleft, linkright, back, head, records, trail, menu)
 }
-
-
 
 // Dump all fields of a record, one column per line
 func dumpFields(w http.ResponseWriter, db string, t string, o string, od string, n string, cred Access, trail []Entry, back string, query string) {
@@ -374,7 +377,7 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, od string,
 		valuePtrs[i] = &values[i]
 	}
 
-	head := []string{"Column", "Data"}
+	head := []string{"#", "Column", "Data"}
 	records := [][]string{}
 
 	rec, err := strconv.Atoi(n)
@@ -452,12 +455,12 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		valuePtrs[i] = &values[i]
 	}
 
-	head := []string{"Column", "Data"}
+	head := []string{"#", "Column", "Data"}
 	records := [][]string{}
 
 	var iter int = 1
 rowLoop:
-	for rows.Next() { 
+	for rows.Next() {
 
 		// just one row
 		if iter == 1 {
@@ -497,13 +500,13 @@ rowLoop:
 	 mysql> select number from unique_field where number>12 order by number limit 1;
 	 mysql> select number from unique_field where number<123 order by number desc limit 1;
 	 mysql> select content from unique_field where content > "hu" order by content limit 1;
-	 */
-	 
-	next := getSingle(cred,db,"select "+ k + " from " + t  + " where " + k + ">" + v + " order by " + k + " limit 1")
+	*/
+
+	next := getSingle(cred, db, "select "+k+" from "+t+" where "+k+">"+v+" order by "+k+" limit 1")
 	if next == "<nil>" {
 		next = v
 	}
-	prev := getSingle(cred,db,"select "+ k + " from " + t  + " where " + k + "<" + v + " order by " + k + " desc limit 1")
+	prev := getSingle(cred, db, "select "+k+" from "+t+" where "+k+"<"+v+" order by "+k+" desc limit 1")
 	if prev == "<nil>" {
 		prev = v
 	}

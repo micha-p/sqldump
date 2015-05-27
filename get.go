@@ -63,7 +63,7 @@ func getPrimary(cred Access, db string, t string) string {
 	}
 	return primary
 }
-	
+
 func getNumericBool(cred Access, db string, t string, c string) bool {
 
 	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
@@ -75,33 +75,33 @@ func getNumericBool(cred Access, db string, t string, c string) bool {
 		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
 		if f == c {
-			iType,_ := regexp.MatchString("int", t)
-			fType,_ := regexp.MatchString("float", t)
-			rType,_ := regexp.MatchString("real", t)
-			dType,_ := regexp.MatchString("double", t)
-			cType,_ := regexp.MatchString("decimal", t)
-			nType,_ := regexp.MatchString("numeric", t)
+			iType, _ := regexp.MatchString("int", t)
+			fType, _ := regexp.MatchString("float", t)
+			rType, _ := regexp.MatchString("real", t)
+			dType, _ := regexp.MatchString("double", t)
+			cType, _ := regexp.MatchString("decimal", t)
+			nType, _ := regexp.MatchString("numeric", t)
 			if iType || fType || rType || dType || cType || nType {
 				return true
 			} else {
 				return false
-			} 
+			}
 		}
 	}
-	log.Fatalln("column " + c+ " not found")
+	log.Fatalln("column " + c + " not found")
 	return false
 }
 
 func getSingle(cred Access, db string, q string) string {
 
 	rows := getRows(cred, db, q)
-	defer rows.Close()	
+	defer rows.Close()
 	var value interface{}
 	var valuePtr interface{}
 	valuePtr = &value
 
 rowLoop:
-	for rows.Next() { 
+	for rows.Next() {
 		// just one row
 		err := rows.Scan(valuePtr)
 		checkY(err)

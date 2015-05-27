@@ -176,7 +176,7 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	menu = append(menu, Entry{linkinsert, "+"})
 
 	records := [][]string{}
-	head := []string{"Field", "Type", "Null", "Key", "Default", "Extra"}
+	head := []string{"#", "Field", "Type", "Null", "Key", "Default", "Extra"}
 
 	var i int = 1
 	for rows.Next() {

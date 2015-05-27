@@ -31,7 +31,7 @@
 
 <div class="main">
 <table>
-<tr><th>{{if .Trail}}#{{else}}<a href="{{.Back}}">[X]</a>{{end}}</th>{{range .Head}}<th>{{.}}</th>{{end}}</tr>
+<tr>{{range .Head}}<th>{{.}}</th>{{end}}{{if .Trail}}{{else}}<th><a href="{{.Back}}">[X]</a>{{end}}</th></tr>
 {{range .Records}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
 {{end}}
 </table>
