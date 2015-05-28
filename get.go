@@ -18,7 +18,7 @@ func getRows(cred Access, db string, stmt string) *sql.Rows {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
-	log.Println("SQL: " + stmt)
+	log.Println("[SQL] " + stmt)
 	statement, err := conn.Prepare(stmt)
 	checkY(err)
 	rows, err := statement.Query()

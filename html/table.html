@@ -13,11 +13,11 @@
 	{{if .Counter}}
 	<form class="counter" action="/">
 	    <a class="count" href="{{.Left}}"> &lt; </a>			
-		<input type="hidden" name="action" value="go">
+		<input type="hidden" name="action" value="goto">
 		<input type="hidden" name="db"     value="{{.Database}}">
 		<input type="hidden" name="t"      value="{{.Table}}">
-		<input type="hidden" name="o"      value="{{.Order}}">
-		<input type="hidden" name="od"     value="{{.OrderD}}">
+		{{if .Order}}<input type="hidden" name="o"      value="{{.Order}}">{{end}}
+		{{if .Desc}}<input type="hidden" name="d"      value="{{.Desc}}">{{end}}
 	    <input type="text"   name="n"      value="{{.Counter}}" class="range" size=2 >	
 	    <button type="submit" hidden='hidden'>go</button>
 	    <a class="count" href="{{.Right}}"> &gt; </a>			

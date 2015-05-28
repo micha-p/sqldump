@@ -53,16 +53,16 @@ func readRequest(request *http.Request) (string, string, string, string, string,
 	db := sqlprotect(q.Get("db"))
 	t := sqlprotect(q.Get("t"))
 	o := sqlprotect(q.Get("o"))
-	od := sqlprotect(q.Get("od"))
+	d := sqlprotect(q.Get("d"))
 	n := sqlprotect(q.Get("n"))
 	k := sqlprotect(q.Get("k"))
 	v := sqlprotect(q.Get("v"))
-	return db, t, o, od, n, k, v
+	return db, t, o, d, n, k, v
 }
 
 func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	db, t, o, od, n, k, v := readRequest(r)
+	db, t, o, d, n, k, v := readRequest(r)
 	q := r.URL.Query()
 	action := q.Get("action")
 
@@ -79,10 +79,10 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 	} else if action == "info" && db != "" && t != "" {
 		q.Del("action")
 		actionInfo(w, r, cred, db, t, "?"+q.Encode())
-	} else if action == "go" && db != "" && t != "" && n != "" {
-		dumpIt(w, cred, db, t, o, od, n, k, v)
+	} else if action == "goto" && db != "" && t != "" && n != "" {
+		dumpIt(w, cred, db, t, o, d, n, k, v)
 	} else {
-		dumpIt(w, cred, db, t, o, od, n, k, v)
+		dumpIt(w, cred, db, t, o, d, n, k, v)
 	}
 }
 

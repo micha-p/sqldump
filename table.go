@@ -25,7 +25,7 @@ type Context struct {
 	Database string
 	Table    string
 	Order    string
-	OrderD   string
+	Desc     string
 	Back     string
 	Head     []string
 	Records  [][]string
@@ -46,7 +46,7 @@ func tableOut(w http.ResponseWriter, cred Access, db string, t string, back stri
 		Database: db,
 		Table:    t,
 		Order:    "",
-		OrderD:   "",
+		Desc:     "",
 		Records:  records,
 		Head:     head,
 		Back:     back,
@@ -63,7 +63,7 @@ func tableOut(w http.ResponseWriter, cred Access, db string, t string, back stri
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, od string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	initTemplate()
 
@@ -75,7 +75,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 		Database: db,
 		Table:    t,
 		Order:    o,
-		OrderD:   od,
+		Desc:     d,
 		Records:  records,
 		Head:     head,
 		Back:     back,
@@ -90,7 +90,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, od string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
 
 	initTemplate()
 
@@ -102,7 +102,7 @@ func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o s
 		Database: db,
 		Table:    t,
 		Order:    o,
-		OrderD:   od,
+		Desc:     d,
 		Records:  records,
 		Head:     head,
 		Back:     back,
