@@ -4,10 +4,8 @@
 {{if .CSS}}<link rel="stylesheet" type="text/css" href="html/table.css"/>{{end}}
 <body>
 
-{{define "selector"}}
-<SELECT name="{{.}}O">
-      <OPTION value=""> = </OPTION>
-      <OPTION value="<>"> &ne; </OPTION>
+{{define "tselector"}}
+<SELECT name="{{.}}O" style="width:90%;" >
       <OPTION value=" LIKE "> &sim; </OPTION>
       <OPTION value=" NOT LIKE "> !&sim; </OPTION>
       <OPTION value=">"> &gt; </OPTION>
@@ -16,6 +14,33 @@
       <OPTION value="<="> &le; </OPTION>
 </SELECT>
 {{end}}
+
+{{define "nselector"}}
+<SELECT name="{{.}}O" style="width:90%;" >
+      <OPTION value=""> = </OPTION>
+      <OPTION value="<>"> &ne; </OPTION>
+      <OPTION value=">"> &gt; </OPTION>
+      <OPTION value=">="> &ge; </OPTION>
+      <OPTION value="<"> &lt; </OPTION>
+      <OPTION value="<="> &le; </OPTION>
+</SELECT>
+{{end}}
+
+{{define "oselector"}}
+<SELECT name="{{.}}O" style="width:90%;" > 
+      <OPTION value=""> =  </OPTION>
+      <OPTION value="<>"> &ne; </OPTION>
+      <OPTION value=">"> &gt; </OPTION>
+      <OPTION value=">="> &ge; </OPTION>
+      <OPTION value="<"> &lt; </OPTION>
+      <OPTION value="<="> &le; </OPTION>
+</SELECT>
+{{end}}
+
+{{define "selector"}}
+{{if .IsNumeric}}{{template "nselector" .Name}}{{else if .IsString}}{{template "tselector" .Name}}{{else}}{{template "oselector" .Name}}{{end}}
+{{end}}
+
 
 <div class="top">
 {{if .Trail}}
@@ -33,10 +58,10 @@
 		<input type="hidden" name="t"  value="{{.Table}}">
 		<table>
 			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> <tr>
-			{{range .Columns}}<tr> <td>1</td> <td>{{.}}</td> <td>{{template "selector" .}}</td> <td><input class="cell" type="text" id="{{.}}" name="{{.}}C"></td> <tr>
+			{{range .Columns}}<tr> <td>1</td> <td>{{.Name}}</td> <td>{{template "selector" .}}</td> <td><input class="cell" type="text" id="{{.Name}}" name="{{.Name}}C"></td> <tr>
 			{{end}}
 			{{else}}<tr> <th>#</th> <th>Column</th> <th>Data</th> <tr>
-			{{range .Columns}}<tr> <td>1</td> <td>{{.}}</td> <td><input class="cell" type="text" id="{{.}}" name="{{.}}C"></td> <tr>
+			{{range .Columns}}<tr> <td>1</td> <td>{{.}}</td> <td><input class="cell" type="text" id="{{.Name}}" name="{{.Name}}C"></td> <tr>
 			{{end}}{{end}}
 		</table>
 		<br>

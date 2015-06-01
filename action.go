@@ -20,6 +20,12 @@ import (
 	"strings"
 )
 
+type CContext struct {
+	Name	  string
+	IsNumeric string
+	IsString  string
+}
+
 type FContext struct {
 	CSS      string
 	Action   string
@@ -28,7 +34,7 @@ type FContext struct {
 	Database string
 	Table    string
 	Back     string
-	Columns  []string
+	Columns  []CContext
 	Trail    []Entry
 }
 
@@ -42,7 +48,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 	v.Add("t", t)
 	trail = append(trail, Entry{Link: "?" + v.Encode(), Label: t})
 
-	cols := getCols(cred, db, t)
+	cols := getColumnInfo(cred, db, t)
 	q := r.URL.Query()
 	q.Del("action")
 	linkback := q.Encode()

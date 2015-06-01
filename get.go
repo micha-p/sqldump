@@ -8,6 +8,9 @@ import (
 	"regexp"
 )
 
+// retrieving column information might be combined better
+
+
 func getConnection(cred Access, db string) *sql.DB {
 	conn, err := sql.Open(cred.Dbms, dsn(cred.User, cred.Pass, cred.Host, cred.Port, db))
 	checkY(err)
@@ -64,33 +67,6 @@ func getPrimary(cred Access, db string, t string) string {
 	return primary
 }
 
-func getNumericBool(cred Access, db string, t string, c string) bool {
-
-	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
-	defer rows.Close()
-
-	for rows.Next() {
-		var f, t, n, k, e string
-		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
-		err := rows.Scan(&f, &t, &n, &k, &d, &e)
-		checkY(err)
-		if f == c {
-			iType, _ := regexp.MatchString("int", t)
-			fType, _ := regexp.MatchString("float", t)
-			rType, _ := regexp.MatchString("real", t)
-			dType, _ := regexp.MatchString("double", t)
-			cType, _ := regexp.MatchString("decimal", t)
-			nType, _ := regexp.MatchString("numeric", t)
-			if iType || fType || rType || dType || cType || nType {
-				return true
-			} else {
-				return false
-			}
-		}
-	}
-	log.Fatalln("column " + c + " not found")
-	return false
-}
 
 func getSingle(cred Access, db string, q string) string {
 
@@ -109,3 +85,38 @@ rowLoop:
 	}
 	return dumpValue(value)
 }
+
+func getColumnInfo(cred Access, db string, t string) []CContext {
+
+	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
+	defer rows.Close()
+    m := []CContext{}
+
+	for rows.Next() {
+		var f, t, n, k, e string
+		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
+		err := rows.Scan(&f, &t, &n, &k, &d, &e)
+		checkY(err)
+
+		iType, _ := regexp.MatchString("int", t)
+		fType, _ := regexp.MatchString("float", t)
+		rType, _ := regexp.MatchString("real", t)
+		dType, _ := regexp.MatchString("double", t)
+		lType, _ := regexp.MatchString("decimal", t)
+		nType, _ := regexp.MatchString("numeric", t)
+		cType, _ := regexp.MatchString("char", t)
+		yType, _ := regexp.MatchString("binary", t)
+		bType, _ := regexp.MatchString("blob", t)
+		tType, _ := regexp.MatchString("text", t)
+
+		if iType || fType || rType || dType || lType || nType {
+			m=append(m,CContext{f,"numeric",""})
+		} else if cType || yType || bType || tType {
+			m=append(m,CContext{f,"","string"})
+		} else {
+			m=append(m,CContext{f,"",""})
+		}
+	}
+	return m
+}
+
