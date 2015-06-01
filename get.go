@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"html/template"
 	"log"
 	"regexp"
 )
@@ -26,21 +25,32 @@ func getRows(cred Access, db string, stmt string) *sql.Rows {
 	checkY(err)
 	rows, err := statement.Query()
 	checkY(err)
-
 	return rows
 }
 
+
 func getCols(cred Access, db string, t string) []string {
-	rows := getRows(cred, db, "select * from "+template.HTMLEscapeString(t))
+
+	conn := getConnection(cred, db)
+	defer conn.Close()
+	log.Println("[SQL] cols")
+	// rows, err := conn.Query("select * from ? limit 1") // does not work??
+	rows, err := conn.Query("select * from " + t + " limit 1")
+	checkY(err)
 	defer rows.Close()
 
 	cols, err := rows.Columns()
-	checkY(err)
 	return cols
 }
 
 func getCount(cred Access, db string, t string) string {
-	rows := getRows(cred, db, "select count(*) from "+template.HTMLEscapeString(t))
+
+	conn := getConnection(cred, db)
+	defer conn.Close()
+	log.Println("[SQL] count")
+	// rows,err := conn.Query("select count(*) from ?", t) // does not work??
+	rows,err := conn.Query("select count(*) from " + t)
+	checkY(err)
 	defer rows.Close()
 
 	rows.Next()
@@ -51,7 +61,11 @@ func getCount(cred Access, db string, t string) string {
 
 func getPrimary(cred Access, db string, t string) string {
 
-	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
+	conn := getConnection(cred, db)
+	defer conn.Close()
+	// rows, err := conn.Query("show columns from ?", t) // does not work??
+	rows, err := conn.Query("show columns from " + t)
+	checkY(err)
 	defer rows.Close()
 
 	primary := ""
@@ -86,12 +100,16 @@ rowLoop:
 	return dumpValue(value)
 }
 
+
 func getColumnInfo(cred Access, db string, t string) []CContext {
 
-	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
+	conn := getConnection(cred, db)
+	defer conn.Close()
+	rows, err := conn.Query("show columns from " + t)
+	checkY(err)
 	defer rows.Close()
-    m := []CContext{}
 
+    m := []CContext{}
 	for rows.Next() {
 		var f, t, n, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
