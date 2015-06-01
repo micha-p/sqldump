@@ -18,7 +18,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"regexp"
 )
 
 type CContext struct {
@@ -103,13 +102,12 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: t})
 
 	var tests []string
-	reNumeric := regexp.MustCompile("[^-><=!0-9. eE]*")
 	for _, col := range cols {
 		val := sqlprotect(r.FormValue(col + "C"))
 		if val != "" {
 			comparator := sqlprotect(r.FormValue(col + "O"))
 			if comparator == "" {
-				tests = append(tests, col+reNumeric.ReplaceAllString(val, ""))
+				tests = append(tests, col+sqlFilterNumeric(val))
 			} else {
 				tests = append(tests, col+comparator+"\""+val+"\"")
 			}

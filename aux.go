@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 )
 
 func troubleF(filename string) error {
@@ -42,3 +43,13 @@ func minI(a int, b int) int {
 		return b
 	}
 }
+
+// TODO improve with real regexp
+func sqlFilterNumeric(t string) string {
+	reNumeric := regexp.MustCompile("[^-><=!0-9. eE]*")
+	return reNumeric.ReplaceAllString(t, "")
+}
+	
+	
+
+	
