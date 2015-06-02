@@ -11,21 +11,17 @@ import (
 func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
 	var query string
+	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
+	checkY(err)
+	re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
+	limits := re.FindStringSubmatch(n)
 
 	if db == "" {
 		dumpHome(w, cred)
 		return
-	}
-
-	if t == "" {
+	} else if t == "" {
 		dumpTables(w, db, cred)
-		return
-	}
-
-	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
-	checkY(err)
-
-	if k != "" && v != "" && k == getPrimary(cred, db, t) {
+	} else if k != "" && v != "" && k == getPrimary(cred, db, t) {
 		query = "select * from " + t + " where " + k + "=" + v
 		dumpKeyValue(w, db, t, k, v, cred, query)
 	} else if nnumber {
@@ -38,19 +34,7 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 			query = "select * from " + t
 		}
 		dumpFields(w, db, t, o, d, n, cred, query)
-	} else {
-		if o != "" {
-			query = "select * from " + t + " order by " + o
-			if d != "" {
-				query = query + " desc"
-			}
-		} else {
-			query = "select * from " + t
-		}
-		re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
-		limits := re.FindStringSubmatch(n)
-
-		if len(limits) == 3 {
+	} else if len(limits) == 3 {
 			startint, err := strconv.Atoi(limits[1])
 			checkY(err)
 			startint = maxI(startint, 1)
@@ -59,11 +43,23 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 			maxint, err := strconv.Atoi(getCount(cred, db, t))
 			checkY(err)
 			endint = minI(endint, maxint)
-			query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
+			query = "select * from " + t + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
+			if o != "" {
+				query = "select t.* from (" + query + ") t order by " + o
+				if d != "" {
+					query = query + " desc"
+				}
+			}
 			dumpRange(w, db, t, o, d, startint, endint, maxint, cred, query)
-		} else {
-			dumpRows(w, db, t, o, d, cred, query, "")
+	} else {
+		query = "select * from " + t
+		if o != "" {
+			query = query + " order by " + o
+			if d != "" {
+				query = query + " desc"
+			}
 		}
+		dumpRows(w, db, t, o, d, cred, query, "")
 	}
 }
 
@@ -152,11 +148,15 @@ func showNumsBool(primary string, o string) bool {
 	}
 }
 
-func createHead(db string, t string, o string, d string, primary string, columns []string, q url.Values) []string {
+func createHead(db string, t string, o string, d string, n string, primary string, columns []string, q url.Values) []string {
+	root := url.Values{}
 	head := []string{}
 
 	if showNumsBool(primary, o) {
-		head = append(head, "#")
+		root.Add("db",db)
+		root.Add("t",t)
+		root.Add("n",n)
+		head = append(head, href(root.Encode(), "#"))
 	}
 	for _, title := range columns {
 		var titlestring string
@@ -223,7 +223,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		valuePtrs[i] = &values[i]
 	}
 
-	head := createHead(db, t, o, d, primary, columns, q)
+	head := createHead(db, t, o, d, "", primary, columns, q)
 	
 	if o != "" {
 		q.Set("o", o)
@@ -313,7 +313,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 		valuePtrs[i] = &values[i]
 	}
 
-	head := createHead(db, t, o, d, "", columns, q)
+	head := createHead(db, t, o, d, limitstring, "", columns, q)
 
 	records := [][]string{}
 	rowrange := 1 + end - start
