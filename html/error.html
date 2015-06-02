@@ -21,7 +21,7 @@
 		<input type="hidden" name="t"  value="{{.Table}}">
 		<table>
 			<tr> <th>Error</th> <th></th> <tr>
-			{{range .Columns}}<tr> <td>{{.Name}}</td> <td>{{.IsString}}</td> <tr>
+			{{range .Columns}}<tr> <td>{{.Name}}</td> <td>{{.Value}}</td> <tr>
 			{{end}}
 		</table>
 		<br>

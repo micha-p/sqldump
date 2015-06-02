@@ -48,6 +48,17 @@ func sqlprotect(s string) string {
 	}
 }
 
+func sqlprotectweak(s string) string {
+	if s != "" && strings.ContainsAny(s, "\\;") {
+		r := strings.Replace(strings.Replace(s, ";", "", -1), "\"", "", -1)
+		log.Println("[SQL INJECTION]", s+"->"+r)
+		return r
+	} else {
+		return s
+	}
+}
+
+
 func readRequest(request *http.Request) (string, string, string, string, string, string, string, string) {
 	q := request.URL.Query()
 	db := sqlprotect(q.Get("db"))
@@ -57,7 +68,7 @@ func readRequest(request *http.Request) (string, string, string, string, string,
 	n := sqlprotect(q.Get("n"))
 	k := sqlprotect(q.Get("k"))
 	v := sqlprotect(q.Get("v"))
-	w := sqlprotect(q.Get("w"))
+	w := sqlprotectweak(q.Get("where"))
 	return db, t, o, d, n, k, v, w
 }
 
@@ -72,20 +83,24 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 	if action == "SUBSET" && db != "" && t != "" {
 		actionSubset(w, r, cred, db, t)
 	} else if action == "QUERY" && db != "" && t != "" {
-		actionQuery(w, r, cred)
+		actionQuery(w, r, cred, db ,t)
 	} else if action == "ADD" && db != "" && t != "" {
 		actionAdd(w, r, cred, db, t)
 	} else if action == "INSERT" && db != "" && t != "" {
-		actionInsert(w, r, cred)
+		actionInsert(w, r, cred, db,t)
 	} else if action == "INFO" && db != "" && t != "" {
 		actionInfo(w, r, cred, db, t)
 	} else if action == "REMOVE" && db != "" && t != "" && k != "" && v != "" {
 		actionRemove(w, r, cred, db, t, k, v)
 	} else if action == "EDIT" && db != "" && t != "" && k != ""  && v != "" {
 		shipMessage(w, cred, db, "Edit record with primary key not implemented")
-	} else if action == "DELETE" && db != "" && t != "" && where != "" {
-		shipMessage(w, cred, db, "Delete records not implemented")
-	} else if action == "UPDATE" && db != "" && t != "" && where != "" {
+	} else if action == "DELETEWHERE" && db != "" && t != "" && where != "" {
+		actionDeleteWhere(w, r, cred, db, t, where)
+	} else if action == "DELETE" && db != "" && t != "" {
+		actionDelete(w, r, cred, db, t)
+	} else if action == "DELETEEXEC" && db != "" && t != "" {
+		actionDeleteExec(w, r, cred, db, t)
+	} else if action == "UPDATE" && db != "" && t != "" {
 		shipMessage(w, cred, db, "Update records not implemented")
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, cred, db, t, o, d, n, k, v, where)

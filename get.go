@@ -119,11 +119,11 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		tType, _ := regexp.MatchString("text", t)
 
 		if iType || fType || rType || dType || lType || nType {
-			m = append(m, CContext{f, "numeric", ""})
+			m = append(m, CContext{f, "numeric", "", ""})
 		} else if cType || yType || bType || tType {
-			m = append(m, CContext{f, "", "string"})
+			m = append(m, CContext{f, "", "string", ""})
 		} else {
-			m = append(m, CContext{f, "", ""})
+			m = append(m, CContext{f, "", "", ""})
 		}
 	}
 	return m

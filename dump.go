@@ -192,6 +192,8 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	q.Add("t", t)
 	q.Add("action", "ADD")
 	linkinsert := "/?" + q.Encode()
+	q.Set("action", "DELETE")
+	linkdelete := "?" + q.Encode()
 	q.Set("action", "SUBSET")
 	linkselect := "/?" + q.Encode()
 	q.Set("action", "INFO")
@@ -199,8 +201,8 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	if where != "" {
 		q.Add("where", where)
 	}
-	q.Set("action", "DELETE")
-	linkdelete := "?" + q.Encode()
+	q.Set("action", "DELETEWHERE")
+	linkdeletewhere := "?" + q.Encode()
 	q.Set("action", "UPDATE")
 	linkupdate := "?" + q.Encode()
 	q.Del("action")
@@ -210,6 +212,8 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	menu = append(menu, Entry{linkinsert, "+"})
 	if where != "" {
 		menu = append(menu, Entry{linkupdate, "~"})
+		menu = append(menu, Entry{linkdeletewhere, "-"})
+	} else {
 		menu = append(menu, Entry{linkdelete, "-"})
 	}
 	menu = append(menu, Entry{linkinfo, "i"})
@@ -459,12 +463,13 @@ rowLoop:
 	tableOutFields(w, cred, db, t, o, d, "", n, linkleft, linkright, head, records, menu)
 }
 
-func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
+func getKeyValueFieldMap(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) map[string]string {
 
+	fieldmap := make(map[string]string)
 	rows, err := getRows(cred, db, query)
 	if err != nil {
 		shipError(w, cred, db, t, query, err)
-		return
+		return fieldmap
 	} else {
 		defer rows.Close()
 	}
@@ -479,23 +484,35 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		valuePtrs[i] = &values[i]
 	}
 
-	head := []string{"#", "Column", "Data"}
-	records := [][]string{}
-
 	rows.Next() // just one row
 	err = rows.Scan(valuePtrs...)
 	checkY(err)
 
 	for i, _ := range columns {
-		var row []string
 		var colstring string
 		if columns[i] == primary {
 			colstring = primary + " (ID)"
 		} else {
 			colstring = columns[i]
 		}
-		row = []string{strconv.Itoa(i + 1), colstring, dumpValue(values[i])}
+		val := dumpValue(values[i])
+		fieldmap[colstring] = val
+	}
+	return fieldmap
+}
+
+func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
+
+	fieldmap := getKeyValueFieldMap(w, db, t, k, v, cred, query)
+	head := []string{"#", "Column", "Data"}
+	records := [][]string{}
+
+	i := 1
+	for f, v := range fieldmap {
+		var row []string
+		row = []string{strconv.Itoa(i + 1), f, v}
 		records = append(records, row)
+		i = i + 1
 	}
 
 	q := url.Values{}

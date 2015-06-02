@@ -24,6 +24,7 @@ type CContext struct {
 	Name      string
 	IsNumeric string
 	IsString  string
+	Value	  string
 }
 
 type FContext struct {
@@ -61,12 +62,12 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 
 
 func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, e error) {
-	cols:=  []CContext{CContext{"Query", "", query}, CContext{"Result", "", fmt.Sprint(e)}}
+	cols:=  []CContext{CContext{"Query", "", "", query}, CContext{"Result", "", "", fmt.Sprint(e)}}
 	shipErrorPage(w, cred, db, t, cols)
 }	
 
 func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
-	cols:=  []CContext{CContext{"Message", "", msg}}
+	cols:=  []CContext{CContext{"Message", "", "", msg}}
 	shipErrorPage(w, cred, db, "", cols)
 }
 
@@ -101,55 +102,58 @@ func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database 
 	shipForm(w, r, cred, database, table, "QUERY", "Query", "true")
 }
 
+func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
+
+	shipForm(w, r, cred, database, table, "DELETEEXEC", "Delete", "true")
+}
+
+
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
 
 	shipForm(w, r, cred, database, table, "INSERT", "Insert", "")
 }
 
-func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
+func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	db := sqlprotect(r.FormValue("db"))
-	t := sqlprotect(r.FormValue("t"))
 	cols := getCols(cred, db, t)
-
-	var tests []string
+	var clauses []string
 	for _, col := range cols {
 		val := sqlprotect(r.FormValue(col + "C"))
 		if val != "" {
 			comparator := sqlprotect(r.FormValue(col + "O"))
 			if comparator == "" {
-				tests = append(tests, col+sqlFilterNumeric(val))
+				clauses = append(clauses, col+sqlFilterNumeric(val))
 			} else {
-				tests = append(tests, col+comparator+"\""+val+"\"")
+				clauses = append(clauses, col+comparator+"\""+val+"\"")
 			}
 		}
 	}
 
-	if len(tests) > 0 {
-		// Imploding within templates is severly missing!
-		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
-		dumpRows(w, db, t, "", "", cred, query, strings.Join(tests, " "))
+	if len(clauses) > 0 {
+		where := strings.Join(clauses, " && ")
+		query := "SELECT * FROM " + t + " WHERE " + where
+		dumpRows(w, db, t, "", "", cred, query, where)
 	}
 }
 
-func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
+func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	db := sqlprotect(r.FormValue("db"))
-	t := sqlprotect(r.FormValue("t"))
 	cols := getCols(cred, db, t)
-
-	// Searching for cols within formValues
-	var assignments []string
+	var clauses []string
 	for _, col := range cols {
 		val := sqlprotect(r.FormValue(col + "C"))
 		if val != "" {
-			assignments = append(assignments, col+"=\""+val+"\"")
+			comparator := sqlprotect(r.FormValue(col + "O"))
+			if comparator == "" {
+				clauses = append(clauses, col+sqlFilterNumeric(val))
+			} else {
+				clauses = append(clauses, col+comparator+"\""+val+"\"")
+			}
 		}
 	}
-
-	if len(assignments) > 0 {
-		// Imploding within templates is severly missing!
-		stmt := "INSERT INTO " + t + " SET " + strings.Join(assignments, ",")
+	if len(clauses) > 0 {
+		stmt := "DELETE FROM " + t + " WHERE " + strings.Join(clauses, " && ")
+		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
@@ -157,14 +161,13 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 		checkY(err)
 		_, err = statement.Exec()
 		checkY(err)
-		log.Println("[SQL]", stmt)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
 
-func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-
-	stmt := "DELETE FROM " + t + " WHERE " + k + "=" +v
+func actionDeleteWhere(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, where string) {
+	stmt := "DELETE FROM " + t + " WHERE " + where
+	log.Println("[SQL]", stmt)
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
@@ -172,7 +175,49 @@ func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string
 	checkY(err)
 	_, err = statement.Exec()
 	checkY(err)
+	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
+}
+
+
+
+func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+
+	cols := getCols(cred, db, t)
+	// Searching for cols within formValues
+	var clauses []string
+	for _, col := range cols {
+		val := sqlprotect(r.FormValue(col + "C"))
+		if val != "" {
+			clauses = append(clauses, col+"=\""+val+"\"")
+		}
+	}
+
+	if len(clauses) > 0 {
+		// Imploding within templates is severly missing!
+		stmt := "INSERT INTO " + t + " SET " + strings.Join(clauses, ",")
+		log.Println("[SQL]", stmt)
+		conn := getConnection(cred, db)
+		defer conn.Close()
+
+		statement, err := conn.Prepare(stmt)
+		checkY(err)
+		_, err = statement.Exec()
+		checkY(err)
+		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
+	}
+}
+
+func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+
+	stmt := "DELETE FROM " + t + " WHERE " + k + "=" +v
 	log.Println("[SQL]", stmt)
+	conn := getConnection(cred, db)
+	defer conn.Close()
+
+	statement, err := conn.Prepare(stmt)
+	checkY(err)
+	_, err = statement.Exec()
+	checkY(err)
 	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t + "&k" + k, 302)
 }
 
