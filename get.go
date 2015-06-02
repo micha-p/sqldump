@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"net/http"
+	"strconv"
 )
 
 // retrieving column information might be combined better
@@ -102,6 +103,7 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	defer rows.Close()
 
 	m := []CContext{}
+	i := 1
 	for rows.Next() {
 		var f, t, n, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
@@ -120,12 +122,13 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		tType, _ := regexp.MatchString("text", t)
 
 		if iType || fType || rType || dType || lType || nType {
-			m = append(m, CContext{f, "numeric", "", ""})
+			m = append(m, CContext{strconv.Itoa(i),f, f, "numeric", "", ""})
 		} else if cType || yType || bType || tType {
-			m = append(m, CContext{f, "", "string", ""})
+			m = append(m, CContext{strconv.Itoa(i),f, f, "", "string", ""})
 		} else {
-			m = append(m, CContext{f, "", "", ""})
+			m = append(m, CContext{strconv.Itoa(i),f, f, "", "", ""})
 		}
+		i = i +1
 	}
 	return m
 }

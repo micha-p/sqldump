@@ -48,12 +48,14 @@
 		<input type="hidden" name="action" value="{{.Action}}">
 		<input type="hidden" name="db" value="{{.Database}}">
 		<input type="hidden" name="t"  value="{{.Table}}">
+		<input type="hidden" name="k"  value="{{.Key}}">
+		<input type="hidden" name="v"  value="{{.Value}}">
 		<table>
 			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> <tr>
-			{{range .Columns}}<tr> <td>1</td> <td>{{.Name}}</td> <td>{{template "selector" .}}</td> <td>{{template "input" .}}</td> <tr>
+			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "selector" .}}</td> <td>{{template "input" .}}</td> <tr>
 			{{end}}
 			{{else}}<tr> <th>#</th> <th>Column</th> <th>Data</th> <tr>
-			{{range .Columns}}<tr> <td>1</td> <td>{{.Name}}</td> <td>{{template "input" .}}</td> <tr>
+			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "input" .}}</td> <tr>
 			{{end}}{{end}}
 		</table>
 		<br>

@@ -21,7 +21,9 @@ import (
 )
 
 type CContext struct {
+	Number    string
 	Name      string
+	Label	  string
 	IsNumeric string
 	IsString  string
 	Value	  string
@@ -34,6 +36,8 @@ type FContext struct {
 	Button   string
 	Database string
 	Table    string
+	Key      string
+	Value    string
 	Back     string
 	Columns  []CContext
 	Trail    []Entry
@@ -62,12 +66,12 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 
 
 func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, e error) {
-	cols:=  []CContext{CContext{"Query", "", "", query}, CContext{"Result", "", "", fmt.Sprint(e)}}
+	cols:=  []CContext{CContext{"1","","Query", "", "", query}, CContext{"2","","Result", "", "", fmt.Sprint(e)}}
 	shipErrorPage(w, cred, db, t, cols)
 }	
 
 func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
-	cols:=  []CContext{CContext{"Message", "", "", msg}}
+	cols:=  []CContext{CContext{"1","","Message", "", "", msg}}
 	shipErrorPage(w, cred, db, "", cols)
 }
 
@@ -85,6 +89,8 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 		Button:   button,
 		Database: db,
 		Table:    t,
+		Key:      "",
+		Value:    "",
 		Back:     linkback,
 		Columns:  cols,
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
@@ -97,21 +103,65 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 	checkY(err)
 }
 
-func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
+func shipFormWithValues(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string, action string, button string, selector string, query string) {
 
+	cols := getColumnInfo(cred, db, t)
+	fieldmap := getFieldMap(w, db, t, cred, query)
+	colsvals := []CContext{}
+	
+	// TODO disable input for primary <input type="text" readonly="readonly" />
+	for _, col := range cols {
+		colname := col.Name
+		val := fieldmap[colname]
+		if val == "" {
+			colname = colname + " (ID)"
+			val = fieldmap[colname]
+		}
+		colsvals = append(colsvals, CContext{col.Number, col.Name, colname, col.IsNumeric, col.IsString, val})
+	}
+	
+	q := r.URL.Query()
+	q.Del("action")
+	linkback := q.Encode()
+
+	c := FContext{
+		CSS:      CSS_FILE,
+		Action:   action,
+		Selector: selector,
+		Button:   button,
+		Database: db,
+		Table:    t,
+		Key:      k,
+		Value:    v,
+		Back:     linkback,
+		Columns:  colsvals,
+		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
+	}
+
+	if DEBUGFLAG {
+		initTemplate()
+	}
+	err := templateFormFields.Execute(w, c)
+	checkY(err)
+}
+
+func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
 	shipForm(w, r, cred, database, table, "QUERY", "Query", "true")
 }
 
 func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
-
 	shipForm(w, r, cred, database, table, "DELETEEXEC", "Delete", "true")
 }
 
-
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
-
 	shipForm(w, r, cred, database, table, "INSERT", "Insert", "")
 }
+
+func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, database string, t string, k string, v string) {
+	query := "select * from " + t + " where " + k + "=" + v
+	shipFormWithValues(w, r, cred, database, t, k,v,"EDITEXEC", "Submit", "", query)
+}
+
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
@@ -135,6 +185,7 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string,
 		dumpRows(w, db, t, "", "", cred, query, where)
 	}
 }
+
 
 func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
@@ -195,6 +246,34 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string
 	if len(clauses) > 0 {
 		// Imploding within templates is severly missing!
 		stmt := "INSERT INTO " + t + " SET " + strings.Join(clauses, ",")
+		log.Println("[SQL]", stmt)
+		conn := getConnection(cred, db)
+		defer conn.Close()
+
+		statement, err := conn.Prepare(stmt)
+		checkY(err)
+		_, err = statement.Exec()
+		checkY(err)
+		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
+	}
+}
+
+func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+
+	cols := getCols(cred, db, t)
+	// Searching for cols within formValues
+	var clauses []string
+	for _, col := range cols {
+		val := sqlprotect(r.FormValue(col + "C"))
+		if val != "" && col != k {
+			clauses = append(clauses, col+"=\""+val+"\"")
+		}
+	}
+
+	if len(clauses) > 0 {
+		// Imploding within templates is severly missing!
+		// TODO stmt := "UPDATE ? SET " + strings.Join(clauses, ",") + " where ? = ?
+		stmt := "UPDATE " + t + " SET " + strings.Join(clauses, ",") + " where " + k + "=" +v
 		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()

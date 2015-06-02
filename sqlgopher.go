@@ -93,7 +93,9 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 	} else if action == "REMOVE" && db != "" && t != "" && k != "" && v != "" {
 		actionRemove(w, r, cred, db, t, k, v)
 	} else if action == "EDIT" && db != "" && t != "" && k != ""  && v != "" {
-		shipMessage(w, cred, db, "Edit record with primary key not implemented")
+		actionEdit(w, r, cred, db, t, k, v)
+	} else if action == "EDITEXEC" && db != "" && t != "" && k != ""  && v != "" {
+		actionEditExec(w, r, cred, db, t, k, v)
 	} else if action == "DELETEWHERE" && db != "" && t != "" && where != "" {
 		actionDeleteWhere(w, r, cred, db, t, where)
 	} else if action == "DELETE" && db != "" && t != "" {
