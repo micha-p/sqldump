@@ -37,7 +37,7 @@ type FContext struct {
 	Trail    []Entry
 }
 
-func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, e error) {
+func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols []CContext) {
 
 	c := FContext{
 		CSS:      CSS_FILE,
@@ -47,7 +47,7 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, query st
 		Database: db,
 		Table:    t,
 		Back:     makeBack(cred.Host, db, t, "", "", ""),
-		Columns:  []CContext{CContext{"Query", "", query}, CContext{"Result", "", fmt.Sprint(e)}},
+		Columns:  cols,
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
@@ -58,26 +58,17 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, query st
 	checkY(err)
 }
 
+
+func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, e error) {
+	cols:=  []CContext{CContext{"Query", "", query}, CContext{"Result", "", fmt.Sprint(e)}}
+	shipErrorPage(w, cred, db, t, cols)
+}	
+
 func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
-
-	c := FContext{
-		CSS:      CSS_FILE,
-		Action:   "BACK",
-		Selector: "",
-		Button:   "Back",
-		Database: db,
-		Table:    "",
-		Back:     makeBack(cred.Host, db, "", "", "", ""),
-		Columns:  []CContext{CContext{"Query", "", msg}},
-		Trail:    makeTrail(cred.Host, db, "", "", "", "", ""),
-	}
-
-	if DEBUGFLAG {
-		initTemplate()
-	}
-	err := templateError.Execute(w, c)
-	checkY(err)
+	cols:=  []CContext{CContext{"Message", "", msg}}
+	shipErrorPage(w, cred, db, "", cols)
 }
+
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
 
 	cols := getColumnInfo(cred, db, t)

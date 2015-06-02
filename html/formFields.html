@@ -62,7 +62,7 @@
 			{{range .Columns}}<tr> <td>1</td> <td>{{.Name}}</td> <td>{{template "selector" .}}</td> <td><input class="cell" type="text" id="{{.Name}}" name="{{.Name}}C"></td> <tr>
 			{{end}}
 			{{else}}<tr> <th>#</th> <th>Column</th> <th>Data</th> <tr>
-			{{range .Columns}}<tr> <td>1</td> <td>{{.}}</td> <td><input class="cell" type="text" id="{{.Name}}" name="{{.Name}}C"></td> <tr>
+			{{range .Columns}}<tr> <td>1</td> <td>{{.Name}}</td> <td><input class="cell" type="text" id="{{.Name}}" name="{{.Name}}C"></td> <tr>
 			{{end}}{{end}}
 		</table>
 		<br>
