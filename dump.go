@@ -11,24 +11,20 @@ import (
 func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
 	q := url.Values{}
-	trail := []Entry{}
-	trail = append(trail, Entry{"/", cred.Host})
 	var query string
 
 	if db == "" {
-		dumpHome(w, cred, trail, "/logout")
+		dumpHome(w, cred, "/logout")
 		return
 	} else {
 		q.Add("db", db)
-		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: db})
 	}
 
 	if t == "" {
-		dumpTables(w, db, cred, trail, "?"+q.Encode())
+		dumpTables(w, db, cred, "?"+q.Encode())
 		return
 	} else {
 		q.Add("t", t)
-		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: t})
 	}
 
 	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
@@ -37,33 +33,26 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 	if k != "" && v != "" && k == getPrimary(cred, db, t) {
 		q.Add("k", k)
 		q.Add("v", v)
-		trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: k + " (ID)"})
-		query = "select * from " + v + " where " + k + "=" + v
-		dumpKeyValue(w, db, t, k, v, cred, trail, "?"+q.Encode(), query)
+		query = "select * from " + t + " where " + k + "=" + v
+		dumpKeyValue(w, db, t, k, v, cred, "?"+q.Encode(), query)
 	} else if nnumber {
 		if o != "" {
 			q.Add("o", o)
 			query = "select * from " + t + " order by " + o
-	        if d == "" {
-				trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&uarr;"})
-			} else {
+	        if d != "" {
 				q.Add("d", d)
-				trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&darr;"})
 				query = query + " desc"
 			} 
 		} else {
 			query = "select * from " + t
 		}
-		dumpFields(w, db, t, o, d, n, cred, trail, "?"+q.Encode(), query)
+		dumpFields(w, db, t, o, d, n, cred, "?"+q.Encode(), query)
 	} else {
 		if o != "" {
 			q.Add("o", o)
 			query = "select * from " + t + " order by " + o
-			if d == "" {
-				trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&uarr;"})
-			} else {
+			if d != "" {
 				q.Add("d", d)
-				trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&darr;"})
 				query = query + " desc"
 			}
 		} else {
@@ -82,15 +71,15 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 			checkY(err)
 			endint = minI(endint, maxint)
 			query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
-			dumpRange(w, db, t, o, d, startint, endint, maxint, cred, trail, "?"+q.Encode(), query)
+			dumpRange(w, db, t, o, d, startint, endint, maxint, cred, "?"+q.Encode(), query)
 		} else {
-			dumpRows(w, db, t, o, d, cred, trail, "?"+q.Encode(), query)
+			dumpRows(w, db, t, o, d, cred, "?"+q.Encode(), query)
 		}
 	}
 }
 
 // Shows selection of databases at top level
-func dumpHome(w http.ResponseWriter, cred Access, trail []Entry, back string) {
+func dumpHome(w http.ResponseWriter, cred Access, back string) {
 
 	q := url.Values{}
 	rows,err := getRows(cred, "", "show databases")
@@ -112,11 +101,11 @@ func dumpHome(w http.ResponseWriter, cred Access, trail []Entry, back string) {
 			n = n + 1
 		}
 	}
-	tableOut(w, cred, "", "", back, head, records, trail, menu)
+	tableOutSimple(w, cred, "", "", back, head, records, menu)
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, db string, cred Access, trail []Entry, back string) {
+func dumpTables(w http.ResponseWriter, db string, cred Access, back string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -141,7 +130,7 @@ func dumpTables(w http.ResponseWriter, db string, cred Access, trail []Entry, ba
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOut(w, cred, db, "", back, head, records, trail, menu)
+	tableOutSimple(w, cred, db, "", back, head, records, menu)
 }
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -209,7 +198,7 @@ func createHead(db string, t string, o string, d string, primary string, columns
 	return head
 }
 
-func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, trail []Entry, back string, query string) {
+func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, back string, query string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -229,7 +218,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 
 	rows,err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, trail, query, err)
+		shipError(w, cred, db, t, back, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -293,10 +282,10 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	limitstring := "1-" + strconv.Itoa(rownum-1)
 	q.Set("n", limitstring)
 	link := "?" + q.Encode()
-	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, back, head, records, trail, menu)
+	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, back, head, records, menu)
 }
 
-func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, trail []Entry, back string, query string) {
+func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, back string, query string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -319,7 +308,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 
 	rows, err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, trail, query, err)
+		shipError(w, cred, db, t, back, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -379,15 +368,15 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 	linkleft := "?" + q.Encode()
 	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
 	linkright := "?" + q.Encode()
-	tableOutRows(w, cred, db, t, o, d, limitstring, linkleft, linkright, back, head, records, trail, menu)
+	tableOutRows(w, cred, db, t, o, d, limitstring, linkleft, linkright, back, head, records, menu)
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, cred Access, trail []Entry, back string, query string) {
+func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, cred Access, back string, query string) {
 
 	rows, err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, trail, query, err)
+		shipError(w, cred, db, t, back, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -464,14 +453,14 @@ rowLoop:
 	v.Set("n", right)
 	linkright := "?" + v.Encode()
 
-	tableOutFields(w, cred, db, t, o, d, n, linkleft, linkright, back, head, records, trail, menu)
+	tableOutFields(w, cred, db, t, o, d,"", n, linkleft, linkright, back, head, records, menu)
 }
 
-func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, trail []Entry, back string, query string) {
+func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, back string, query string) {
 
 	rows,err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, trail, query, err)
+		shipError(w, cred, db, t, back, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -534,5 +523,5 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	q.Set("v", next)
 	linkright := "?" + q.Encode()
 
-	tableOutFields(w, cred, db, t, "", "", v, linkleft, linkright, back, head, records, trail, menu)
+	tableOutFields(w, cred, db, t, "", "", k , v, linkleft, linkright, back, head, records, menu)
 }

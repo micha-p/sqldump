@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"fmt"
+	"net/url"
 )
 
 /*
@@ -37,7 +38,34 @@ type Context struct {
 	Menu     []Entry
 }
 
-func shipError(w http.ResponseWriter, cred Access, db string, t string, back string, trail []Entry, query string, errormessage error) {
+func makeTrail(host string, db string, t string, o string, d string, k string) []Entry {
+	q := url.Values{}
+	trail := []Entry{Entry{"/", host}}
+
+	if db != "" {
+		q.Add("db", db)
+		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: db})
+	}
+	if t != "" {
+		q.Add("t", t)
+		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: t})
+	}
+	if k != "" {
+		q.Add("k", k)
+		trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: k + " (ID)"})
+	} else if o != "" {
+		q.Add("o", o)
+        if d != "" {
+			q.Add("d", d)
+			trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&darr;"})
+		} else {
+			trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&uarr;"})
+		}
+	}
+	return trail
+}
+
+func shipError(w http.ResponseWriter, cred Access, db string, t string, back string, query string, errormessage error) {
 
 	c := Context{
 		User:     cred.User,
@@ -54,8 +82,8 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, back str
 		Counter:  "",
 		Left:     query,
 		Right:    fmt.Sprintln(errormessage),
-		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
-		Menu:     []Entry{},  // always used. location dependent of presence of trail
+		Trail:    makeTrail(cred.Host,db,t,"","",""),
+		Menu:     []Entry{}, 
 	}
 	if DEBUGFLAG {
 		initTemplate()
@@ -64,7 +92,7 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, back str
 	checkY(err)
 }
 
-func tableOut(w http.ResponseWriter, cred Access, db string, t string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, back string, head []string, records [][]string, menu []Entry) {
 
 	c := Context{
 		User:     cred.User,
@@ -81,8 +109,8 @@ func tableOut(w http.ResponseWriter, cred Access, db string, t string, back stri
 		Counter:  "",
 		Left:     "",
 		Right:    "",
-		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
-		Menu:     menu,  // always used. location dependent of presence of trail
+		Trail:    makeTrail(cred.Host,db,t,"","",""),
+		Menu:     menu,
 	}
 	if DEBUGFLAG {
 		initTemplate()
@@ -91,7 +119,7 @@ func tableOut(w http.ResponseWriter, cred Access, db string, t string, back stri
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, back string, head []string, records [][]string, menu []Entry) {
 
 	initTemplate()
 
@@ -110,7 +138,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    trail,
+		Trail:    makeTrail(cred.Host,db,t,o,d,""),
 		Menu:     menu,
 	}
 
@@ -118,7 +146,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {
+func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, k string, n string, linkleft string, linkright string, back string, head []string, records [][]string, menu []Entry) {
 
 	initTemplate()
 
@@ -137,7 +165,7 @@ func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o s
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    trail,
+		Trail:    makeTrail(cred.Host,db,t,o,d,k),
 		Menu:     menu,
 	}
 

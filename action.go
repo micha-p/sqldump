@@ -118,7 +118,7 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
 		fmt.Println(query)
 		trail = append(trail, Entry{Link: "/?" + r.URL.RawQuery, Label: strings.Join(tests, " ")})
-		dumpRows(w, db, t, "", "", cred, trail, linkback, query)
+		dumpRows(w, db, t, "", "", cred, linkback, query)
 	}
 }
 
@@ -173,9 +173,7 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 
 	q := url.Values{}
 	q.Add("db", db)
-	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: db})
 	q.Add("t", t)
-	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: t})
 
 	menu := []Entry{}
 	q.Set("action", "add")
@@ -194,5 +192,5 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 		records = append(records, []string{strconv.Itoa(i), f, t, n, k, string(d), e})
 		i = i + 1
 	}
-	tableOut(w, cred, db, t, back, head, records, trail, menu)
+	tableOutSimple(w, cred, db, t, back, head, records, menu)
 }
