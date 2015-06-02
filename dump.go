@@ -10,49 +10,38 @@ import (
 
 func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
-	q := url.Values{}
 	var query string
 
 	if db == "" {
-		dumpHome(w, cred, "/logout")
+		dumpHome(w, cred)
 		return
-	} else {
-		q.Add("db", db)
 	}
 
 	if t == "" {
-		dumpTables(w, db, cred, "?"+q.Encode())
+		dumpTables(w, db, cred)
 		return
-	} else {
-		q.Add("t", t)
 	}
 
 	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
 	checkY(err)
 
 	if k != "" && v != "" && k == getPrimary(cred, db, t) {
-		q.Add("k", k)
-		q.Add("v", v)
 		query = "select * from " + t + " where " + k + "=" + v
-		dumpKeyValue(w, db, t, k, v, cred, "?"+q.Encode(), query)
+		dumpKeyValue(w, db, t, k, v, cred, query)
 	} else if nnumber {
 		if o != "" {
-			q.Add("o", o)
 			query = "select * from " + t + " order by " + o
 	        if d != "" {
-				q.Add("d", d)
 				query = query + " desc"
 			} 
 		} else {
 			query = "select * from " + t
 		}
-		dumpFields(w, db, t, o, d, n, cred, "?"+q.Encode(), query)
+		dumpFields(w, db, t, o, d, n, cred, query)
 	} else {
 		if o != "" {
-			q.Add("o", o)
 			query = "select * from " + t + " order by " + o
 			if d != "" {
-				q.Add("d", d)
 				query = query + " desc"
 			}
 		} else {
@@ -71,15 +60,15 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 			checkY(err)
 			endint = minI(endint, maxint)
 			query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
-			dumpRange(w, db, t, o, d, startint, endint, maxint, cred, "?"+q.Encode(), query)
+			dumpRange(w, db, t, o, d, startint, endint, maxint, cred, query)
 		} else {
-			dumpRows(w, db, t, o, d, cred, "?"+q.Encode(), query)
+			dumpRows(w, db, t, o, d, cred, query, "")
 		}
 	}
 }
 
 // Shows selection of databases at top level
-func dumpHome(w http.ResponseWriter, cred Access, back string) {
+func dumpHome(w http.ResponseWriter, cred Access) {
 
 	q := url.Values{}
 	rows,err := getRows(cred, "", "show databases")
@@ -101,11 +90,11 @@ func dumpHome(w http.ResponseWriter, cred Access, back string) {
 			n = n + 1
 		}
 	}
-	tableOutSimple(w, cred, "", "", back, head, records, menu)
+	tableOutSimple(w, cred, "", "", head, records, menu)
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, db string, cred Access, back string) {
+func dumpTables(w http.ResponseWriter, db string, cred Access) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -130,7 +119,7 @@ func dumpTables(w http.ResponseWriter, db string, cred Access, back string) {
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOutSimple(w, cred, db, "", back, head, records, menu)
+	tableOutSimple(w, cred, db, "", head, records, menu)
 }
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -198,7 +187,7 @@ func createHead(db string, t string, o string, d string, primary string, columns
 	return head
 }
 
-func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, back string, query string) {
+func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, query string, title string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -218,7 +207,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 
 	rows,err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, query, err)
+		shipError(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -282,10 +271,10 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	limitstring := "1-" + strconv.Itoa(rownum-1)
 	q.Set("n", limitstring)
 	link := "?" + q.Encode()
-	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, back, head, records, menu)
+	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, head, records, menu, title)
 }
 
-func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, back string, query string) {
+func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, query string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -308,7 +297,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 
 	rows, err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, query, err)
+		shipError(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -368,15 +357,15 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 	linkleft := "?" + q.Encode()
 	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
 	linkright := "?" + q.Encode()
-	tableOutRows(w, cred, db, t, o, d, limitstring, linkleft, linkright, back, head, records, menu)
+	tableOutRows(w, cred, db, t, o, d, limitstring, linkleft, linkright, head, records, menu,"")
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, cred Access, back string, query string) {
+func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, cred Access, query string) {
 
 	rows, err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, query, err)
+		shipError(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -453,14 +442,14 @@ rowLoop:
 	v.Set("n", right)
 	linkright := "?" + v.Encode()
 
-	tableOutFields(w, cred, db, t, o, d,"", n, linkleft, linkright, back, head, records, menu)
+	tableOutFields(w, cred, db, t, o, d,"", n, linkleft, linkright, head, records, menu)
 }
 
-func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, back string, query string) {
+func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
 
 	rows,err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, back, query, err)
+		shipError(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -523,5 +512,5 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	q.Set("v", next)
 	linkright := "?" + q.Encode()
 
-	tableOutFields(w, cred, db, t, "", "", k , v, linkleft, linkright, back, head, records, menu)
+	tableOutFields(w, cred, db, t, "", "", k , v, linkleft, linkright, head, records, menu)
 }

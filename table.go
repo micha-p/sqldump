@@ -38,7 +38,28 @@ type Context struct {
 	Menu     []Entry
 }
 
-func makeTrail(host string, db string, t string, o string, d string, k string) []Entry {
+func makeBack(host string, db string, t string, o string, d string, k string) string {
+	q := url.Values{}
+	if db != "" {
+		q.Add("db", db)
+		if t != "" {
+			q.Add("t", t)
+		}
+		if k != "" {
+			q.Add("k", k)
+		} else if o != "" {
+			q.Add("o", o)
+			if d != "" {
+				q.Add("d", d)
+			}
+		}
+		return "?" + q.Encode()
+	} else {
+		return "/logout"
+	}
+}	
+
+func makeTrail(host string, db string, t string, o string, d string, k string, w string) []Entry {
 	q := url.Values{}
 	trail := []Entry{Entry{"/", host}}
 
@@ -50,10 +71,7 @@ func makeTrail(host string, db string, t string, o string, d string, k string) [
 		q.Add("t", t)
 		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: t})
 	}
-	if k != "" {
-		q.Add("k", k)
-		trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: k + " (ID)"})
-	} else if o != "" {
+	if o != "" {
 		q.Add("o", o)
         if d != "" {
 			q.Add("d", d)
@@ -61,11 +79,18 @@ func makeTrail(host string, db string, t string, o string, d string, k string) [
 		} else {
 			trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&uarr;"})
 		}
+	} else if k != "" {
+		q.Add("k", k)
+		trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: k + " (ID)"})
+	}
+	if w != "" {
+		q.Add("action", "subset")
+		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: w})
 	}
 	return trail
 }
 
-func shipError(w http.ResponseWriter, cred Access, db string, t string, back string, query string, errormessage error) {
+func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, errormessage error) {
 
 	c := Context{
 		User:     cred.User,
@@ -78,11 +103,11 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, back str
 		Desc:     "",
 		Records:  [][]string{},
 		Head:     []string{},
-		Back:     back,
+		Back:     makeBack(cred.Host,db,t,"","",""),
 		Counter:  "",
 		Left:     query,
 		Right:    fmt.Sprintln(errormessage),
-		Trail:    makeTrail(cred.Host,db,t,"","",""),
+		Trail:    makeTrail(cred.Host,db,t,"","","",""),
 		Menu:     []Entry{}, 
 	}
 	if DEBUGFLAG {
@@ -92,7 +117,7 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, back str
 	checkY(err)
 }
 
-func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, back string, head []string, records [][]string, menu []Entry) {
+func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, head []string, records [][]string, menu []Entry) {
 
 	c := Context{
 		User:     cred.User,
@@ -105,11 +130,11 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, bac
 		Desc:     "",
 		Records:  records,
 		Head:     head,
-		Back:     back,
+		Back:     makeBack(cred.Host,db,t,"","",""),
 		Counter:  "",
 		Left:     "",
 		Right:    "",
-		Trail:    makeTrail(cred.Host,db,t,"","",""),
+		Trail:    makeTrail(cred.Host,db,t,"","","",""),
 		Menu:     menu,
 	}
 	if DEBUGFLAG {
@@ -119,10 +144,9 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, bac
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, back string, head []string, records [][]string, menu []Entry) {
+func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, head []string, records [][]string, menu []Entry, title string) {
 
 	initTemplate()
-
 	c := Context{
 		User:     cred.User,
 		Host:     cred.Host,
@@ -134,11 +158,11 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     back,
+		Back:     makeBack(cred.Host,db,t,o,d,""),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host,db,t,o,d,""),
+		Trail:    makeTrail(cred.Host,db,t,o,d,"",title),
 		Menu:     menu,
 	}
 
@@ -146,7 +170,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, k string, n string, linkleft string, linkright string, back string, head []string, records [][]string, menu []Entry) {
+func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, k string, n string, linkleft string, linkright string, head []string, records [][]string, menu []Entry) {
 
 	initTemplate()
 
@@ -161,11 +185,11 @@ func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o s
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     back,
+		Back:     makeBack(cred.Host,db,t,o,d,k),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host,db,t,o,d,k),
+		Trail:    makeTrail(cred.Host,db,t,o,d,k,""),
 		Menu:     menu,
 	}
 

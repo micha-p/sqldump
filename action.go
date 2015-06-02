@@ -40,12 +40,8 @@ type FContext struct {
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
 
 	v := url.Values{}
-	trail := []Entry{}
-	trail = append(trail, Entry{"/", cred.Host})
 	v.Add("db", db)
-	trail = append(trail, Entry{Link: "?" + v.Encode(), Label: db})
 	v.Add("t", t)
-	trail = append(trail, Entry{Link: "?" + v.Encode(), Label: t})
 
 	cols := getColumnInfo(cred, db, t)
 	q := r.URL.Query()
@@ -61,7 +57,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 		Table:    t,
 		Back:     linkback,
 		Columns:  cols,
-		Trail:    trail,
+		Trail:    makeTrail(cred.Host,db,t,"","","",""),
 	}
 
 	if DEBUGFLAG {
@@ -86,19 +82,6 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 	db := sqlprotect(r.FormValue("db"))
 	t := sqlprotect(r.FormValue("t"))
 	cols := getCols(cred, db, t)
-	v := url.Values{}
-	v.Set("db", db)
-	v.Set("t", t)
-	linkback := "?" + v.Encode()
-
-	trail := []Entry{}
-	trail = append(trail, Entry{"/", cred.Host})
-
-	q := url.Values{}
-	q.Add("db", db)
-	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: db})
-	q.Add("t", t)
-	trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: t})
 
 	var tests []string
 	for _, col := range cols {
@@ -116,9 +99,7 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
 	if len(tests) > 0 {
 		// Imploding within templates is severly missing!
 		query := "SELECT * FROM " + t + " WHERE " + strings.Join(tests, " && ")
-		fmt.Println(query)
-		trail = append(trail, Entry{Link: "/?" + r.URL.RawQuery, Label: strings.Join(tests, " ")})
-		dumpRows(w, db, t, "", "", cred, linkback, query)
+		dumpRows(w, db, t, "", "", cred, query, strings.Join(tests, " "))
 	}
 }
 
@@ -162,14 +143,11 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 +-------+-------------+------+-----+---------+-------+
 */
 
-func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, back string) {
+func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
 	rows, err := getRows(cred, db, "show columns from "+ t)
 	checkY(err)
 	defer rows.Close()
-
-	trail := []Entry{}
-	trail = append(trail, Entry{"/", cred.Host})
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -192,5 +170,5 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 		records = append(records, []string{strconv.Itoa(i), f, t, n, k, string(d), e})
 		i = i + 1
 	}
-	tableOutSimple(w, cred, db, t, back, head, records, menu)
+	tableOutSimple(w, cred, db, t, head, records, menu)
 }
