@@ -37,11 +37,29 @@ type FContext struct {
 	Trail    []Entry
 }
 
-func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
+func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, e error) {
 
-	v := url.Values{}
-	v.Add("db", db)
-	v.Add("t", t)
+	c := FContext{
+		CSS:      CSS_FILE,
+		Action:   "back",
+		Selector: "",
+		Button:   "Back",
+		Database: db,
+		Table:    t,
+		Back:     makeBack(cred.Host,db,t,"","",""),
+		Columns:  []CContext{ CContext{"Query","",query}, CContext{"Result","",fmt.Sprint(e)}},
+		Trail:    makeTrail(cred.Host,db,t,"","","",""),
+	}
+
+	if DEBUGFLAG {
+		initTemplate()
+	}
+	err := templateError.Execute(w, c)
+	checkY(err)
+}
+
+
+func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
 
 	cols := getColumnInfo(cred, db, t)
 	q := r.URL.Query()

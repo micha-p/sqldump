@@ -80,6 +80,8 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionInfo(w, r, cred, db, t)
 	} else if action == "goto" && db != "" && t != "" && n != "" {
 		dumpIt(w, cred, db, t, o, d, n, k, v)
+	} else if action == "back" {
+		dumpIt(w, cred, db, "", "", "", "", "", "")
 	} else {
 		dumpIt(w, cred, db, t, o, d, n, k, v)
 	}

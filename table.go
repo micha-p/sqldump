@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"fmt"
 	"net/url"
 )
 
@@ -88,33 +87,6 @@ func makeTrail(host string, db string, t string, o string, d string, k string, w
 		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: w})
 	}
 	return trail
-}
-
-func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, errormessage error) {
-
-	c := Context{
-		User:     cred.User,
-		Host:     cred.Host,
-		Port:     cred.Port,
-		CSS:      CSS_FILE,
-		Database: db,
-		Table:    t,
-		Order:    "",
-		Desc:     "",
-		Records:  [][]string{},
-		Head:     []string{},
-		Back:     makeBack(cred.Host,db,t,"","",""),
-		Counter:  "",
-		Left:     query,
-		Right:    fmt.Sprintln(errormessage),
-		Trail:    makeTrail(cred.Host,db,t,"","","",""),
-		Menu:     []Entry{}, 
-	}
-	if DEBUGFLAG {
-		initTemplate()
-	}
-	err := templateError.Execute(w, c)
-	checkY(err)
 }
 
 func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, head []string, records [][]string, menu []Entry) {
