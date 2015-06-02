@@ -33,7 +33,13 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 		} else {
 			query = "select * from " + t
 		}
-		dumpFields(w, db, t, o, d, n, cred, query)
+		nint, err := strconv.Atoi(n)
+		checkY(err)
+		maxint, err := strconv.Atoi(getCount(cred, db, t))
+		checkY(err)
+		nint = minI(nint, maxint)
+		query = query + " limit 1 offset " + strconv.Itoa(nint-1)
+		dumpFields(w, db, t, o, d, n, nint, maxint, cred, query)
 	} else if len(limits) == 3 {
 		startint, err := strconv.Atoi(limits[1])
 		checkY(err)
@@ -379,53 +385,18 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, cred Access, query string) {
+func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, nint int, nmax int, cred Access, query string) {
 
-	rows, err := getRows(cred, db, query)
-	if err != nil {
-		shipError(w, cred, db, t, query, err)
-		return
-	} else {
-		defer rows.Close()
-	}
-
-	primary := getPrimary(cred, db, t)
-	columns, err := rows.Columns()
-	checkY(err)
-	count := len(columns)
-	values := make([]interface{}, count)
-	valuePtrs := make([]interface{}, count)
-	for i, _ := range columns {
-		valuePtrs[i] = &values[i]
-	}
-
+	fieldmap := getFieldMap(w, db, t, cred, query)
 	head := []string{"#", "Column", "Data"}
 	records := [][]string{}
 
-	rec, err := strconv.Atoi(n)
-	checkY(err)
-	var iter int = 1
-rowLoop:
-	for rows.Next() {
-
-		// unfortunately we have to iterate up to row of interest
-		if iter == rec {
-			err = rows.Scan(valuePtrs...)
-			checkY(err)
-			for i, _ := range columns {
-				var row []string
-				var colstring string
-				if columns[i] == primary {
-					colstring = primary + " (ID)"
-				} else {
-					colstring = columns[i]
-				}
-				row = []string{strconv.Itoa(i + 1), colstring, dumpValue(values[i])}
-				records = append(records, row)
-			}
-			break rowLoop
-		}
-		iter = iter + 1
+	i := 1
+	for f, v := range fieldmap {
+		var row []string
+		row = []string{strconv.Itoa(i), f, v}
+		records = append(records, row)
+		i = i + 1
 	}
 
 	v := url.Values{}
@@ -442,10 +413,6 @@ rowLoop:
 	menu = append(menu, Entry{linkinsert, "+"})
 	menu = append(menu, Entry{linkinfo, "i"})
 
-	nint, err := strconv.Atoi(n)
-	checkY(err)
-	nmax, err := strconv.Atoi(getCount(cred, db, t))
-	checkY(err)
 	left := strconv.Itoa(maxI(nint-1, 1))
 	right := strconv.Itoa(minI(nint+1, nmax))
 
@@ -463,54 +430,17 @@ rowLoop:
 	tableOutFields(w, cred, db, t, o, d, "", n, linkleft, linkright, head, records, menu)
 }
 
-func getKeyValueFieldMap(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) map[string]string {
-
-	fieldmap := make(map[string]string)
-	rows, err := getRows(cred, db, query)
-	if err != nil {
-		shipError(w, cred, db, t, query, err)
-		return fieldmap
-	} else {
-		defer rows.Close()
-	}
-
-	primary := getPrimary(cred, db, t)
-	columns, err := rows.Columns()
-	checkY(err)
-	count := len(columns)
-	values := make([]interface{}, count)
-	valuePtrs := make([]interface{}, count)
-	for i, _ := range columns {
-		valuePtrs[i] = &values[i]
-	}
-
-	rows.Next() // just one row
-	err = rows.Scan(valuePtrs...)
-	checkY(err)
-
-	for i, _ := range columns {
-		var colstring string
-		if columns[i] == primary {
-			colstring = primary + " (ID)"
-		} else {
-			colstring = columns[i]
-		}
-		val := dumpValue(values[i])
-		fieldmap[colstring] = val
-	}
-	return fieldmap
-}
 
 func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
 
-	fieldmap := getKeyValueFieldMap(w, db, t, k, v, cred, query)
+	fieldmap := getFieldMap(w, db, t, cred, query)
 	head := []string{"#", "Column", "Data"}
 	records := [][]string{}
 
 	i := 1
 	for f, v := range fieldmap {
 		var row []string
-		row = []string{strconv.Itoa(i + 1), f, v}
+		row = []string{strconv.Itoa(i), f, v}
 		records = append(records, row)
 		i = i + 1
 	}

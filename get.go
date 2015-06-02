@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"regexp"
+	"net/http"
 )
 
 // retrieving column information might be combined better
@@ -127,4 +128,42 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		}
 	}
 	return m
+}
+
+func getFieldMap(w http.ResponseWriter, db string, t string, cred Access, query string) map[string]string {
+
+	fieldmap := make(map[string]string)
+	rows, err := getRows(cred, db, query)
+	if err != nil {
+		shipError(w, cred, db, t, query, err)
+		return fieldmap
+	} else {
+		defer rows.Close()
+	}
+
+	primary := getPrimary(cred, db, t)
+	columns, err := rows.Columns()
+	checkY(err)
+	count := len(columns)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
+	for i, _ := range columns {
+		valuePtrs[i] = &values[i]
+	}
+
+	rows.Next() // just one row
+	err = rows.Scan(valuePtrs...)
+	checkY(err)
+
+	for i, _ := range columns {
+		var colstring string
+		if columns[i] == primary {
+			colstring = primary + " (ID)"
+		} else {
+			colstring = columns[i]
+		}
+		val := dumpValue(values[i])
+		fieldmap[colstring] = val
+	}
+	return fieldmap
 }
