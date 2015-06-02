@@ -13,7 +13,6 @@ package main
 import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -165,7 +164,8 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 
 func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, back string) {
 
-	rows := getRows(cred, db, "show columns from "+template.HTMLEscapeString(t))
+	rows, err := getRows(cred, db, "show columns from "+ t)
+	checkY(err)
 	defer rows.Close()
 
 	trail := []Entry{}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -39,12 +38,12 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 		q.Add("k", k)
 		q.Add("v", v)
 		trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: k + " (ID)"})
-		query = "select * from " + template.HTMLEscapeString(t) + " where " + template.HTMLEscapeString(k) + "=" + template.HTMLEscapeString(v)
+		query = "select * from " + v + " where " + k + "=" + v
 		dumpKeyValue(w, db, t, k, v, cred, trail, "?"+q.Encode(), query)
 	} else if nnumber {
 		if o != "" {
 			q.Add("o", o)
-			query = "select * from " + template.HTMLEscapeString(t) + " order by " + template.HTMLEscapeString(o)
+			query = "select * from " + t + " order by " + o
 	        if d == "" {
 				trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&uarr;"})
 			} else {
@@ -53,13 +52,13 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 				query = query + " desc"
 			} 
 		} else {
-			query = "select * from " + template.HTMLEscapeString(t)
+			query = "select * from " + t
 		}
 		dumpFields(w, db, t, o, d, n, cred, trail, "?"+q.Encode(), query)
 	} else {
 		if o != "" {
 			q.Add("o", o)
-			query = "select * from " + template.HTMLEscapeString(t) + " order by " + template.HTMLEscapeString(o)
+			query = "select * from " + t + " order by " + o
 			if d == "" {
 				trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&uarr;"})
 			} else {
@@ -68,7 +67,7 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 				query = query + " desc"
 			}
 		} else {
-			query = "select * from " + template.HTMLEscapeString(t)
+			query = "select * from " + t
 		}
 		re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
 		limits := re.FindStringSubmatch(n)
@@ -94,7 +93,8 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 func dumpHome(w http.ResponseWriter, cred Access, trail []Entry, back string) {
 
 	q := url.Values{}
-	rows := getRows(cred, "", "show databases")
+	rows,err := getRows(cred, "", "show databases")
+	checkY(err)
 	defer rows.Close()
 
 	menu := []Entry{}
@@ -120,7 +120,8 @@ func dumpTables(w http.ResponseWriter, db string, cred Access, trail []Entry, ba
 
 	q := url.Values{}
 	q.Add("db", db)
-	rows := getRows(cred, db, "show tables")
+	rows, err := getRows(cred, db, "show tables")
+	checkY(err)
 	defer rows.Close()
 
 	menu := []Entry{}
@@ -226,9 +227,15 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	menu = append(menu, Entry{linkinfo, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 
+	rows,err := getRows(cred, db, query)
+	if err != nil {
+		shipError(w, cred, db, t, back, trail, query, err)
+		return
+	} else {
+		defer rows.Close()
+	}
+
 	primary := getPrimary(cred, db, t)
-	rows := getRows(cred, db, query)
-	defer rows.Close()
 	columns, err := rows.Columns()
 	checkY(err)
 	count := len(columns)
@@ -310,9 +317,15 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 	limitstring := strconv.Itoa(start) + "-" + strconv.Itoa(end)
 	q.Add("n", limitstring)
 
+	rows, err := getRows(cred, db, query)
+	if err != nil {
+		shipError(w, cred, db, t, back, trail, query, err)
+		return
+	} else {
+		defer rows.Close()
+	}
+
 	primary := getPrimary(cred, db, t)
-	rows := getRows(cred, db, query)
-	defer rows.Close()
 	columns, err := rows.Columns()
 	checkY(err)
 	count := len(columns)
@@ -372,8 +385,14 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 // Dump all fields of a record, one column per line
 func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, cred Access, trail []Entry, back string, query string) {
 
-	rows := getRows(cred, db, query)
-	defer rows.Close()
+	rows, err := getRows(cred, db, query)
+	if err != nil {
+		shipError(w, cred, db, t, back, trail, query, err)
+		return
+	} else {
+		defer rows.Close()
+	}
+	
 	primary := getPrimary(cred, db, t)
 	columns, err := rows.Columns()
 	checkY(err)
@@ -450,8 +469,14 @@ rowLoop:
 
 func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, trail []Entry, back string, query string) {
 
-	rows := getRows(cred, db, query)
-	defer rows.Close()
+	rows,err := getRows(cred, db, query)
+	if err != nil {
+		shipError(w, cred, db, t, back, trail, query, err)
+		return
+	} else {
+		defer rows.Close()
+	}
+
 	primary := getPrimary(cred, db, t)
 	columns, err := rows.Columns()
 	checkY(err)

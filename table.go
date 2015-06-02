@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"fmt"
 )
 
 /*
@@ -34,6 +35,33 @@ type Context struct {
 	Right    string
 	Trail    []Entry
 	Menu     []Entry
+}
+
+func shipError(w http.ResponseWriter, cred Access, db string, t string, back string, trail []Entry, query string, errormessage error) {
+
+	c := Context{
+		User:     cred.User,
+		Host:     cred.Host,
+		Port:     cred.Port,
+		CSS:      CSS_FILE,
+		Database: db,
+		Table:    t,
+		Order:    "",
+		Desc:     "",
+		Records:  [][]string{},
+		Head:     []string{},
+		Back:     back,
+		Counter:  "",
+		Left:     query,
+		Right:    fmt.Sprintln(errormessage),
+		Trail:    trail, // if trail is missing, menu is shown at the right side of the headline
+		Menu:     []Entry{},  // always used. location dependent of presence of trail
+	}
+	if DEBUGFLAG {
+		initTemplate()
+	}
+	err := templateError.Execute(w, c)
+	checkY(err)
 }
 
 func tableOut(w http.ResponseWriter, cred Access, db string, t string, back string, head []string, records [][]string, trail []Entry, menu []Entry) {

@@ -12,7 +12,7 @@
 	</div>
 	{{if .Counter}}
 	<form class="counter" action="/">
-	    <a class="count" href="{{.Left}}"> &lt; </a>			
+	    {{if .Left}}<a class="count" href="{{.Left}}"> &lt; </a>{{end}}			
 		<input type="hidden" name="action" value="goto">
 		<input type="hidden" name="db"     value="{{.Database}}">
 		<input type="hidden" name="t"      value="{{.Table}}">
@@ -20,7 +20,7 @@
 		{{if .Desc}}<input type="hidden" name="d"      value="{{.Desc}}">{{end}}
 	    <input type="text"   name="n"      value="{{.Counter}}" class="range" size=2 >	
 	    <button type="submit" hidden='hidden'>go</button>
-	    <a class="count" href="{{.Right}}"> &gt; </a>			
+	    {{if .Right}}<a class="count" href="{{.Right}}"> &gt; </a>{{end}}		
     </form>		
 	{{end}}
 	{{if .Menu}}

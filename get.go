@@ -16,14 +16,13 @@ func getConnection(cred Access, db string) *sql.DB {
 	return conn
 }
 
-func getRows(cred Access, db string, stmt string) *sql.Rows {
+func getRows(cred Access, db string, stmt string) (*sql.Rows, error) {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
 	log.Println("[SQL]",stmt)
 	rows, err := conn.Query(stmt)
-	checkY(err)
-	return rows
+	return rows, err
 }
 
 func getSingleValue(cred Access, db string, stmt string) string {
