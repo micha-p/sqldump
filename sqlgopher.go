@@ -79,22 +79,22 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionInsert(w, r, cred)
 	} else if action == "INFO" && db != "" && t != "" {
 		actionInfo(w, r, cred, db, t)
-	} else if action == "GOTO" && db != "" && t != "" && n != "" {
-		dumpIt(w, cred, db, t, o, d, n, k, v)
-	} else if action == "REMOVE" && db != "" && t != "" && k != "" {
-		shipMessage(w, cred, db, "Remove record with primary key not implemented")
-	} else if action == "EDIT" && db != "" && t != "" && k != "" {
+	} else if action == "REMOVE" && db != "" && t != "" && k != "" && v != "" {
+		actionRemove(w, r, cred, db, t, k, v)
+	} else if action == "EDIT" && db != "" && t != "" && k != ""  && v != "" {
 		shipMessage(w, cred, db, "Edit record with primary key not implemented")
 	} else if action == "DELETE" && db != "" && t != "" && where != "" {
 		shipMessage(w, cred, db, "Delete records not implemented")
 	} else if action == "UPDATE" && db != "" && t != "" && where != "" {
 		shipMessage(w, cred, db, "Update records not implemented")
+	} else if action == "GOTO" && db != "" && t != "" && n != "" {
+		dumpIt(w, cred, db, t, o, d, n, k, v, where)
 	} else if action == "BACK" {
-		dumpIt(w, cred, db, "", "", "", "", "", "")
+		dumpIt(w, cred, db, "", "", "", "", "", "", "")
 	} else if action != "" {
 		shipMessage(w, cred, db, "Unknown action: "+action)
 	} else {
-		dumpIt(w, cred, db, t, o, d, n, k, v)
+		dumpIt(w, cred, db, t, o, d, n, k, v, where)
 	}
 }
 

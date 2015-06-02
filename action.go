@@ -12,6 +12,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"net/url"
@@ -156,10 +157,25 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 		checkY(err)
 		_, err = statement.Exec()
 		checkY(err)
-		fmt.Println(stmt)
+		log.Println("[SQL]", stmt)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
+
+func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+
+	stmt := "DELETE FROM " + t + " WHERE " + k + "=" +v
+	conn := getConnection(cred, db)
+	defer conn.Close()
+
+	statement, err := conn.Prepare(stmt)
+	checkY(err)
+	_, err = statement.Exec()
+	checkY(err)
+	log.Println("[SQL]", stmt)
+	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t + "&k" + k, 302)
+}
+
 
 /*
  show columns from posts;

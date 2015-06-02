@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
+func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string, where string) {
 
 	var query string
 	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
@@ -190,15 +190,15 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
-	if where != "" {
-		q.Add("where", where)
-	}
 	q.Add("action", "ADD")
 	linkinsert := "/?" + q.Encode()
 	q.Set("action", "SUBSET")
 	linkselect := "/?" + q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := "?" + q.Encode()
+	if where != "" {
+		q.Add("where", where)
+	}
 	q.Set("action", "DELETE")
 	linkdelete := "?" + q.Encode()
 	q.Set("action", "UPDATE")
