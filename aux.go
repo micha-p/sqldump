@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"regexp"
 )
@@ -14,7 +14,7 @@ func troubleF(filename string) error {
 // simple error checker
 func checkY(err error) {
 	if err != nil {
-		fmt.Println(err)
+		log.Println("[ERROR]",err)
 		os.Exit(1)
 	}
 }

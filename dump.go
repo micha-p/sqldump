@@ -132,11 +132,8 @@ func dumpTables(w http.ResponseWriter, db string, cred Access, trail []Entry, ba
 		var field string
 		var nrows string
 		rows.Scan(&field)
-		if db == "information_schema" {
-			nrows = "?"
-		} else {
-			nrows = getCount(cred, db, field)
-		}
+		nrows = getCount(cred, db, field)
+		
 		q.Set("t", field)
 		link := q.Encode()
 		row := []string{href(link, strconv.Itoa(n)), href(link, field), nrows}
@@ -468,28 +465,20 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	head := []string{"#", "Column", "Data"}
 	records := [][]string{}
 
-	var iter int = 1
-rowLoop:
-	for rows.Next() {
+	rows.Next() 		// just one row
+	err = rows.Scan(valuePtrs...)
+	checkY(err)
 
-		// just one row
-		if iter == 1 {
-			err = rows.Scan(valuePtrs...)
-			checkY(err)
-			for i, _ := range columns {
-				var row []string
-				var colstring string
-				if columns[i] == primary {
-					colstring = primary + " (ID)"
-				} else {
-					colstring = columns[i]
-				}
-				row = []string{strconv.Itoa(i + 1), colstring, dumpValue(values[i])}
-				records = append(records, row)
-			}
-			break rowLoop
+	for i, _ := range columns {
+		var row []string
+		var colstring string
+		if columns[i] == primary {
+			colstring = primary + " (ID)"
+		} else {
+			colstring = columns[i]
 		}
-		iter = iter + 1
+		row = []string{strconv.Itoa(i + 1), colstring, dumpValue(values[i])}
+		records = append(records, row)
 	}
 
 	q := url.Values{}
@@ -506,18 +495,12 @@ rowLoop:
 	menu = append(menu, Entry{linkinfo, "i"})
 	menu = append(menu, Entry{linkinsert, "+"})
 
-	/*
-	 mysql> select number from unique_field where number>12 order by number limit 1;
-	 mysql> select number from unique_field where number<123 order by number desc limit 1;
-	 mysql> select content from unique_field where content > "hu" order by content limit 1;
-	*/
-
-	next := getSingle(cred, db, "select "+k+" from "+t+" where "+k+">"+v+" order by "+k+" limit 1")
-	if next == "<nil>" {
+	next := getSingleValue(cred, db, "select "+k+" from "+t+" where "+k+">"+v+" order by "+k+" limit 1")
+	if next == "NULL" {
 		next = v
 	}
-	prev := getSingle(cred, db, "select "+k+" from "+t+" where "+k+"<"+v+" order by "+k+" desc limit 1")
-	if prev == "<nil>" {
+	prev := getSingleValue(cred, db, "select "+k+" from "+t+" where "+k+"<"+v+" order by "+k+" desc limit 1")
+	if prev == "NULL" {
 		prev = v
 	}
 	q.Set("k", k)

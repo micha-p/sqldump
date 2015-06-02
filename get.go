@@ -20,14 +20,43 @@ func getRows(cred Access, db string, stmt string) *sql.Rows {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
-	log.Println("[SQL] " + stmt)
-	statement, err := conn.Prepare(stmt)
-	checkY(err)
-	rows, err := statement.Query()
+	log.Println("[SQL]",stmt)
+	rows, err := conn.Query(stmt)
 	checkY(err)
 	return rows
 }
 
+func getSingleValue(cred Access, db string, stmt string) string {
+	conn := getConnection(cred, db)
+	defer conn.Close()
+	log.Println("[SQL SV]", stmt)
+	row := conn.QueryRow(stmt)
+
+	var value interface{}
+	var valuePtr interface{}
+	valuePtr = &value
+	err := row.Scan(valuePtr)
+
+	if err == nil {
+		return dumpValue(value)
+	} else {
+		return "NULL"
+	}
+}
+
+func getCount(cred Access, db string, t string) string {
+
+	stmt := "select count(*) from " + t
+	conn := getConnection(cred, db)
+	defer conn.Close()
+	log.Println("[SQL]",stmt)
+	// rows,err := conn.Query("select count(*) from ?", t) // does not work??
+	row := conn.QueryRow(stmt)
+
+	var field string
+	row.Scan(&field)
+	return field
+}
 
 func getCols(cred Access, db string, t string) []string {
 
@@ -43,21 +72,6 @@ func getCols(cred Access, db string, t string) []string {
 	return cols
 }
 
-func getCount(cred Access, db string, t string) string {
-
-	conn := getConnection(cred, db)
-	defer conn.Close()
-	log.Println("[SQL] count")
-	// rows,err := conn.Query("select count(*) from ?", t) // does not work??
-	rows,err := conn.Query("select count(*) from " + t)
-	checkY(err)
-	defer rows.Close()
-
-	rows.Next()
-	var field string
-	rows.Scan(&field)
-	return field
-}
 
 func getPrimary(cred Access, db string, t string) string {
 
@@ -79,25 +93,6 @@ func getPrimary(cred Access, db string, t string) string {
 		}
 	}
 	return primary
-}
-
-
-func getSingle(cred Access, db string, q string) string {
-
-	rows := getRows(cred, db, q)
-	defer rows.Close()
-	var value interface{}
-	var valuePtr interface{}
-	valuePtr = &value
-
-rowLoop:
-	for rows.Next() {
-		// just one row
-		err := rows.Scan(valuePtr)
-		checkY(err)
-		break rowLoop
-	}
-	return dumpValue(value)
 }
 
 
