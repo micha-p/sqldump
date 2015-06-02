@@ -28,7 +28,7 @@ func getRows(cred Access, db string, stmt string) (*sql.Rows, error) {
 func getSingleValue(cred Access, db string, stmt string) string {
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	log.Println("[SQL SV]", stmt)
+	log.Println("[SQLV]", stmt)
 	row := conn.QueryRow(stmt)
 
 	var value interface{}
@@ -45,12 +45,12 @@ func getSingleValue(cred Access, db string, stmt string) string {
 
 func getCount(cred Access, db string, t string) string {
 
-	stmt := "select count(*) from " + t
+	countstmt := "select count(*) from " + t
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	log.Println("[SQL]",stmt)
+	log.Println("[SQL]",countstmt)
 	// rows,err := conn.Query("select count(*) from ?", t) // does not work??
-	row := conn.QueryRow(stmt)
+	row := conn.QueryRow(countstmt)
 
 	var field string
 	row.Scan(&field)
@@ -61,7 +61,7 @@ func getCols(cred Access, db string, t string) []string {
 
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	log.Println("[SQL] cols")
+	log.Println("[SQL]","get columns")
 	// rows, err := conn.Query("select * from ? limit 1") // does not work??
 	rows, err := conn.Query("select * from " + t + " limit 1")
 	checkY(err)

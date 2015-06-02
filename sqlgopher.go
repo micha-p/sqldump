@@ -27,7 +27,7 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 func cssHandler(w http.ResponseWriter, r *http.Request) {
 	if troubleF(CSS_FILE) == nil {
 		http.ServeFile(w, r, CSS_FILE)
-		fmt.Println("get css: " + CSS_FILE)
+		log.Println("[GET]", CSS_FILE)
 	} else {
 		http.StatusText(404)
 	}
@@ -41,7 +41,7 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 func sqlprotect(s string) string {
 	if s != "" && strings.ContainsAny(s, "\"\\;") {
 		r := strings.Replace(strings.Replace(strings.Replace(s, "\\", "", -1), ";", "", -1), "\"", "", -1)
-		log.Println("SQL INJECTION! :" + s + "->" + r)
+		log.Println("[SQL INJECTION]", s + "->" + r)
 		return r
 	} else {
 		return s
@@ -90,7 +90,7 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
-	fmt.Println(r.URL)
+	log.Println("[GET]",r.URL)
 	user := q.Get("user")
 	pass := q.Get("pass")
 	host := q.Get("host")
