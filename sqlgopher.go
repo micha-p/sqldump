@@ -41,14 +41,14 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 func sqlprotect(s string) string {
 	if s != "" && strings.ContainsAny(s, "\"\\;") {
 		r := strings.Replace(strings.Replace(strings.Replace(s, "\\", "", -1), ";", "", -1), "\"", "", -1)
-		log.Println("[SQL INJECTION]", s + "->" + r)
+		log.Println("[SQL INJECTION]", s+"->"+r)
 		return r
 	} else {
 		return s
 	}
 }
 
-func readRequest(request *http.Request) (string, string, string, string, string, string, string) {
+func readRequest(request *http.Request) (string, string, string, string, string, string, string, string) {
 	q := request.URL.Query()
 	db := sqlprotect(q.Get("db"))
 	t := sqlprotect(q.Get("t"))
@@ -57,31 +57,42 @@ func readRequest(request *http.Request) (string, string, string, string, string,
 	n := sqlprotect(q.Get("n"))
 	k := sqlprotect(q.Get("k"))
 	v := sqlprotect(q.Get("v"))
-	return db, t, o, d, n, k, v
+	w := sqlprotect(q.Get("w"))
+	return db, t, o, d, n, k, v, w
 }
 
 func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	db, t, o, d, n, k, v := readRequest(r)
+	db, t, o, d, n, k, v, where := readRequest(r)
 	q := r.URL.Query()
 	action := q.Get("action")
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if action == "subset" && db != "" && t != "" {
+	if action == "SUBSET" && db != "" && t != "" {
 		actionSubset(w, r, cred, db, t)
-	} else if action == "query" && db != "" && t != "" {
+	} else if action == "QUERY" && db != "" && t != "" {
 		actionQuery(w, r, cred)
-	} else if action == "add" && db != "" && t != "" {
+	} else if action == "ADD" && db != "" && t != "" {
 		actionAdd(w, r, cred, db, t)
-	} else if action == "insert" && db != "" && t != "" {
+	} else if action == "INSERT" && db != "" && t != "" {
 		actionInsert(w, r, cred)
-	} else if action == "info" && db != "" && t != "" {
+	} else if action == "INFO" && db != "" && t != "" {
 		actionInfo(w, r, cred, db, t)
-	} else if action == "goto" && db != "" && t != "" && n != "" {
+	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, cred, db, t, o, d, n, k, v)
-	} else if action == "back" {
+	} else if action == "REMOVE" && db != "" && t != "" && k != "" {
+		shipMessage(w, cred, db, "Remove record with primary key not implemented")
+	} else if action == "EDIT" && db != "" && t != "" && k != "" {
+		shipMessage(w, cred, db, "Edit record with primary key not implemented")
+	} else if action == "DELETE" && db != "" && t != "" && where != "" {
+		shipMessage(w, cred, db, "Delete records not implemented")
+	} else if action == "UPDATE" && db != "" && t != "" && where != "" {
+		shipMessage(w, cred, db, "Update records not implemented")
+	} else if action == "BACK" {
 		dumpIt(w, cred, db, "", "", "", "", "", "")
+	} else if action != "" {
+		shipMessage(w, cred, db, "Unknown action: "+action)
 	} else {
 		dumpIt(w, cred, db, t, o, d, n, k, v)
 	}
@@ -90,7 +101,7 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
-	log.Println("[GET]",r.URL)
+	log.Println("[GET]", r.URL)
 	user := q.Get("user")
 	pass := q.Get("pass")
 	host := q.Get("host")

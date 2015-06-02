@@ -56,7 +56,7 @@ func makeBack(host string, db string, t string, o string, d string, k string) st
 	} else {
 		return "/logout"
 	}
-}	
+}
 
 func makeTrail(host string, db string, t string, o string, d string, k string, w string) []Entry {
 	q := url.Values{}
@@ -72,7 +72,7 @@ func makeTrail(host string, db string, t string, o string, d string, k string, w
 	}
 	if o != "" {
 		q.Add("o", o)
-        if d != "" {
+		if d != "" {
 			q.Add("d", d)
 			trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&darr;"})
 		} else {
@@ -102,11 +102,11 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 		Desc:     "",
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host,db,t,"","",""),
+		Back:     makeBack(cred.Host, db, t, "", "", ""),
 		Counter:  "",
 		Left:     "",
 		Right:    "",
-		Trail:    makeTrail(cred.Host,db,t,"","","",""),
+		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 		Menu:     menu,
 	}
 	if DEBUGFLAG {
@@ -116,7 +116,7 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, head []string, records [][]string, menu []Entry, title string) {
+func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, head []string, records [][]string, menu []Entry, where string) {
 
 	initTemplate()
 	c := Context{
@@ -130,11 +130,11 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host,db,t,o,d,""),
+		Back:     makeBack(cred.Host, db, t, o, d, ""),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host,db,t,o,d,"",title),
+		Trail:    makeTrail(cred.Host, db, t, o, d, "", where),
 		Menu:     menu,
 	}
 
@@ -157,11 +157,11 @@ func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o s
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host,db,t,o,d,k),
+		Back:     makeBack(cred.Host, db, t, o, d, k),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host,db,t,o,d,k,""),
+		Trail:    makeTrail(cred.Host, db, t, o, d, k, ""),
 		Menu:     menu,
 	}
 

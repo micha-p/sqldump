@@ -20,7 +20,7 @@ import (
 )
 
 type CContext struct {
-	Name	  string
+	Name      string
 	IsNumeric string
 	IsString  string
 }
@@ -41,14 +41,14 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, query st
 
 	c := FContext{
 		CSS:      CSS_FILE,
-		Action:   "back",
+		Action:   "BACK",
 		Selector: "",
 		Button:   "Back",
 		Database: db,
 		Table:    t,
-		Back:     makeBack(cred.Host,db,t,"","",""),
-		Columns:  []CContext{ CContext{"Query","",query}, CContext{"Result","",fmt.Sprint(e)}},
-		Trail:    makeTrail(cred.Host,db,t,"","","",""),
+		Back:     makeBack(cred.Host, db, t, "", "", ""),
+		Columns:  []CContext{CContext{"Query", "", query}, CContext{"Result", "", fmt.Sprint(e)}},
+		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
 	if DEBUGFLAG {
@@ -58,7 +58,26 @@ func shipError(w http.ResponseWriter, cred Access, db string, t string, query st
 	checkY(err)
 }
 
+func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
 
+	c := FContext{
+		CSS:      CSS_FILE,
+		Action:   "BACK",
+		Selector: "",
+		Button:   "Back",
+		Database: db,
+		Table:    "",
+		Back:     makeBack(cred.Host, db, "", "", "", ""),
+		Columns:  []CContext{CContext{"Query", "", msg}},
+		Trail:    makeTrail(cred.Host, db, "", "", "", "", ""),
+	}
+
+	if DEBUGFLAG {
+		initTemplate()
+	}
+	err := templateError.Execute(w, c)
+	checkY(err)
+}
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
 
 	cols := getColumnInfo(cred, db, t)
@@ -75,7 +94,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 		Table:    t,
 		Back:     linkback,
 		Columns:  cols,
-		Trail:    makeTrail(cred.Host,db,t,"","","",""),
+		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
 	if DEBUGFLAG {
@@ -87,12 +106,12 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 
 func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
 
-	shipForm(w, r, cred, database, table, "query", "Query", "true")
+	shipForm(w, r, cred, database, table, "QUERY", "Query", "true")
 }
 
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
 
-	shipForm(w, r, cred, database, table, "insert", "Insert", "")
+	shipForm(w, r, cred, database, table, "INSERT", "Insert", "")
 }
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access) {
@@ -163,7 +182,7 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access) {
 
 func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	rows, err := getRows(cred, db, "show columns from "+ t)
+	rows, err := getRows(cred, db, "show columns from "+t)
 	checkY(err)
 	defer rows.Close()
 
@@ -172,7 +191,7 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	q.Add("t", t)
 
 	menu := []Entry{}
-	q.Set("action", "add")
+	q.Set("action", "ADD")
 	linkinsert := "/?" + q.Encode()
 	menu = append(menu, Entry{linkinsert, "+"})
 

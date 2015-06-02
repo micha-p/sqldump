@@ -14,7 +14,7 @@ func troubleF(filename string) error {
 // simple error checker
 func checkY(err error) {
 	if err != nil {
-		log.Println("[ERROR]",err)
+		log.Println("[ERROR]", err)
 		os.Exit(1)
 	}
 }
@@ -49,7 +49,3 @@ func sqlFilterNumeric(t string) string {
 	reNumeric := regexp.MustCompile("[^-><=!0-9. eE]*")
 	return reNumeric.ReplaceAllString(t, "")
 }
-	
-	
-
-	

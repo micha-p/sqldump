@@ -8,8 +8,8 @@
 package main
 
 import (
-	"log"
 	"github.com/gorilla/securecookie"
+	"log"
 	"net/http"
 )
 
@@ -40,7 +40,7 @@ func getCredentials(r *http.Request) (Access, error) {
 			port = cookieValue["port"]
 			dbms = cookieValue["dbms"]
 		} else { // cookieerror
-			log.Println("[Cookie error]", host + ":" + port + "(" + dbms + ")")
+			log.Println("[Cookie error]", host+":"+port+"("+dbms+")")
 			return Access{user, pass, host, port, dbms}, err
 		}
 	}

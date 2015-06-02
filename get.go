@@ -9,7 +9,6 @@ import (
 
 // retrieving column information might be combined better
 
-
 func getConnection(cred Access, db string) *sql.DB {
 	conn, err := sql.Open(cred.Dbms, dsn(cred.User, cred.Pass, cred.Host, cred.Port, db))
 	checkY(err)
@@ -20,7 +19,7 @@ func getRows(cred Access, db string, stmt string) (*sql.Rows, error) {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
-	log.Println("[SQL]",stmt)
+	log.Println("[SQL]", stmt)
 	rows, err := conn.Query(stmt)
 	return rows, err
 }
@@ -48,7 +47,7 @@ func getCount(cred Access, db string, t string) string {
 	countstmt := "select count(*) from " + t
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	log.Println("[SQL]",countstmt)
+	log.Println("[SQL]", countstmt)
 	// rows,err := conn.Query("select count(*) from ?", t) // does not work??
 	row := conn.QueryRow(countstmt)
 
@@ -61,7 +60,7 @@ func getCols(cred Access, db string, t string) []string {
 
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	log.Println("[SQL]","get columns")
+	log.Println("[SQL]", "get columns")
 	// rows, err := conn.Query("select * from ? limit 1") // does not work??
 	rows, err := conn.Query("select * from " + t + " limit 1")
 	checkY(err)
@@ -70,7 +69,6 @@ func getCols(cred Access, db string, t string) []string {
 	cols, err := rows.Columns()
 	return cols
 }
-
 
 func getPrimary(cred Access, db string, t string) string {
 
@@ -94,7 +92,6 @@ func getPrimary(cred Access, db string, t string) string {
 	return primary
 }
 
-
 func getColumnInfo(cred Access, db string, t string) []CContext {
 
 	conn := getConnection(cred, db)
@@ -103,7 +100,7 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	checkY(err)
 	defer rows.Close()
 
-    m := []CContext{}
+	m := []CContext{}
 	for rows.Next() {
 		var f, t, n, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
@@ -122,13 +119,12 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		tType, _ := regexp.MatchString("text", t)
 
 		if iType || fType || rType || dType || lType || nType {
-			m=append(m,CContext{f,"numeric",""})
+			m = append(m, CContext{f, "numeric", ""})
 		} else if cType || yType || bType || tType {
-			m=append(m,CContext{f,"","string"})
+			m = append(m, CContext{f, "", "string"})
 		} else {
-			m=append(m,CContext{f,"",""})
+			m = append(m, CContext{f, "", ""})
 		}
 	}
 	return m
 }
-
