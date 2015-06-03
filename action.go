@@ -266,14 +266,14 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 
 	clauses := collectSet(r, cred, db, t)
 	if len(clauses) > 0 {
-		stmt := "UPDATE `" + t + "` SET " + clauses + " where ? = ?"
-		log.Println("[SQL]", stmt, k, v)
+		stmt := "UPDATE `" + t + "` SET " + clauses + "` WHERE `" + k + "` = ?"
+		log.Println("[SQL]", stmt, v)
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
 		checkY(err)
-		_, err = statement.Exec(k,v)
+		_, err = statement.Exec(v)
 		checkY(err)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
@@ -281,14 +281,14 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 
 func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
 
-	stmt := "DELETE FROM `" + t + "` WHERE ? = ?"
-	log.Println("[SQL]", stmt, k , v)
+	stmt := "DELETE FROM `" + t + "` WHERE `" + k + "` = ?"
+	log.Println("[SQL]", stmt, v)
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
 	statement, err := conn.Prepare(stmt)
 	checkY(err)
-	_, err = statement.Exec(k,v)
+	_, err = statement.Exec(v)
 	checkY(err)
 	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t+"&k"+k, 302)
 }
