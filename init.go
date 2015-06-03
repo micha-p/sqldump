@@ -1,7 +1,7 @@
 package main
 
 import "io/ioutil"
-import "text/template" // needs to be changed to html/template
+import "text/template" // TODO change to html/template
 
 var templateFormFields = template.New("formfields")
 var templateTable = template.New("table")

@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"html"
 )
 
 type CContext struct {
@@ -84,11 +85,12 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 	for _, col := range cols {
 		label := col.Name
 		readonly := ""
+		value := html.EscapeString(fieldmap[col.Name])
 		if label == primary {
 			label = label + " (ID)"
-			readonly = fieldmap[col.Name]
+			readonly = value
 		}
-		newcols = append(newcols, CContext{col.Number, col.Name, label, col.IsNumeric, col.IsString, fieldmap[col.Name], readonly})
+		newcols = append(newcols, CContext{col.Number, col.Name, label, col.IsNumeric, col.IsString, value, readonly})
 	}
 
 	q := r.URL.Query()
