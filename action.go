@@ -194,7 +194,7 @@ func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db st
 		checkY(err)
 		_, err = statement.Exec()
 		if err != nil {
-			shipError(w, cred, db, t, query, err)
+			shipError(w, cred, db, t, stmt, err)
 		}
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
@@ -211,7 +211,7 @@ func actionDeleteWhere(w http.ResponseWriter, r *http.Request, cred Access, db s
 	checkY(err)
 	_, err = statement.Exec()
 	if err != nil {
-		shipError(w, cred, db, t, query, err)
+		shipError(w, cred, db, t, stmt, err)
 	}
 	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 }
@@ -229,7 +229,7 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string
 		checkY(err)
 		_, err = statement.Exec()
 		if err != nil {
-			shipError(w, cred, db, t, query, err)
+			shipError(w, cred, db, t, stmt, err)
 		}
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
@@ -248,7 +248,7 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 		checkY(err)
 		_, err = statement.Exec(v)
 		if err != nil {
-			shipError(w, cred, db, t, query, err)
+			shipError(w, cred, db, t, stmt, err)
 		}
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
@@ -261,11 +261,11 @@ func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
-	statement, _ := conn.Prepare(stmt)
+	statement, err := conn.Prepare(stmt)
 	checkY(err)
 	_, err = statement.Exec(v)
 	if err != nil {
-		shipError(w, cred, db, t, query, err)
+		shipError(w, cred, db, t, stmt, err)
 	}
 	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t+"&k"+k, 302)
 }
