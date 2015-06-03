@@ -58,7 +58,6 @@ func sqlprotectweak(s string) string {
 	}
 }
 
-
 func readRequest(request *http.Request) (string, string, string, string, string, string, string, string) {
 	q := request.URL.Query()
 	db := sqlprotect(q.Get("db"))
@@ -83,18 +82,18 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 	if action == "SUBSET" && db != "" && t != "" {
 		actionSubset(w, r, cred, db, t)
 	} else if action == "QUERY" && db != "" && t != "" {
-		actionQuery(w, r, cred, db ,t)
+		actionQuery(w, r, cred, db, t)
 	} else if action == "ADD" && db != "" && t != "" {
 		actionAdd(w, r, cred, db, t)
 	} else if action == "INSERT" && db != "" && t != "" {
-		actionInsert(w, r, cred, db,t)
+		actionInsert(w, r, cred, db, t)
 	} else if action == "INFO" && db != "" && t != "" {
 		actionInfo(w, r, cred, db, t)
 	} else if action == "REMOVE" && db != "" && t != "" && k != "" && v != "" {
 		actionRemove(w, r, cred, db, t, k, v)
-	} else if action == "EDIT" && db != "" && t != "" && k != ""  && v != "" {
+	} else if action == "EDIT" && db != "" && t != "" && k != "" && v != "" {
 		actionEdit(w, r, cred, db, t, k, v)
-	} else if action == "EDITEXEC" && db != "" && t != "" && k != ""  && v != "" {
+	} else if action == "EDITEXEC" && db != "" && t != "" && k != "" && v != "" {
 		actionEditExec(w, r, cred, db, t, k, v)
 	} else if action == "DELETEWHERE" && db != "" && t != "" && where != "" {
 		actionDeleteWhere(w, r, cred, db, t, where)

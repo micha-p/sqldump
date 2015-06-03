@@ -402,7 +402,6 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 	v := url.Values{}
 	v.Add("db", db)
 	v.Add("t", t)
-
 	v.Add("action", "ADD")
 	linkinsert := "/?" + v.Encode()
 	v.Set("action", "INFO")
@@ -430,16 +429,19 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 	tableOutFields(w, cred, db, t, o, d, "", n, linkleft, linkright, head, records, menu)
 }
 
-
 func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
 
 	fieldmap := getFieldMap(w, db, t, cred, query)
+	primary := getPrimary(cred, db, t)
 	head := []string{"#", "Column", "Data"}
 	records := [][]string{}
 
 	i := 1
 	for f, v := range fieldmap {
 		var row []string
+		if f == primary {
+			f = f + " (ID)"
+		}
 		row = []string{strconv.Itoa(i), f, v}
 		records = append(records, row)
 		i = i + 1

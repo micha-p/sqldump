@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
-	"regexp"
 	"net/http"
+	"regexp"
 	"strconv"
 )
 
@@ -122,13 +122,13 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		tType, _ := regexp.MatchString("text", t)
 
 		if iType || fType || rType || dType || lType || nType {
-			m = append(m, CContext{strconv.Itoa(i),f, f, "numeric", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "numeric", "", "", ""})
 		} else if cType || yType || bType || tType {
-			m = append(m, CContext{strconv.Itoa(i),f, f, "", "string", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "", "string", "", ""})
 		} else {
-			m = append(m, CContext{strconv.Itoa(i),f, f, "", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "", "", "", ""})
 		}
-		i = i +1
+		i = i + 1
 	}
 	return m
 }
@@ -144,7 +144,6 @@ func getFieldMap(w http.ResponseWriter, db string, t string, cred Access, query 
 		defer rows.Close()
 	}
 
-	primary := getPrimary(cred, db, t)
 	columns, err := rows.Columns()
 	checkY(err)
 	count := len(columns)
@@ -159,14 +158,7 @@ func getFieldMap(w http.ResponseWriter, db string, t string, cred Access, query 
 	checkY(err)
 
 	for i, _ := range columns {
-		var colstring string
-		if columns[i] == primary {
-			colstring = primary + " (ID)"
-		} else {
-			colstring = columns[i]
-		}
-		val := dumpValue(values[i])
-		fieldmap[colstring] = val
+		fieldmap[columns[i]] = dumpValue(values[i])
 	}
 	return fieldmap
 }

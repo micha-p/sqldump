@@ -12,8 +12,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,10 +23,11 @@ import (
 type CContext struct {
 	Number    string
 	Name      string
-	Label	  string
+	Label     string
 	IsNumeric string
 	IsString  string
-	Value	  string
+	Value     string
+	Readonly  string
 }
 
 type FContext struct {
@@ -64,23 +65,32 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 	checkY(err)
 }
 
-
 func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, e error) {
-	cols:=  []CContext{CContext{"1","","Query", "", "", query}, CContext{"2","","Result", "", "", fmt.Sprint(e)}}
+	cols := []CContext{CContext{"1", "", "Query", "", "", query, ""}, CContext{"2", "", "Result", "", "", fmt.Sprint(e), ""}}
 	shipErrorPage(w, cred, db, t, cols)
-}	
+}
 
 func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
-	cols:=  []CContext{CContext{"1","","Message", "", "", msg}}
+	cols := []CContext{CContext{"1", "", "Message", "", "", msg, ""}}
 	shipErrorPage(w, cred, db, "", cols)
 }
 
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
 
 	cols := getColumnInfo(cred, db, t)
+	primary := getPrimary(cred, db, t)
 	q := r.URL.Query()
 	q.Del("action")
 	linkback := q.Encode()
+	newcols := []CContext{}
+
+	for _, col := range cols {
+		label := col.Name
+		if label == primary {
+			label = label + " (ID)"
+		}
+		newcols = append(newcols, CContext{col.Number, col.Name, label, col.IsNumeric, col.IsString, "", ""})
+	}
 
 	c := FContext{
 		CSS:      CSS_FILE,
@@ -92,7 +102,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 		Key:      "",
 		Value:    "",
 		Back:     linkback,
-		Columns:  cols,
+		Columns:  newcols,
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
@@ -107,19 +117,19 @@ func shipFormWithValues(w http.ResponseWriter, r *http.Request, cred Access, db 
 
 	cols := getColumnInfo(cred, db, t)
 	fieldmap := getFieldMap(w, db, t, cred, query)
-	colsvals := []CContext{}
-	
-	// TODO disable input for primary <input type="text" readonly="readonly" />
+	primary := getPrimary(cred, db, t)
+	newcols := []CContext{}
+
 	for _, col := range cols {
-		colname := col.Name
-		val := fieldmap[colname]
-		if val == "" {
-			colname = colname + " (ID)"
-			val = fieldmap[colname]
+		label := col.Name
+		readonly := ""
+		if label == primary {
+			label = label + " (ID)"
+			readonly = "true"
 		}
-		colsvals = append(colsvals, CContext{col.Number, col.Name, colname, col.IsNumeric, col.IsString, val})
+		newcols = append(newcols, CContext{col.Number, col.Name, label, col.IsNumeric, col.IsString, fieldmap[col.Name], readonly})
 	}
-	
+
 	q := r.URL.Query()
 	q.Del("action")
 	linkback := q.Encode()
@@ -134,7 +144,7 @@ func shipFormWithValues(w http.ResponseWriter, r *http.Request, cred Access, db 
 		Key:      k,
 		Value:    v,
 		Back:     linkback,
-		Columns:  colsvals,
+		Columns:  newcols,
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
@@ -159,9 +169,8 @@ func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database str
 
 func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, database string, t string, k string, v string) {
 	query := "select * from " + t + " where " + k + "=" + v
-	shipFormWithValues(w, r, cred, database, t, k,v,"EDITEXEC", "Submit", "", query)
+	shipFormWithValues(w, r, cred, database, t, k, v, "EDITEXEC", "Submit", "", query)
 }
-
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
@@ -185,7 +194,6 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string,
 		dumpRows(w, db, t, "", "", cred, query, where)
 	}
 }
-
 
 func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
@@ -229,8 +237,6 @@ func actionDeleteWhere(w http.ResponseWriter, r *http.Request, cred Access, db s
 	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 }
 
-
-
 func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
 	cols := getCols(cred, db, t)
@@ -273,7 +279,7 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 	if len(clauses) > 0 {
 		// Imploding within templates is severly missing!
 		// TODO stmt := "UPDATE ? SET " + strings.Join(clauses, ",") + " where ? = ?
-		stmt := "UPDATE " + t + " SET " + strings.Join(clauses, ",") + " where " + k + "=" +v
+		stmt := "UPDATE " + t + " SET " + strings.Join(clauses, ",") + " where " + k + "=" + v
 		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()
@@ -288,7 +294,7 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 
 func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
 
-	stmt := "DELETE FROM " + t + " WHERE " + k + "=" +v
+	stmt := "DELETE FROM " + t + " WHERE " + k + "=" + v
 	log.Println("[SQL]", stmt)
 	conn := getConnection(cred, db)
 	defer conn.Close()
@@ -297,9 +303,8 @@ func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string
 	checkY(err)
 	_, err = statement.Exec()
 	checkY(err)
-	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t + "&k" + k, 302)
+	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t+"&k"+k, 302)
 }
-
 
 /*
  show columns from posts;

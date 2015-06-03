@@ -40,7 +40,7 @@ func getCredentials(r *http.Request) (Access, error) {
 			port = cookieValue["port"]
 			dbms = cookieValue["dbms"]
 		} else { // cookieerror
-			log.Println("[Cookie error]", host+":"+port+"("+dbms+")")
+			log.Println("[Cookie error] ", host+":"+port+"("+dbms+")")
 			return Access{user, pass, host, port, dbms}, err
 		}
 	}
@@ -62,7 +62,7 @@ func setCredentials(w http.ResponseWriter, r *http.Request, cred Access) {
 			Path:  "/",
 		}
 		http.SetCookie(w, c)
-		log.Println("[Cookie]" + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")")
+		log.Println("[Cookie] " + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")")
 	}
 }
 
