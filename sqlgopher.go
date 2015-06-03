@@ -47,7 +47,7 @@ func readRequest(request *http.Request) (string, string, string, string, string,
 	k := sqlProtectIdentifier(q.Get("k"))
 	n := sqlProtectString(q.Get("n"))
 	v := sqlProtectString(q.Get("v"))
-	w := sqlProtectString(q.Get("where"))
+	w := sqlProtectString(q.Get("where")) // TODO
 	return db, t, o, d, n, k, v, w
 }
 
