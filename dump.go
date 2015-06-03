@@ -396,7 +396,9 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 // Dump all fields of a record, one column per line
 func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, nint int, nmax int, cred Access, query string) {
 
-	fieldmap := getFieldMap(w, db, t, cred, query)
+	rows, err := getRows(cred, db, query)
+	checkY(err)
+	fieldmap := getFieldMap(w, db, t, cred, rows)
 	head := []string{"#", "Column", "Data"}
 	records := [][]string{}
 
@@ -440,7 +442,9 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 
 func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
 
-	fieldmap := getFieldMap(w, db, t, cred, query)
+	rows, err := getRows(cred, db, query)
+	checkY(err)
+	fieldmap := getFieldMap(w, db, t, cred, rows)
 	primary := getPrimary(cred, db, t)
 	head := []string{"#", "Column", "Data"}
 	records := [][]string{}

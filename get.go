@@ -133,16 +133,10 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	return m
 }
 
-func getFieldMap(w http.ResponseWriter, db string, t string, cred Access, query string) map[string]string {
+func getFieldMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]string {
 
 	fieldmap := make(map[string]string)
-	rows, err := getRows(cred, db, query)
-	if err != nil {
-		shipError(w, cred, db, t, query, err)
-		return fieldmap
-	} else {
-		defer rows.Close()
-	}
+	defer rows.Close()
 
 	columns, err := rows.Columns()
 	checkY(err)

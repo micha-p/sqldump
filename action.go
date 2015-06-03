@@ -75,48 +75,9 @@ func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
 	shipErrorPage(w, cred, db, "", cols)
 }
 
-func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, action string, button string, selector string) {
+func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string, action string, button string, selector string, fieldmap map[string]string) {
 
 	cols := getColumnInfo(cred, db, t)
-	primary := getPrimary(cred, db, t)
-	q := r.URL.Query()
-	q.Del("action")
-	linkback := q.Encode()
-	newcols := []CContext{}
-
-	for _, col := range cols {
-		label := col.Name
-		if label == primary {
-			label = label + " (ID)"
-		}
-		newcols = append(newcols, CContext{col.Number, col.Name, label, col.IsNumeric, col.IsString, "", ""})
-	}
-
-	c := FContext{
-		CSS:      CSS_FILE,
-		Action:   action,
-		Selector: selector,
-		Button:   button,
-		Database: db,
-		Table:    t,
-		Key:      "",
-		Value:    "",
-		Back:     linkback,
-		Columns:  newcols,
-		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
-	}
-
-	if DEBUGFLAG {
-		initTemplate()
-	}
-	err := templateFormFields.Execute(w, c)
-	checkY(err)
-}
-
-func shipFormWithValues(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string, action string, button string, selector string, query string) {
-
-	cols := getColumnInfo(cred, db, t)
-	fieldmap := getFieldMap(w, db, t, cred, query)
 	primary := getPrimary(cred, db, t)
 	newcols := []CContext{}
 
@@ -125,7 +86,7 @@ func shipFormWithValues(w http.ResponseWriter, r *http.Request, cred Access, db 
 		readonly := ""
 		if label == primary {
 			label = label + " (ID)"
-			readonly = "true"
+			readonly = fieldmap[col.Name]
 		}
 		newcols = append(newcols, CContext{col.Number, col.Name, label, col.IsNumeric, col.IsString, fieldmap[col.Name], readonly})
 	}
@@ -155,21 +116,27 @@ func shipFormWithValues(w http.ResponseWriter, r *http.Request, cred Access, db 
 	checkY(err)
 }
 
-func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
-	shipForm(w, r, cred, database, table, "QUERY", "Query", "true")
+func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	shipForm(w, r, cred, db, t, "", "", "QUERY", "Query", "true", make(map[string]string) )
 }
 
-func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
-	shipForm(w, r, cred, database, table, "DELETEEXEC", "Delete", "true")
+func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	shipForm(w, r, cred, db, t, "","", "DELETEEXEC", "Delete", "true", make(map[string]string) )
 }
 
-func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, database string, table string) {
-	shipForm(w, r, cred, database, table, "INSERT", "Insert", "")
+func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	shipForm(w, r, cred, db, t, "","","INSERT", "Insert", "", make(map[string]string) )
 }
 
-func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, database string, t string, k string, v string) {
-	query := "select * from `" + t + "` where `" + k + "` = " + v
-	shipFormWithValues(w, r, cred, database, t, k, v, "EDITEXEC", "Submit", "", query)
+func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+	query := "select * from `" + t + "` where `" + k + "` = ?" 
+	conn := getConnection(cred, db)
+	defer conn.Close()
+	stmt, err := conn.Prepare(query)
+	checkY(err)	
+	rows, err := stmt.Query(v)
+	checkY(err)
+	shipForm(w, r, cred, db, t, k, v, "EDITEXEC", "Submit", "", getFieldMap(w, db, t, cred, rows))
 }
 
 
@@ -266,7 +233,7 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 
 	clauses := collectSet(r, cred, db, t)
 	if len(clauses) > 0 {
-		stmt := "UPDATE `" + t + "` SET " + clauses + "` WHERE `" + k + "` = ?"
+		stmt := "UPDATE `" + t + "` SET " + clauses + " WHERE `" + k + "` = ?"
 		log.Println("[SQL]", stmt, v)
 		conn := getConnection(cred, db)
 		defer conn.Close()
