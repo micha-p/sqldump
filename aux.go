@@ -60,6 +60,13 @@ func sqlProtectString(s string) string {
 }
 
 
+// TODO improve with real regexp
+func sqlProtectNumericComparison(t string) string {
+	reNumeric := regexp.MustCompile("[^-><=!0-9. eE]*")
+	return reNumeric.ReplaceAllString(t, "")
+}
+
+
 func troubleF(filename string) error {
 	_, err := os.Stat(filename)
 	return err
@@ -96,10 +103,4 @@ func minI(a int, b int) int {
 	} else {
 		return b
 	}
-}
-
-// TODO improve with real regexp
-func sqlFilterNumeric(t string) string {
-	reNumeric := regexp.MustCompile("[^-><=!0-9. eE]*")
-	return reNumeric.ReplaceAllString(t, "")
 }

@@ -172,24 +172,43 @@ func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, database st
 	shipFormWithValues(w, r, cred, database, t, k, v, "EDITEXEC", "Submit", "", query)
 }
 
-func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	cols := getCols(cred, db, t)
+
+func collectClauses(r *http.Request, cred Access, db string, t string, set string) []string {
+
 	var clauses []string
+	cols := getCols(cred, db, t)
 	for _, col := range cols {
 		val := sqlProtectString(r.FormValue(col + "C"))
 		if val != "" {
 			comparator := sqlProtectString(r.FormValue(col + "O"))
 			if comparator == "" {
-				clauses = append(clauses, "`" + col + "`" + sqlFilterNumeric(val))
+				if set == "" {
+					clauses = append(clauses, "`" + col + "`" + sqlProtectNumericComparison(val))
+				} else {
+					clauses = append(clauses, "`" + col + "` " + set + " \"" + val + "\"")
+				}	
 			} else {
 				clauses = append(clauses, "`" + col + "`" + comparator + "\"" + val + "\"")
 			}
 		}
 	}
+	return clauses
+} 
 
-	if len(clauses) > 0 {
-		where := strings.Join(clauses, " && ")
+func collectSet(r *http.Request, cred Access, db string, t string) string {
+	return strings.Join(collectClauses (r, cred, db, t, "="), " , ")
+}
+
+func collectWhere(r *http.Request, cred Access, db string, t string) string {
+	return strings.Join(collectClauses (r, cred, db, t, "")," && ")
+}
+ 
+
+func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+
+	where := collectWhere(r, cred, db, t)
+	if len(where) > 0 {
 		query := "SELECT * FROM `" + t + "` WHERE " + where
 		dumpRows(w, db, t, "", "", cred, query, where)
 	}
@@ -197,21 +216,9 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string,
 
 func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	cols := getCols(cred, db, t)
-	var clauses []string
-	for _, col := range cols {
-		val := sqlProtectString(r.FormValue(col + "C"))
-		if val != "" {
-			comparator := sqlProtectString(r.FormValue(col + "O"))
-			if comparator == "" {
-				clauses = append(clauses, "`" + col + "`" + sqlFilterNumeric(val))
-			} else {
-				clauses = append(clauses, "`" + col + "`" + comparator + "\"" + val + "\"")
-			}
-		}
-	}
-	if len(clauses) > 0 {
-		stmt := "DELETE FROM `" + t + "` WHERE " + strings.Join(clauses, " && ")
+	where := collectWhere(r, cred, db, t)
+	if len(where) > 0 {
+		stmt := "DELETE FROM `" + t + "` WHERE " + where
 		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()
@@ -240,18 +247,9 @@ func actionDeleteWhere(w http.ResponseWriter, r *http.Request, cred Access, db s
 
 func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	cols := getCols(cred, db, t)
-
-	var clauses []string
-	for _, col := range cols {
-		val := sqlProtectString(r.FormValue(col + "C"))
-		if val != "" {
-			clauses = append(clauses, "`" + col + "`" + "=" + "\"" + val + "\"")
-		}
-	}
-
+	clauses := collectSet(r, cred, db, t)
 	if len(clauses) > 0 {
-		stmt := "INSERT INTO `" + t + "` SET " + strings.Join(clauses, ",")
+		stmt := "INSERT INTO `" + t + "` SET " + clauses
 		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()
@@ -266,17 +264,9 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string
 
 func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
 
-	cols := getCols(cred, db, t)
-	var clauses []string
-	for _, col := range cols {
-		val := sqlProtectString(r.FormValue(col + "C"))
-		if val != "" && col != k {
-			clauses = append(clauses, "`" + col + "`" + "=" + "\"" + val + "\"")
-		}
-	}
-
+	clauses := collectSet(r, cred, db, t)
 	if len(clauses) > 0 {
-		stmt := "UPDATE `" + t + "` SET " + strings.Join(clauses, ",") + " where ? = ?"
+		stmt := "UPDATE `" + t + "` SET " + clauses + " where ? = ?"
 		log.Println("[SQL]", stmt, k, v)
 		conn := getConnection(cred, db)
 		defer conn.Close()

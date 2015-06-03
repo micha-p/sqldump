@@ -10,18 +10,25 @@ import (
 
 func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string, where string) {
 
+	if db == "" {
+		dumpHome(w, cred)
+		return
+	} else if t == "" {
+		dumpTables(w, db, cred)
+	} else {
+		dumpSelection(w, cred,db,t,o,d,n,k,v,where)
+	}
+}
+	
+func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string, where string) {
+	
 	var query string
 	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
 	checkY(err)
 	re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
 	limits := re.FindStringSubmatch(n)
 
-	if db == "" {
-		dumpHome(w, cred)
-		return
-	} else if t == "" {
-		dumpTables(w, db, cred)
-	} else if k != "" && v != "" && k == getPrimary(cred, db, t) {
+	if k != "" && v != "" && k == getPrimary(cred, db, t) {
 		query = "select * from `" + t + "` where `" + k + "` =" + v
 		dumpKeyValue(w, db, t, k, v, cred, query)
 	} else if nnumber {
@@ -261,6 +268,8 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 
 		row := []string{}
 		if showNumsBool(primary, o) {
+			q.Del("k")
+			q.Del("v")
 			q.Set("n", strconv.Itoa(rownum))
 			row = append(row, href(q.Encode(), strconv.Itoa(rownum)))
 		}

@@ -29,7 +29,7 @@ func getRows(cred Access, db string, stmt string) (*sql.Rows, error) {
 func getSingleValue(cred Access, db string, stmt string) string {
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	log.Println("[SQLV]", stmt)
+	log.Println("[SQL]", stmt)
 	row := conn.QueryRow(stmt)
 
 	var value interface{}
