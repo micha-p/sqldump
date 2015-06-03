@@ -22,16 +22,16 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 	} else if t == "" {
 		dumpTables(w, db, cred)
 	} else if k != "" && v != "" && k == getPrimary(cred, db, t) {
-		query = "select * from " + t + " where " + k + "=" + v
+		query = "select * from `" + t + "` where `" + k + "` =" + v
 		dumpKeyValue(w, db, t, k, v, cred, query)
 	} else if nnumber {
 		if o != "" {
-			query = "select * from " + t + " order by " + o
+			query = "select * from `" + t + "` order by `" + o + "`"
 			if d != "" {
 				query = query + " desc"
 			}
 		} else {
-			query = "select * from " + t
+			query = "select * from `" + t + "`"
 		}
 		nint, err := strconv.Atoi(n)
 		checkY(err)
@@ -49,18 +49,18 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 		maxint, err := strconv.Atoi(getCount(cred, db, t))
 		checkY(err)
 		endint = minI(endint, maxint)
-		query = "select * from " + t + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
+		query = "select * from `" + t + "` limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
 		if o != "" {
-			query = "select t.* from (" + query + ") t order by " + o
+			query = "select t.* from (" + query + ") t order by `" + o + "`"
 			if d != "" {
 				query = query + " desc"
 			}
 		}
 		dumpRange(w, db, t, o, d, startint, endint, maxint, cred, query)
 	} else {
-		query = "select * from " + t
+		query = "select * from `" + t + "`"
 		if o != "" {
-			query = query + " order by " + o
+			query = query + " order by `" + o + "`"
 			if d != "" {
 				query = query + " desc"
 			}
@@ -468,11 +468,11 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	menu = append(menu, Entry{linkremove, "-"})
 	menu = append(menu, Entry{linkinfo, "i"})
 
-	next := getSingleValue(cred, db, "select "+k+" from "+t+" where "+k+">"+v+" order by "+k+" limit 1")
+	next := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` > "+v+" order by `"+k+"` limit 1")
 	if next == "NULL" {
 		next = v
 	}
-	prev := getSingleValue(cred, db, "select "+k+" from "+t+" where "+k+"<"+v+" order by "+k+" desc limit 1")
+	prev := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` < "+v+" order by `"+k+"` desc limit 1")
 	if prev == "NULL" {
 		prev = v
 	}

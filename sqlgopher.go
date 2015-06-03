@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 var database = "information_schema"
@@ -38,36 +37,17 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-func sqlprotect(s string) string {
-	if s != "" && strings.ContainsAny(s, "\"\\;") {
-		r := strings.Replace(strings.Replace(strings.Replace(s, "\\", "", -1), ";", "", -1), "\"", "", -1)
-		log.Println("[SQL INJECTION]", s+"->"+r)
-		return r
-	} else {
-		return s
-	}
-}
-
-func sqlprotectweak(s string) string {
-	if s != "" && strings.ContainsAny(s, "\\;") {
-		r := strings.Replace(strings.Replace(s, ";", "", -1), "\"", "", -1)
-		log.Println("[SQL INJECTION]", s+"->"+r)
-		return r
-	} else {
-		return s
-	}
-}
 
 func readRequest(request *http.Request) (string, string, string, string, string, string, string, string) {
 	q := request.URL.Query()
-	db := sqlprotect(q.Get("db"))
-	t := sqlprotect(q.Get("t"))
-	o := sqlprotect(q.Get("o"))
-	d := sqlprotect(q.Get("d"))
-	n := sqlprotect(q.Get("n"))
-	k := sqlprotect(q.Get("k"))
-	v := sqlprotect(q.Get("v"))
-	w := sqlprotectweak(q.Get("where"))
+	db := sqlProtectIdentifier(q.Get("db"))
+	t := sqlProtectIdentifier(q.Get("t"))
+	o := sqlProtectIdentifier(q.Get("o"))
+	d := sqlProtectIdentifier(q.Get("d"))
+	k := sqlProtectIdentifier(q.Get("k"))
+	n := sqlProtectString(q.Get("n"))
+	v := sqlProtectString(q.Get("v"))
+	w := sqlProtectString(q.Get("where"))
 	return db, t, o, d, n, k, v, w
 }
 
