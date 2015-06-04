@@ -13,9 +13,10 @@ import (
  * </table>
  */
 
+// all output has to be supplied as struct to respective template
 type Entry struct {
-	Link  string
-	Label string
+	Text string
+	Link string
 }
 
 type Context struct {
@@ -28,8 +29,8 @@ type Context struct {
 	Order    string
 	Desc     string
 	Back     string
-	Head     []string
-	Records  [][]string
+	Head     []Entry
+	Records  [][]Entry
 	Counter  string
 	Left     string
 	Right    string
@@ -52,7 +53,7 @@ func makeBack(host string, db string, t string, o string, d string, k string) st
 				q.Add("d", d)
 			}
 		}
-		return "?" + q.Encode()
+		return q.Encode()
 	} else {
 		return "/logout"
 	}
@@ -60,36 +61,36 @@ func makeBack(host string, db string, t string, o string, d string, k string) st
 
 func makeTrail(host string, db string, t string, o string, d string, k string, w string) []Entry {
 	q := url.Values{}
-	trail := []Entry{Entry{"/", host}}
+	trail := []Entry{Entry{host, "/"}}
 
 	if db != "" {
 		q.Add("db", db)
-		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: db})
+		trail = append(trail, Entry{Link: q.Encode(), Text: db})
 	}
 	if t != "" {
 		q.Add("t", t)
-		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: t})
+		trail = append(trail, Entry{Link: q.Encode(), Text: t})
 	}
 	if o != "" {
 		q.Add("o", o)
 		if d != "" {
 			q.Add("d", d)
-			trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&darr;"})
+			trail = append(trail, Entry{Link: q.Encode(), Text: o + "&darr;"})
 		} else {
-			trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: o + "&uarr;"})
+			trail = append(trail, Entry{Link: q.Encode(), Text: o + "&uarr;"})
 		}
 	} else if k != "" {
 		q.Add("k", k)
-		trail = append(trail, Entry{Link: "/?" + q.Encode(), Label: k + " (ID)"})
+		trail = append(trail, Entry{Link: q.Encode(), Text: k + " (ID)"})
 	}
 	if w != "" {
 		q.Add("action", "subset")
-		trail = append(trail, Entry{Link: "?" + q.Encode(), Label: w})
+		trail = append(trail, Entry{Link: q.Encode(), Text: w})
 	}
 	return trail
 }
 
-func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, head []string, records [][]string, menu []Entry) {
+func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
 
 	c := Context{
 		User:     cred.User,
@@ -116,7 +117,7 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, head []string, records [][]string, menu []Entry, where string) {
+func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, linkleft string, linkright string, head []Entry, records [][]Entry, menu []Entry, where string) {
 
 	initTemplate()
 	c := Context{
@@ -130,7 +131,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host, db, t, o, d, ""),
+		Back:     makeBack(cred.Host, db, t, "", "", ""),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
@@ -142,7 +143,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, k string, n string, linkleft string, linkright string, head []string, records [][]string, menu []Entry) {
+func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, k string, n string, linkleft string, linkright string, head []Entry, records [][]Entry, menu []Entry) {
 
 	initTemplate()
 
@@ -157,7 +158,7 @@ func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o s
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host, db, t, o, d, k),
+		Back:     makeBack(cred.Host, db, t, "", "", ""),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,

@@ -37,7 +37,6 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-
 func readRequest(request *http.Request) (string, string, string, string, string, string, string, string) {
 	q := request.URL.Query()
 	db := sqlProtectIdentifier(q.Get("db"))

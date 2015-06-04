@@ -65,7 +65,7 @@ If identifiers for tables or fields contain quotes or doublequotes, control migh
  
 #### Login-attack via credentials
 
-Establishing connections to databases is done by the standard library-functions. Trusting in code is required here.  
+Establishing connections to databases is done by the standard library-functions. The trusted code has to prevent additional commands appended to manipulated credentials.   
 
 
 # License

@@ -3,16 +3,13 @@
 <title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}} -- Error</title> 
 {{if .CSS}}<link rel="stylesheet" type="text/css" href="html/table.css"/>{{end}}
 <body>
-
-<div class="top">
-{{if .Trail}}
+	
+{{if .Trail}}<div class="top">
 	<div class="breadcrumb">
-	    <a class="trail" href="logout">&times;</a></li>			
-	    {{range .Trail}}<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
-	</div>
-{{end}}
-</div>
-
+	    <a class="trail" href="logout">&times;</a>{{range .Trail}}
+	    <a class="trail" href="/?{{.Link}}">{{.Text}}</a>{{end}}
+	</div>    
+</div>{{end}}
 
 <div class="main">
 	<form action="/">
@@ -21,7 +18,7 @@
 		<input type="hidden" name="t"  value="{{.Table}}">
 		<table>
 			<tr> <th>Error</th> <th></th> <tr>
-			{{range .Columns}}<tr> <td>{{.Name}}</td> <td>{{.Value}}</td> <tr>
+			{{range .Columns}}<tr> <td>{{.Label}}</td> <td>{{.Value}}</td> <tr>
 			{{end}}
 		</table>
 		<br>

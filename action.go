@@ -13,12 +13,12 @@ package main
 import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"html"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"html"
 )
 
 type CContext struct {
@@ -119,29 +119,27 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 }
 
 func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "", "", "QUERY", "Query", "true", make(map[string]string) )
+	shipForm(w, r, cred, db, t, "", "", "QUERY", "Query", "true", make(map[string]string))
 }
 
 func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "","", "DELETEEXEC", "Delete", "true", make(map[string]string) )
+	shipForm(w, r, cred, db, t, "", "", "DELETEEXEC", "Delete", "true", make(map[string]string))
 }
 
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "","","INSERT", "Insert", "", make(map[string]string) )
+	shipForm(w, r, cred, db, t, "", "", "INSERT", "Insert", "", make(map[string]string))
 }
 
 func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-	query := "select * from `" + t + "` where `" + k + "` = ?" 
+	query := "select * from `" + t + "` where `" + k + "` = ?"
 	conn := getConnection(cred, db)
 	defer conn.Close()
 	stmt, err := conn.Prepare(query)
-	checkY(err)	
+	checkY(err)
 	rows, err := stmt.Query(v)
 	checkY(err)
 	shipForm(w, r, cred, db, t, k, v, "EDITEXEC", "Submit", "", getFieldMap(w, db, t, cred, rows))
 }
-
-
 
 func collectClauses(r *http.Request, cred Access, db string, t string, set string) []string {
 
@@ -153,26 +151,25 @@ func collectClauses(r *http.Request, cred Access, db string, t string, set strin
 			comparator := sqlProtectString(r.FormValue(col + "O"))
 			if comparator == "" {
 				if set == "" {
-					clauses = append(clauses, "`" + col + "`" + sqlProtectNumericComparison(val))
+					clauses = append(clauses, "`"+col+"`"+sqlProtectNumericComparison(val))
 				} else {
-					clauses = append(clauses, "`" + col + "` " + set + " \"" + val + "\"")
-				}	
+					clauses = append(clauses, "`"+col+"` "+set+" \""+val+"\"")
+				}
 			} else {
-				clauses = append(clauses, "`" + col + "`" + comparator + "\"" + val + "\"")
+				clauses = append(clauses, "`"+col+"`"+comparator+"\""+val+"\"")
 			}
 		}
 	}
 	return clauses
-} 
+}
 
 func collectSet(r *http.Request, cred Access, db string, t string) string {
-	return strings.Join(collectClauses (r, cred, db, t, "="), " , ")
+	return strings.Join(collectClauses(r, cred, db, t, "="), " , ")
 }
 
 func collectWhere(r *http.Request, cred Access, db string, t string) string {
-	return strings.Join(collectClauses (r, cred, db, t, "")," && ")
+	return strings.Join(collectClauses(r, cred, db, t, ""), " && ")
 }
- 
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
@@ -284,7 +281,7 @@ func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string
 
 func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	rows, err := getRows(cred, db, "show columns from `" + t + "`")
+	rows, err := getRows(cred, db, "show columns from `"+t+"`")
 	checkY(err)
 	defer rows.Close()
 
@@ -294,11 +291,11 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 
 	menu := []Entry{}
 	q.Set("action", "ADD")
-	linkinsert := "/?" + q.Encode()
-	menu = append(menu, Entry{linkinsert, "+"})
+	linkinsert := q.Encode()
+	menu = append(menu, Entry{"+", linkinsert})
 
-	records := [][]string{}
-	head := []string{"#", "Field", "Type", "Null", "Key", "Default", "Extra"}
+	records := [][]Entry{}
+	head := []Entry{{"#", ""}, {"Field", ""}, {"Type", ""}, {"Null", ""}, {"Key", ""}, {"Default", ""}, {"Extra", ""}}
 
 	var i int = 1
 	for rows.Next() {
@@ -306,7 +303,7 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
 		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
-		records = append(records, []string{strconv.Itoa(i), f, t, n, k, string(d), e})
+		records = append(records, []Entry{{strconv.Itoa(i), ""}, {f, ""}, {t, ""}, {n, ""}, {k, ""}, {string(d), ""}, {e, ""}})
 		i = i + 1
 	}
 	tableOutSimple(w, cred, db, t, head, records, menu)

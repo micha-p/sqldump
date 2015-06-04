@@ -37,14 +37,12 @@
 {{define "readonly"}}<input class="cell" type="hidden" id="{{.Name}}" name="{{.Name}}C" value="{{.Value}}">{{.Value}}{{end}}
 {{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "input" .}}{{end}}{{end}}
 
-<div class="top">
-{{if .Trail}}
+{{if .Trail}}<div class="top">
 	<div class="breadcrumb">
-	    <a class="trail" href="logout">&times;</a>		
-	    {{range .Trail}}<a class="trail" href="{{.Link}}">{{.Label}}</a>{{end}}
-	</div>
-{{end}}
-</div>
+	    <a class="trail" href="logout">&times;</a>{{range .Trail}}
+	    <a class="trail" href="/?{{.Link}}">{{.Text}}</a>{{end}}
+	</div>    
+</div>{{end}}
 
 <div class="main">
 	<form action="/">
