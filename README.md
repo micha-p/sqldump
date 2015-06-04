@@ -48,9 +48,25 @@ or on command line
 
 - no encrypted connection to mysql server
 - use only in trusted environments
-- just basic protection against sql injection via database and table names
 - insert and query limited by request length
 - some data types cause problems at driver level
+- passwords might be supplied or bookmarked via URL
+
+#### SQL-injection via Request parameters
+
+To prevent SQL-injection, all supplied identifiers are backqoted and to prevent escaping, all backquotes are escaped by doubling them. 
+Values are doublequoted, supplied double quotes are escaped the same way. Where-clauses are especially difficult to ckeck, as this would require full parsing of SQL-expressions. Therefore they are avoided (TODO).
+
+
+#### Javascript-Injection via Identifiers and Values
+
+If identifiers for tables or fields contain quotes or doublequotes, control might escape from these strings. Therefore they are protected by html-escaping in templates and manually (TODO).
+
+ 
+#### Login-attack via credentials
+
+Establishing connections to databases is done by the standard library-functions. Trusting in code is required here.  
+
 
 # License
 
