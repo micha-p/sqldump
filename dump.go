@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string, where string) {
+func dumpIt(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
 	if db == "" {
 		dumpHome(w, cred)
@@ -16,14 +16,14 @@ func dumpIt(w http.ResponseWriter, cred Access, db string, t string, o string, d
 	} else if t == "" {
 		dumpTables(w, db, cred)
 	} else {
-		dumpSelection(w, cred, db, t, o, d, n, k, v, where)
+		dumpSelection(w, cred, db, t, o, d, n, k, v)
 	}
 }
 
-func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string, where string) {
+func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
 	var query string
-	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
+    nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
 	checkY(err)
 	re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
 	limits := re.FindStringSubmatch(n)
@@ -72,7 +72,7 @@ func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o st
 				query = query + " desc"
 			}
 		}
-		dumpRows(w, db, t, o, d, cred, query, "")
+		dumpRows(w, db, t, o, d, cred, query, url.Values{})
 	}
 }
 
@@ -198,36 +198,37 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	return head
 }
 
-func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, query string, where string) {
+func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, query string, where url.Values) {
 
+	wherestring :=  ""
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
 	q.Add("action", "ADD")
 	linkinsert := q.Encode()
-	q.Set("action", "DELETE")
-	linkdelete := q.Encode()
 	q.Set("action", "SUBSET")
 	linkselect := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
-	if where != "" {
-		q.Add("where", where)
-	}
-	q.Set("action", "DELETEWHERE")
-	linkdeletewhere := q.Encode()
-	q.Set("action", "UPDATE")
-	linkupdate := q.Encode()
+	q.Set("action", "DELETEQ")
+	linkdeleteQ := q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
 	menu = append(menu, Entry{Link: linkselect, Text: "?"})
 	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
-	if where != "" {
+	if len(where) > 0 {
+		wherestring = WhereQuery2Sql(where,getCols(cred, db, t))
+		where.Add("db", db)
+		where.Add("t", t)
+		where.Set("action", "DELETE")
+		linkdelete := where.Encode()
+		where.Set("action", "UPDATE")
+		linkupdate := where.Encode()
 		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
-		menu = append(menu, Entry{Link: linkdeletewhere, Text: "-"})
-	} else {
 		menu = append(menu, Entry{Link: linkdelete, Text: "-"})
+	} else {
+		menu = append(menu, Entry{Link: linkdeleteQ, Text: "-"})
 	}
 	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
@@ -296,7 +297,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	}
 
 	var limitstring, link string
-	if where == "" {
+	if len(q) == 0 {
 		limitstring = "1-" + strconv.Itoa(rownum-1)
 		q.Set("n", limitstring)
 		link = q.Encode()
@@ -304,7 +305,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		limitstring = ""
 		link = ""
 	}
-	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, head, records, menu, where)
+	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, head, records, menu, wherestring)
 }
 
 func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, query string) {

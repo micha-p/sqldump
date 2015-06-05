@@ -37,8 +37,8 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-func readRequest(request *http.Request) (string, string, string, string, string, string, string, string) {
-	q := request.URL.Query()
+func readRequest(r *http.Request) (string, string, string, string, string, string, string) {
+	q := r.URL.Query()
 	db := sqlProtectIdentifier(q.Get("db"))
 	t := sqlProtectIdentifier(q.Get("t"))
 	o := sqlProtectIdentifier(q.Get("o"))
@@ -46,13 +46,13 @@ func readRequest(request *http.Request) (string, string, string, string, string,
 	k := sqlProtectIdentifier(q.Get("k"))
 	n := sqlProtectString(q.Get("n"))
 	v := sqlProtectString(q.Get("v"))
-	w := sqlProtectString(q.Get("where")) // TODO
-	return db, t, o, d, n, k, v, w
+	return db, t, o, d, n, k, v
 }
 
 func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
-	db, t, o, d, n, k, v, where := readRequest(r)
+	db, t, o, d, n, k, v := readRequest(r)
+	
 	q := r.URL.Query()
 	action := q.Get("action")
 
@@ -74,22 +74,20 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionEdit(w, r, cred, db, t, k, v)
 	} else if action == "EDITEXEC" && db != "" && t != "" && k != "" && v != "" {
 		actionEditExec(w, r, cred, db, t, k, v)
-	} else if action == "DELETEWHERE" && db != "" && t != "" && where != "" {
-		actionDeleteWhere(w, r, cred, db, t, where)
-	} else if action == "DELETE" && db != "" && t != "" {
+	} else if action == "DELETEQ" && db != "" && t != "" {	// Subset and Delete
+		actionDeleteQ(w, r, cred, db, t)
+	} else if action == "DELETE" && db != "" && t != "" { 	// Delete a selected subset
 		actionDelete(w, r, cred, db, t)
-	} else if action == "DELETEEXEC" && db != "" && t != "" {
-		actionDeleteExec(w, r, cred, db, t)
 	} else if action == "UPDATE" && db != "" && t != "" {
 		shipMessage(w, cred, db, "Update records not implemented")
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
-		dumpIt(w, cred, db, t, o, d, n, k, v, where)
+		dumpIt(w, r, cred, db, t, o, d, n, k, v)
 	} else if action == "BACK" {
-		dumpIt(w, cred, db, "", "", "", "", "", "", "")
+		dumpIt(w, r, cred, db, "", "", "", "", "", "")
 	} else if action != "" {
 		shipMessage(w, cred, db, "Unknown action: "+action)
 	} else {
-		dumpIt(w, cred, db, t, o, d, n, k, v, where)
+		dumpIt(w, r, cred, db, t, o, d, n, k, v)
 	}
 }
 

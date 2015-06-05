@@ -125,8 +125,8 @@ func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, db string
 	shipForm(w, r, cred, db, t, "", "", "QUERY", "Query", "true", make(map[string]string))
 }
 
-func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "", "", "DELETEEXEC", "Delete", "true", make(map[string]string))
+func actionDeleteQ(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	shipForm(w, r, cred, db, t, "", "", "DELETE", "Delete", "true", make(map[string]string))
 }
 
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
@@ -149,8 +149,8 @@ func collectClauses(r *http.Request, cred Access, db string, t string, set strin
 	var clauses []string
 	cols := getCols(cred, db, t)
 	for _, col := range cols {
-		val := sqlProtectString(r.FormValue(col + "C"))
 		colname := sqlProtectIdentifier(col)
+		val := sqlProtectString(r.FormValue(col + "C"))
 		if val != "" {
 			comparator := sqlProtectString(r.FormValue(col + "O"))
 			if comparator == "" {
@@ -160,33 +160,72 @@ func collectClauses(r *http.Request, cred Access, db string, t string, set strin
 					clauses = append(clauses, "`"+colname+"` "+set+" \""+val+"\"")
 				}
 			} else {
-				clauses = append(clauses, "`"+colname+"`"+comparator+"\""+val+"\"")
+				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(comparator)+"\""+val+"\"")
 			}
 		}
 	}
 	return clauses
 }
 
-func collectSet(r *http.Request, cred Access, db string, t string) string {
-	return strings.Join(collectClauses(r, cred, db, t, "="), " , ")
+func WhereQuery2Sql(q url.Values, cols []string) string {
+	
+	var clauses []string
+	log.Println("WhereQ2S",q)
+	for _, col := range cols {
+		colname := sqlProtectIdentifier(col)
+		val := sqlProtectString(q.Get(col + "C"))
+		if val != "" {
+			comparator := sqlProtectString(q.Get(col + "O"))
+			if comparator == "" {
+				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
+			} else {
+				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(comparator)+"\""+val+"\"")
+			}
+		}
+	}
+	log.Println("WhereQ2S",strings.Join(clauses," && "))
+	return strings.Join(clauses," && ")
+}	
+	
+	
+func WhereForm2Query(r *http.Request, cred Access, db string, t string) url.Values {
+
+	v := url.Values{}
+	log.Println("WhereF2Q",db,t)
+	cols := getCols(cred, db, t)
+	for _, col := range cols {
+		colname := sqlProtectIdentifier(col)
+		val := sqlProtectString(r.FormValue(col + "C"))
+		if val != "" {
+			v.Add(colname+"C",sqlProtectNumericComparison(val))
+			comparator := sqlProtectString(r.FormValue(col + "O"))
+			if comparator != "" {
+				v.Add(colname+"O",sqlProtectNumericComparison(comparator))
+			}
+		}
+	}
+	log.Println("WhereF2Q",v)
+	return v
 }
 
-func collectWhere(r *http.Request, cred Access, db string, t string) string {
+func WhereForm2Sql(r *http.Request, cred Access, db string, t string) string {
 	return strings.Join(collectClauses(r, cred, db, t, ""), " && ")
 }
 
+
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	where := collectWhere(r, cred, db, t)
+	where := WhereForm2Sql(r, cred, db, t)
+	whereQ:= WhereForm2Query(r, cred, db, t)
 	if len(where) > 0 {
 		query := "SELECT * FROM `" + t + "` WHERE " + where
-		dumpRows(w, db, t, "", "", cred, query, where)
+		dumpRows(w, db, t, "", "", cred, query, whereQ)
 	}
 }
 
-func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	where := collectWhere(r, cred, db, t)
+	where := WhereForm2Sql(r, cred, db, t)
 	if len(where) > 0 {
 		stmt := "DELETE FROM `" + t + "` WHERE " + where
 		log.Println("[SQL]", stmt)
@@ -203,20 +242,8 @@ func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db st
 	}
 }
 
-func actionDeleteWhere(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, where string) {
-
-	stmt := "DELETE FROM `" + t + "` WHERE " + where
-	log.Println("[SQL]", stmt)
-	conn := getConnection(cred, db)
-	defer conn.Close()
-
-	statement, err := conn.Prepare(stmt)
-	checkY(err)
-	_, err = statement.Exec()
-	if err != nil {
-		shipError(w, cred, db, t, stmt, err)
-	}
-	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
+func collectSet(r *http.Request, cred Access, db string, t string) string {
+	return strings.Join(collectClauses(r, cred, db, t, "="), " , ")
 }
 
 func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {

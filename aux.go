@@ -40,7 +40,7 @@ func escape(name string, link string) Entry {
 func sqlProtectIdentifier(s string) string {
 	if s != "" && strings.ContainsAny(s, "`") {
 		r := strings.Replace(s, "`", "``", -1)
-		log.Println("[SQL INJECTION]", s+"->"+r)
+		log.Println("[SQL INJECTION?]", s+" -> "+r)
 		return r
 	} else {
 		return s
@@ -63,7 +63,7 @@ func sqlProtectIdentifier(s string) string {
 func sqlProtectString(s string) string {
 	if s != "" && strings.ContainsAny(s, "\"") {
 		r := strings.Replace(s, "\"", "\"\"", -1)
-		log.Println("[SQL INJECTION]", s+"->"+r)
+		log.Println("[SQL INJECTION?]", s+" -> "+r)
 		return r
 	} else {
 		return s
@@ -76,6 +76,9 @@ func sqlProtectNumericComparison(t string) string {
 	reNumeric := regexp.MustCompile("[^-><=!0-9. eE]*")
 	return reNumeric.ReplaceAllString(t, "")
 }
+
+
+
 
 
 func troubleF(filename string) error {
