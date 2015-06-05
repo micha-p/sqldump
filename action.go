@@ -83,14 +83,17 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 	newcols := []CContext{}
 
 	for _, col := range cols {
-		label := col.Name
+		name := html.EscapeString(col.Name)
 		readonly := ""
 		value := html.EscapeString(fieldmap[col.Name])
-		if label == primary {
-			label = label + " (ID)"
+		label := ""
+		if name == primary {
+			label = name + " (ID)"
 			readonly = value
+		} else {
+			label = name
 		}
-		newcols = append(newcols, CContext{col.Number, col.Name, label, col.IsNumeric, col.IsString, value, readonly})
+		newcols = append(newcols, CContext{col.Number, name, label, col.IsNumeric, col.IsString, value, readonly})
 	}
 
 	q := r.URL.Query()
@@ -147,16 +150,17 @@ func collectClauses(r *http.Request, cred Access, db string, t string, set strin
 	cols := getCols(cred, db, t)
 	for _, col := range cols {
 		val := sqlProtectString(r.FormValue(col + "C"))
+		colname := sqlProtectIdentifier(col)
 		if val != "" {
 			comparator := sqlProtectString(r.FormValue(col + "O"))
 			if comparator == "" {
 				if set == "" {
-					clauses = append(clauses, "`"+col+"`"+sqlProtectNumericComparison(val))
+					clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
 				} else {
-					clauses = append(clauses, "`"+col+"` "+set+" \""+val+"\"")
+					clauses = append(clauses, "`"+colname+"` "+set+" \""+val+"\"")
 				}
 			} else {
-				clauses = append(clauses, "`"+col+"`"+comparator+"\""+val+"\"")
+				clauses = append(clauses, "`"+colname+"`"+comparator+"\""+val+"\"")
 			}
 		}
 	}
@@ -303,7 +307,7 @@ func actionInfo(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
 		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
-		records = append(records, []Entry{{strconv.Itoa(i), ""}, {f, ""}, {t, ""}, {n, ""}, {k, ""}, {string(d), ""}, {e, ""}})
+		records = append(records, []Entry{{strconv.Itoa(i), ""}, escape(f, ""), {t, ""}, {n, ""}, {k, ""}, {string(d), ""}, {e, ""}})
 		i = i + 1
 	}
 	tableOutSimple(w, cred, db, t, head, records, menu)

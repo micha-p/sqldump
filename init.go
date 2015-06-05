@@ -1,7 +1,7 @@
 package main
 
 import "io/ioutil"
-import "text/template" // TODO change to html/template
+import "text/template" // change to html/template impossible as query=parameter would be escaped too
 
 var templateFormFields = template.New("formfields")
 var templateTable = template.New("table")

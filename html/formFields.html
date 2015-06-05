@@ -33,8 +33,8 @@
       <OPTION value="<="> &le; </OPTION>
 </SELECT>{{end}}
 {{define "selector"}}{{if .IsNumeric}}{{template "nselector" .Name}}{{else if .IsString}}{{template "tselector" .Name}}{{else}}{{template "oselector" .Name}}{{end}}{{end}}
-{{define "input"}}<input class="cell" type="text" id="{{.Name}}" name="{{.Name}}C" value="{{.Value}}">{{end}}
-{{define "readonly"}}<input class="cell" type="hidden" id="{{.Name}}" name="{{.Name}}C" value="{{.Value}}">{{.Value}}{{end}}
+{{define "input"}}<input class="cell" type="text" name="{{.Name}}C" value="{{.Value}}">{{end}}
+{{define "readonly"}}<input class="cell" type="hidden" name="{{.Name}}C" value="{{.Value}}">{{.Value}}{{end}}
 {{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "input" .}}{{end}}{{end}}
 
 {{if .Trail}}<div class="top">

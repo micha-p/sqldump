@@ -93,7 +93,7 @@ func dumpHome(w http.ResponseWriter, cred Access) {
 		if EXPERTFLAG || INFOFLAG || field != "information_schema" {
 			q.Set("db", field)
 			link := q.Encode()
-			row := []Entry{Entry{strconv.Itoa(n), link}, Entry{field, link}}
+			row := []Entry{escape(strconv.Itoa(n), link), escape(field, link)}
 			records = append(records, row)
 			n = n + 1
 		}
@@ -122,7 +122,7 @@ func dumpTables(w http.ResponseWriter, db string, cred Access) {
 
 		q.Set("t", field)
 		link := q.Encode()
-		row := []Entry{{strconv.Itoa(n), link}, {field, link}, {nrows, ""}}
+		row := []Entry{escape(strconv.Itoa(n), link), escape(field, link), escape(nrows, "")}
 		records = append(records, row)
 		n = n + 1
 	}
@@ -271,7 +271,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 			q.Del("k")
 			q.Del("v")
 			q.Set("n", strconv.Itoa(rownum))
-			row = append(row, Entry{Link: q.Encode(), Text: strconv.Itoa(rownum)})
+			row = append(row, escape(strconv.Itoa(rownum),q.Encode()))
 		}
 
 		err = rows.Scan(valuePtrs...)
@@ -285,9 +285,9 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 				q.Del("n")
 				q.Set("k", primary)
 				q.Set("v", v)
-				row = append(row, Entry{Link: q.Encode(), Text: v})
+				row = append(row, escape(v,q.Encode()))
 			} else {
-				row = append(row, Entry{Link: "", Text: v})
+				row = append(row, escape(v,""))
 			}
 		}
 
@@ -361,7 +361,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 		}
 		row := []Entry{}
 		q.Set("n", strconv.Itoa(rownum))
-		row = append(row, Entry{Link: q.Encode(), Text: strconv.Itoa(rownum)})
+		row = append(row, escape(strconv.Itoa(rownum),q.Encode()))
 
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
@@ -374,9 +374,9 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 				q.Del("n")
 				q.Set("k", primary)
 				q.Set("v", v)
-				row = append(row, Entry{v, q.Encode()})
+				row = append(row, escape(v,q.Encode()))
 			} else {
-				row = append(row, Entry{v, ""})
+				row = append(row, escape(v,""))
 			}
 		}
 
@@ -405,7 +405,7 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 	i := 1
 	for f, v := range fieldmap {
 		var row []Entry
-		row = []Entry{{strconv.Itoa(i), ""}, {f, ""}, {v, ""}}
+		row = []Entry{escape(strconv.Itoa(i),""),escape(f,""),escape(v,"")}
 		records = append(records, row)
 		i = i + 1
 	}
@@ -455,7 +455,7 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		if f == primary {
 			f = f + " (ID)"
 		}
-		row = []Entry{{strconv.Itoa(i), ""}, {f, ""}, {v, ""}}
+		row = []Entry{escape(strconv.Itoa(i),""),escape(f,""),escape(v,"")}
 		records = append(records, row)
 		i = i + 1
 	}
