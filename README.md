@@ -51,6 +51,7 @@ or on command line
 - insert and query limited by request length
 - some data types cause problems at driver level
 - passwords might be supplied or bookmarked via URL
+- no javascript
 
 #### SQL-injection via Request parameters
 
@@ -65,8 +66,7 @@ If identifiers for tables or fields contain quotes or doublequotes, control migh
  
 #### Login-attack via credentials
 
-Establishing connections to databases is done by the standard library-functions. The trusted code has to prevent additional commands appended to manipulated credentials.   
-
+Establishing connections to databases is done by the standard library-functions. The credentials taken from a simple html-form are directly submitted to the library without any further processing. It has to be trusted to their code. 
 
 # License
 

@@ -156,46 +156,61 @@ func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	shipForm(w, r, cred, db, t, k, v, "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows))
 }
 
-func collectClauses(r *http.Request, cols []string, set string) []string {
+func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Values) {
 
-	var clauses []string
+	v := url.Values{}
+	var whereclauses,setclauses []string
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
-		val := sqlProtectString(r.FormValue(col + "C"))
+		colhtml := html.EscapeString(col)
+		valraw := r.FormValue(col + "W")
+		setraw := r.FormValue(col + "S")
+		val := sqlProtectString(valraw)
+		set := sqlProtectString(setraw)
 		if val != "" {
-			comparator := sqlProtectString(r.FormValue(col + "O"))
+			v.Add(colhtml+"W",valraw)
+			comparaw := r.FormValue(col + "O")
+			comparator := sqlProtectString(comparaw)
 			if comparator == "" {
 				if set == "" {
-					clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
+					whereclauses = append(whereclauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
 				} else {
-					clauses = append(clauses, "`"+colname+"` "+set+" \""+val+"\"")
+					whereclauses = append(whereclauses, "`"+colname+"` "+set+" \""+val+"\"")
 				}
-			} else if comparator=="LIKE"{
-				clauses = append(clauses, "`"+colname+"` LIKE \""+val+"\"")
-			} else if comparator=="NOT LIKE"{
-				clauses = append(clauses, "`"+colname+"` NOT LIKE \""+val+"\"")
+			} else if comparator=="~"{
+				v.Add(colhtml+"O",comparaw)
+				whereclauses = append(whereclauses, "`"+colname+"` LIKE \""+val+"\"")
+			} else if comparator=="!~"{
+				v.Add(colhtml+"O",comparaw)
+				whereclauses = append(whereclauses, "`"+colname+"` NOT LIKE \""+val+"\"")
 			} else {
-				clauses = append(clauses, "`"+colname+"` "+sqlProtectNumericComparison(comparator)+" \""+val+"\"")
+				v.Add(colhtml+"O",sqlProtectNumericComparison(comparaw))
+				whereclauses = append(whereclauses, "`"+colname+"` "+sqlProtectNumericComparison(comparaw)+" \""+val+"\"")
 			}
+		} 
+		if set != "" {
+			v.Add(colhtml+"S",setraw)
+			setclauses = append(setclauses, "`"+colname+"` "+"="+" \""+set+"\"")
 		}
 	}
-	return clauses
+	return whereclauses,setclauses,v
 }
 
+// TODO: submit reader to collectClauses and unify	
 func WhereQuery2Sql(q url.Values, cols []string) string {
 	
 	var clauses []string
 	log.Println("WhereQ2S",q)
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
-		val := sqlProtectString(q.Get(html.EscapeString(col) + "C"))
+		val := sqlProtectString(q.Get(html.EscapeString(col) + "W"))
 		if val != "" {
 			comparator := sqlProtectString(q.Get(html.EscapeString(col) + "O"))
 			if comparator == "" {
 				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
-			} else if comparator=="LIKE"{
+			} else if comparator=="~"{
 				clauses = append(clauses, "`"+colname+"` LIKE \""+val+"\"")
-			} else if comparator=="NOT LIKE"{
+			} else if comparator=="!~"{
 				clauses = append(clauses, "`"+colname+"` NOT LIKE \""+val+"\"")
 			} else {
 				clauses = append(clauses, "`"+colname+"` "+sqlProtectNumericComparison(comparator)+" \""+val+"\"")
@@ -206,41 +221,18 @@ func WhereQuery2Sql(q url.Values, cols []string) string {
 	return strings.Join(clauses," && ")
 }	
 	
-	
-func WhereForm2Query(r *http.Request, cred Access, db string, t string) url.Values {
-
-	v := url.Values{}
-	log.Println("WhereF2Q",db,t)
-	cols := getCols(cred, db, t)
-	for _, col := range cols {
-		colname := html.EscapeString(col)
-		val := r.FormValue(col + "C")
-		if val != "" {
-			v.Add(colname+"C",val)
-			comparator := r.FormValue(col + "O")
-			if comparator=="LIKE"{
-				v.Add(colname+"O",comparator)
-			} else if comparator=="NOT LIKE"{
-				v.Add(colname+"O",comparator)
-			} else if comparator != "" {
-				v.Add(colname+"O",sqlProtectNumericComparison(comparator))
-			}
-		}
-	}
-	log.Println("WhereF2Q",v)
-	return v
-}
-
 func WhereForm2Sql(r *http.Request, cred Access, db string, t string) string {
 	cols := getCols(cred, db, t)
-	return strings.Join(collectClauses(r, cols, ""), " && ")
+	wclauses,_ ,_:= collectClauses(r, cols)
+	return strings.Join(wclauses, " && ")
 }
 
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	where := WhereForm2Sql(r, cred, db, t)
-	whereQ:= WhereForm2Query(r, cred, db, t)
+	cols := getCols(cred, db, t)
+	wclauses,_ ,whereQ:= collectClauses(r, cols)
+	where := strings.Join(wclauses, " && ")
 	if len(where) > 0 {
 		query := "SELECT * FROM `" + t + "` WHERE " + where
 		dumpRows(w, db, t, "", "", cred, query, whereQ)
@@ -288,7 +280,8 @@ func actionDeleteSubset(w http.ResponseWriter, r *http.Request, cred Access, db 
 
 func collectSet(r *http.Request, cred Access, db string, t string) string {
 	cols := getCols(cred, db, t)
-	return strings.Join(collectClauses(r,cols, "="), " , ")
+	_,sclauses,_ := collectClauses(r, cols)
+	return strings.Join(sclauses, " , ")
 }
 
 func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {

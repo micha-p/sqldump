@@ -6,8 +6,8 @@
 <body>
 {{define "tselector"}}
 <SELECT name="{{.}}O" style="width:90%;" >
-      <OPTION value="LIKE"> &sim; </OPTION>
-      <OPTION value="NOT LIKE"> !&sim; </OPTION>
+      <OPTION value="~"> &sim; </OPTION>
+      <OPTION value="!~"> !&sim; </OPTION>
       <OPTION value=">"> &gt; </OPTION>
       <OPTION value=">="> &ge; </OPTION>
       <OPTION value="<"> &lt; </OPTION>
@@ -33,8 +33,9 @@
       <OPTION value="<="> &le; </OPTION>
 </SELECT>{{end}}
 {{define "selector"}}{{if .IsNumeric}}{{template "nselector" .Name}}{{else if .IsString}}{{template "tselector" .Name}}{{else}}{{template "oselector" .Name}}{{end}}{{end}}
-{{define "input"}}<input class="cell" type="text" name="{{.Name}}C" value="{{.Value}}">{{end}}
-{{define "readonly"}}<input class="cell" type="hidden" name="{{.Name}}C" value="{{.Value}}">{{.Value}}{{end}}
+{{define "set"}}<input class="cell" type="text" name="{{.Name}}S" value="{{.Value}}">{{end}}
+{{define "input"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
+{{define "readonly"}}<input class="cell" type="hidden" name="{{.Name}}W" value="{{.Value}}">{{.Value}}{{end}}
 {{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "input" .}}{{end}}{{end}}
 
 {{if .Trail}}<div class="top">
@@ -55,7 +56,7 @@
 			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> </tr>
 			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "selector" .}}</td> <td>{{template "field" .}}</td> </tr>
 			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Data</th> </tr>
-			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "field" .}}</td> </tr>
+			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "set" .}}</td> </tr>
 			{{end}}{{end}}
 		</table>
 		<br>
