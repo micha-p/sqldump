@@ -38,10 +38,9 @@ type FContext struct {
 	Button   string
 	Database string
 	Table    string
-	Key      string
-	Value    string
 	Back     string
 	Columns  []CContext
+	Hidden   []CContext
 	Trail    []Entry
 }
 
@@ -56,6 +55,7 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 		Table:    t,
 		Back:     makeBack(cred.Host, db, t, "", "", ""),
 		Columns:  cols,
+		Hidden:	  []CContext{},
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
@@ -76,7 +76,10 @@ func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
 	shipErrorPage(w, cred, db, "", cols)
 }
 
-func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string, action string, button string, selector string, vmap map[string]string) {
+func shipForm(w http.ResponseWriter, r *http.Request, cred Access, 
+              db string, t string,
+              action string, button string, selector string, 
+              vmap map[string]string, hiddencols []CContext) {
 
 	cols := getColumnInfo(cred, db, t)
 	primary := getPrimary(cred, db, t)
@@ -107,10 +110,9 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 		Button:   button,
 		Database: db,
 		Table:    t,
-		Key:      k,
-		Value:    v,
 		Back:     linkback,
 		Columns:  newcols,
+		Hidden:	  hiddencols,
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
@@ -122,30 +124,38 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 }
 
 func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "", "", "QUERY", "Query", "true", make(map[string]string))
+	shipForm(w, r, cred, db, t, "QUERY", "Query", "true", make(map[string]string),[]CContext{})
 }
 
 func actionDeleteForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "", "", "DELETEEXEC", "Delete", "true", make(map[string]string))
+	shipForm(w, r, cred, db, t, "DELETEEXEC", "Delete", "true", make(map[string]string),[]CContext{})
 }
 
-func actionUpdateForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	where := WhereForm2Sql(r, cred, db, t)
+func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	shipForm(w, r, cred, db, t, "INSERT", "Insert", "", make(map[string]string),[]CContext{})
+}
+
+func actionUpdateSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	cols := getCols(cred, db, t)
+	wclauses,_ ,whereQ:= collectClauses(r, cols)
+	where := strings.Join(wclauses, " && ")
+	hiddencols:=[]CContext{}
+	for field, valueArray := range whereQ {    //type Values map[string][]string
+		hiddencols = append(hiddencols, CContext{"", field, "", "", "", valueArray[0], ""})
+	}
+	
 	count := getSingleValue(cred, db, "select count(*) from `" + t + "` where " + where)
 	if count== "1" {
 		rows,err := getRows(cred, db, "select * from `" + t + "` where " + where)
 		checkY(err)
-		shipForm(w, r, cred, db, t, "", "", "UPDATEEXEC", "Update", "", getValueMap(w, db, t, cred, rows))
+		shipForm(w, r, cred, db, t, "UPDATEEXEC", "Update", "", getValueMap(w, db, t, cred, rows), hiddencols)
 	} else {
-		shipForm(w, r, cred, db, t, "", "", "UPDATEEXEC", "Update", "", make(map[string]string))
+		shipForm(w, r, cred, db, t, "UPDATEEXEC", "Update", "", make(map[string]string), hiddencols)
 	}
 }
 
-func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "", "", "INSERT", "Insert", "", make(map[string]string))
-}
-
 func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+	hiddencols:=[]CContext{CContext{"", "k", "", "", "",k, ""},CContext{"", "v", "", "", "", v, ""}}
 	query := "select * from `" + t + "` where `" + k + "` = ?"
 	conn := getConnection(cred, db)
 	defer conn.Close()
@@ -153,7 +163,7 @@ func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	checkY(err)
 	rows, err := stmt.Query(v)
 	checkY(err)
-	shipForm(w, r, cred, db, t, k, v, "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows))
+	shipForm(w, r, cred, db, t, "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows),hiddencols)
 }
 
 func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Values) {
@@ -172,11 +182,7 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 			comparaw := r.FormValue(col + "O")
 			comparator := sqlProtectString(comparaw)
 			if comparator == "" {
-				if set == "" {
-					whereclauses = append(whereclauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
-				} else {
-					whereclauses = append(whereclauses, "`"+colname+"` "+set+" \""+val+"\"")
-				}
+				whereclauses = append(whereclauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
 			} else if comparator=="~"{
 				v.Add(colhtml+"O",comparaw)
 				whereclauses = append(whereclauses, "`"+colname+"` LIKE \""+val+"\"")
@@ -220,13 +226,6 @@ func WhereQuery2Sql(q url.Values, cols []string) string {
 	log.Println("WhereQ2S",strings.Join(clauses," && "))
 	return strings.Join(clauses," && ")
 }	
-	
-func WhereForm2Sql(r *http.Request, cred Access, db string, t string) string {
-	cols := getCols(cred, db, t)
-	wclauses,_ ,_:= collectClauses(r, cols)
-	return strings.Join(wclauses, " && ")
-}
-
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
@@ -239,9 +238,36 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string,
 	}
 }
 
+func actionUpdateExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+
+	cols := getCols(cred, db, t)
+	wclauses,sclauses,_:= collectClauses(r, cols)
+	sets  := strings.Join(sclauses, " , ")
+	where := strings.Join(wclauses, " && ")
+	if len(sclauses) > 0 {
+		stmt := "UPDATE `" + t + "` SET " + sets + " WHERE " + where
+		log.Println("[SQL]", stmt)
+		conn := getConnection(cred, db)
+		defer conn.Close()
+
+		statement, err := conn.Prepare(stmt)
+		if err != nil {
+			shipError(w, cred, db, t, stmt, err)
+		}
+		_, err = statement.Exec()
+		if err != nil {
+			shipError(w, cred, db, t, stmt, err)
+		}
+		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
+	}
+}
+
+
 func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	where := WhereForm2Sql(r, cred, db, t)
+	cols := getCols(cred, db, t)
+	wclauses,_,_:= collectClauses(r, cols)
+	where := strings.Join(wclauses, " && ")
 	if len(where) > 0 {
 		stmt := "DELETE FROM `" + t + "` WHERE " + where
 		log.Println("[SQL]", stmt)
@@ -249,7 +275,9 @@ func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db st
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		checkY(err)
+		if err != nil {
+			shipError(w, cred, db, t, stmt, err)
+		}
 		_, err = statement.Exec()
 		if err != nil {
 			shipError(w, cred, db, t, stmt, err)
@@ -261,7 +289,8 @@ func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db st
 func actionDeleteSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 	
 	cols := getCols(cred, db, t)
-	where := WhereQuery2Sql(r.URL.Query(),cols)
+	wclauses,_,_:= collectClauses(r, cols)
+	where := strings.Join(wclauses, " && ")
 	if len(where) > 0 {
 		stmt := "DELETE FROM `" + t + "` WHERE " + where
 		log.Println("[SQL]", stmt)
@@ -269,7 +298,9 @@ func actionDeleteSubset(w http.ResponseWriter, r *http.Request, cred Access, db 
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		checkY(err)
+		if err != nil {
+			shipError(w, cred, db, t, stmt, err)
+		}
 		_, err = statement.Exec()
 		if err != nil {
 			shipError(w, cred, db, t, stmt, err)
@@ -294,7 +325,9 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		checkY(err)
+		if err != nil {
+			shipError(w, cred, db, t, stmt, err)
+		}
 		_, err = statement.Exec()
 		if err != nil {
 			shipError(w, cred, db, t, stmt, err)
@@ -313,7 +346,9 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		checkY(err)
+		if err != nil {
+			shipError(w, cred, db, t, stmt, err)
+		}
 		_, err = statement.Exec(v)
 		if err != nil {
 			shipError(w, cred, db, t, stmt, err)
@@ -330,7 +365,9 @@ func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string
 	defer conn.Close()
 
 	statement, err := conn.Prepare(stmt)
-	checkY(err)
+	if err != nil {
+		shipError(w, cred, db, t, stmt, err)
+	}
 	_, err = statement.Exec(v)
 	if err != nil {
 		shipError(w, cred, db, t, stmt, err)

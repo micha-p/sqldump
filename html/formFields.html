@@ -34,9 +34,10 @@
 </SELECT>{{end}}
 {{define "selector"}}{{if .IsNumeric}}{{template "nselector" .Name}}{{else if .IsString}}{{template "tselector" .Name}}{{else}}{{template "oselector" .Name}}{{end}}{{end}}
 {{define "set"}}<input class="cell" type="text" name="{{.Name}}S" value="{{.Value}}">{{end}}
-{{define "input"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
-{{define "readonly"}}<input class="cell" type="hidden" name="{{.Name}}W" value="{{.Value}}">{{.Value}}{{end}}
-{{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "input" .}}{{end}}{{end}}
+{{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
+{{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
+{{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
+{{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "where" .}}{{end}}{{end}}
 
 {{if .Trail}}<div class="top">
 	<div class="breadcrumb">
@@ -50,9 +51,8 @@
 		<input type="hidden" name="action" value="{{.Action}}">
 		<input type="hidden" name="db" value="{{.Database}}">
 		<input type="hidden" name="t"  value="{{.Table}}">
-		<input type="hidden" name="k"  value="{{.Key}}">
-		<input type="hidden" name="v"  value="{{.Value}}">
-		<table>
+		{{range .Hidden}}{{template "hidden" .}}
+		{{end}}<table>
 			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> </tr>
 			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "selector" .}}</td> <td>{{template "field" .}}</td> </tr>
 			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Data</th> </tr>

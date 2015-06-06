@@ -80,10 +80,10 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionDeleteExec(w, r, cred, db, t)
 	} else if action == "DELETE" && db != "" && t != "" { 		// Delete a selected subset
 		actionDeleteSubset(w, r, cred, db, t)
-	} else if action == "UPDATE" && db != "" && t != "" {
-		actionUpdateForm(w, r, cred, db, t)
-	} else if action == "UPDATEEXEC" && db != "" && t != "" {	// How to transport where clauses suitable for parsing
-		shipMessage(w, cred, db, "Update records without primary key not implemented")
+	} else if action == "UPDATE" && db != "" && t != "" {		// Update a selected subset
+		actionUpdateSubset(w, r, cred, db, t)
+	} else if action == "UPDATEEXEC" && db != "" && t != "" {
+		actionUpdateExec(w, r, cred, db, t)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, cred, db, t, o, d, n, k, v)
 	} else if action == "BACK" {
