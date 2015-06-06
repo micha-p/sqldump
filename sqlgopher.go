@@ -74,14 +74,16 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionEdit(w, r, cred, db, t, k, v)
 	} else if action == "EDITEXEC" && db != "" && t != "" && k != "" && v != "" {
 		actionEditExec(w, r, cred, db, t, k, v)
-	} else if action == "DELETEFORM" && db != "" && t != "" {	// Subset and Delete
+	} else if action == "DELETEFORM" && db != "" && t != "" {	// Subset and Delete 1
 		actionDeleteForm(w, r, cred, db, t)
-	} else if action == "DELETEEXEC" && db != "" && t != "" {	// Subset and Delete
+	} else if action == "DELETEEXEC" && db != "" && t != "" {	// Subset and Delete 2
 		actionDeleteExec(w, r, cred, db, t)
-	} else if action == "DELETE" && db != "" && t != "" { 	// Delete a selected subset
+	} else if action == "DELETE" && db != "" && t != "" { 		// Delete a selected subset
 		actionDeleteSubset(w, r, cred, db, t)
 	} else if action == "UPDATE" && db != "" && t != "" {
-		shipMessage(w, cred, db, "Update records not implemented")
+		actionUpdateForm(w, r, cred, db, t)
+	} else if action == "UPDATEEXEC" && db != "" && t != "" {	// How to transport where clauses suitable for parsing
+		shipMessage(w, cred, db, "Update records without primary key not implemented")
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, cred, db, t, o, d, n, k, v)
 	} else if action == "BACK" {

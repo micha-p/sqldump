@@ -129,6 +129,18 @@ func actionDeleteForm(w http.ResponseWriter, r *http.Request, cred Access, db st
 	shipForm(w, r, cred, db, t, "", "", "DELETEEXEC", "Delete", "true", make(map[string]string))
 }
 
+func actionUpdateForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	where := WhereForm2Sql(r, cred, db, t)
+	count := getSingleValue(cred, db, "select count(*) from `" + t + "` where " + where)
+	if count== "1" {
+		rows,err := getRows(cred, db, "select * from `" + t + "` where " + where)
+		checkY(err)
+		shipForm(w, r, cred, db, t, "", "", "UPDATEEXEC", "Update", "", getValueMap(w, db, t, cred, rows))
+	} else {
+		shipForm(w, r, cred, db, t, "", "", "UPDATEEXEC", "Update", "", make(map[string]string))
+	}
+}
+
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 	shipForm(w, r, cred, db, t, "", "", "INSERT", "Insert", "", make(map[string]string))
 }
