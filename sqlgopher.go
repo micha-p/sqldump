@@ -74,10 +74,12 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionEdit(w, r, cred, db, t, k, v)
 	} else if action == "EDITEXEC" && db != "" && t != "" && k != "" && v != "" {
 		actionEditExec(w, r, cred, db, t, k, v)
-	} else if action == "DELETEQ" && db != "" && t != "" {	// Subset and Delete
-		actionDeleteQ(w, r, cred, db, t)
+	} else if action == "DELETEFORM" && db != "" && t != "" {	// Subset and Delete
+		actionDeleteForm(w, r, cred, db, t)
+	} else if action == "DELETEEXEC" && db != "" && t != "" {	// Subset and Delete
+		actionDeleteExec(w, r, cred, db, t)
 	} else if action == "DELETE" && db != "" && t != "" { 	// Delete a selected subset
-		actionDelete(w, r, cred, db, t)
+		actionDeleteSubset(w, r, cred, db, t)
 	} else if action == "UPDATE" && db != "" && t != "" {
 		shipMessage(w, cred, db, "Update records not implemented")
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {

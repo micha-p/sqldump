@@ -133,9 +133,9 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	return m
 }
 
-func getFieldMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]string {
+func getValueMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]string {
 
-	fieldmap := make(map[string]string)
+	vmap := make(map[string]string)
 	defer rows.Close()
 
 	columns, err := rows.Columns()
@@ -152,7 +152,7 @@ func getFieldMap(w http.ResponseWriter, db string, t string, cred Access, rows *
 	checkY(err)
 
 	for i, _ := range columns {
-		fieldmap[columns[i]] = dumpValue(values[i])
+		vmap[columns[i]] = dumpValue(values[i])
 	}
-	return fieldmap
+	return vmap
 }

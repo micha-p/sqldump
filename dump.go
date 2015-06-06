@@ -210,8 +210,8 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	linkselect := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
-	q.Set("action", "DELETEQ")
-	linkdeleteQ := q.Encode()
+	q.Set("action", "DELETEFORM")
+	linkdeleteF := q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
@@ -228,7 +228,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
 		menu = append(menu, Entry{Link: linkdelete, Text: "-"})
 	} else {
-		menu = append(menu, Entry{Link: linkdeleteQ, Text: "-"})
+		menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
 	}
 	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
@@ -399,12 +399,12 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 
 	rows, err := getRows(cred, db, query)
 	checkY(err)
-	fieldmap := getFieldMap(w, db, t, cred, rows)
+	vmap := getValueMap(w, db, t, cred, rows)
 	head := []Entry{{"#", ""}, {"Column", ""}, {"Data", ""}}
 	records := [][]Entry{}
 
 	i := 1
-	for f, v := range fieldmap {
+	for f, v := range vmap {
 		var row []Entry
 		row = []Entry{escape(strconv.Itoa(i),""),escape(f,""),escape(v,"")}
 		records = append(records, row)
@@ -445,13 +445,13 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 
 	rows, err := getRows(cred, db, query)
 	checkY(err)
-	fieldmap := getFieldMap(w, db, t, cred, rows)
+	vmap := getValueMap(w, db, t, cred, rows)
 	primary := getPrimary(cred, db, t)
 	head := []Entry{{"#", ""}, {"Column", ""}, {"Data", ""}}
 	records := [][]Entry{}
 
 	i := 1
-	for f, v := range fieldmap {
+	for f, v := range vmap {
 		var row []Entry
 		if f == primary {
 			f = f + " (ID)"

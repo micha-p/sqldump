@@ -76,7 +76,7 @@ func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
 	shipErrorPage(w, cred, db, "", cols)
 }
 
-func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string, action string, button string, selector string, fieldmap map[string]string) {
+func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string, action string, button string, selector string, vmap map[string]string) {
 
 	cols := getColumnInfo(cred, db, t)
 	primary := getPrimary(cred, db, t)
@@ -85,7 +85,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t 
 	for _, col := range cols {
 		name := html.EscapeString(col.Name)
 		readonly := ""
-		value := html.EscapeString(fieldmap[col.Name])
+		value := html.EscapeString(vmap[col.Name])
 		label := ""
 		if name == primary {
 			label = name + " (ID)"
@@ -125,8 +125,8 @@ func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, db string
 	shipForm(w, r, cred, db, t, "", "", "QUERY", "Query", "true", make(map[string]string))
 }
 
-func actionDeleteQ(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "", "", "DELETE", "Delete", "true", make(map[string]string))
+func actionDeleteForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	shipForm(w, r, cred, db, t, "", "", "DELETEEXEC", "Delete", "true", make(map[string]string))
 }
 
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
@@ -141,13 +141,12 @@ func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	checkY(err)
 	rows, err := stmt.Query(v)
 	checkY(err)
-	shipForm(w, r, cred, db, t, k, v, "EDITEXEC", "Submit", "", getFieldMap(w, db, t, cred, rows))
+	shipForm(w, r, cred, db, t, k, v, "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows))
 }
 
-func collectClauses(r *http.Request, cred Access, db string, t string, set string) []string {
+func collectClauses(r *http.Request, cols []string, set string) []string {
 
 	var clauses []string
-	cols := getCols(cred, db, t)
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
 		val := sqlProtectString(r.FormValue(col + "C"))
@@ -159,8 +158,12 @@ func collectClauses(r *http.Request, cred Access, db string, t string, set strin
 				} else {
 					clauses = append(clauses, "`"+colname+"` "+set+" \""+val+"\"")
 				}
+			} else if comparator=="LIKE"{
+				clauses = append(clauses, "`"+colname+"` LIKE \""+val+"\"")
+			} else if comparator=="NOT LIKE"{
+				clauses = append(clauses, "`"+colname+"` NOT LIKE \""+val+"\"")
 			} else {
-				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(comparator)+"\""+val+"\"")
+				clauses = append(clauses, "`"+colname+"` "+sqlProtectNumericComparison(comparator)+" \""+val+"\"")
 			}
 		}
 	}
@@ -173,13 +176,17 @@ func WhereQuery2Sql(q url.Values, cols []string) string {
 	log.Println("WhereQ2S",q)
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
-		val := sqlProtectString(q.Get(col + "C"))
+		val := sqlProtectString(q.Get(html.EscapeString(col) + "C"))
 		if val != "" {
-			comparator := sqlProtectString(q.Get(col + "O"))
+			comparator := sqlProtectString(q.Get(html.EscapeString(col) + "O"))
 			if comparator == "" {
 				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
+			} else if comparator=="LIKE"{
+				clauses = append(clauses, "`"+colname+"` LIKE \""+val+"\"")
+			} else if comparator=="NOT LIKE"{
+				clauses = append(clauses, "`"+colname+"` NOT LIKE \""+val+"\"")
 			} else {
-				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(comparator)+"\""+val+"\"")
+				clauses = append(clauses, "`"+colname+"` "+sqlProtectNumericComparison(comparator)+" \""+val+"\"")
 			}
 		}
 	}
@@ -194,12 +201,16 @@ func WhereForm2Query(r *http.Request, cred Access, db string, t string) url.Valu
 	log.Println("WhereF2Q",db,t)
 	cols := getCols(cred, db, t)
 	for _, col := range cols {
-		colname := sqlProtectIdentifier(col)
-		val := sqlProtectString(r.FormValue(col + "C"))
+		colname := html.EscapeString(col)
+		val := r.FormValue(col + "C")
 		if val != "" {
-			v.Add(colname+"C",sqlProtectNumericComparison(val))
-			comparator := sqlProtectString(r.FormValue(col + "O"))
-			if comparator != "" {
+			v.Add(colname+"C",val)
+			comparator := r.FormValue(col + "O")
+			if comparator=="LIKE"{
+				v.Add(colname+"O",comparator)
+			} else if comparator=="NOT LIKE"{
+				v.Add(colname+"O",comparator)
+			} else if comparator != "" {
 				v.Add(colname+"O",sqlProtectNumericComparison(comparator))
 			}
 		}
@@ -209,7 +220,8 @@ func WhereForm2Query(r *http.Request, cred Access, db string, t string) url.Valu
 }
 
 func WhereForm2Sql(r *http.Request, cred Access, db string, t string) string {
-	return strings.Join(collectClauses(r, cred, db, t, ""), " && ")
+	cols := getCols(cred, db, t)
+	return strings.Join(collectClauses(r, cols, ""), " && ")
 }
 
 
@@ -223,7 +235,7 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string,
 	}
 }
 
-func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
 	where := WhereForm2Sql(r, cred, db, t)
 	if len(where) > 0 {
@@ -242,8 +254,29 @@ func actionDelete(w http.ResponseWriter, r *http.Request, cred Access, db string
 	}
 }
 
+func actionDeleteSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+	
+	cols := getCols(cred, db, t)
+	where := WhereQuery2Sql(r.URL.Query(),cols)
+	if len(where) > 0 {
+		stmt := "DELETE FROM `" + t + "` WHERE " + where
+		log.Println("[SQL]", stmt)
+		conn := getConnection(cred, db)
+		defer conn.Close()
+
+		statement, err := conn.Prepare(stmt)
+		checkY(err)
+		_, err = statement.Exec()
+		if err != nil {
+			shipError(w, cred, db, t, stmt, err)
+		}
+		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
+	}
+}
+
 func collectSet(r *http.Request, cred Access, db string, t string) string {
-	return strings.Join(collectClauses(r, cred, db, t, "="), " , ")
+	cols := getCols(cred, db, t)
+	return strings.Join(collectClauses(r,cols, "="), " , ")
 }
 
 func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
