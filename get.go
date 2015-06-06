@@ -62,7 +62,7 @@ func getCols(cred Access, db string, t string) []string {
 
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	log.Println("[SQL]", "get columns",db,t)
+	log.Println("[SQL]", "get columns", db, t)
 	// rows, err := conn.Query("select * from ? limit 1") // does not work??
 	rows, err := conn.Query("select * from `" + t + "` limit 0")
 	checkY(err)

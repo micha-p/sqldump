@@ -55,7 +55,7 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 		Table:    t,
 		Back:     makeBack(cred.Host, db, t, "", "", ""),
 		Columns:  cols,
-		Hidden:	  []CContext{},
+		Hidden:   []CContext{},
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
@@ -66,9 +66,11 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 	checkY(err)
 }
 
-func shipError(w http.ResponseWriter, cred Access, db string, t string, query string, e error) {
-	cols := []CContext{CContext{"1", "", "Query", "", "", query, ""}, CContext{"2", "", "Result", "", "", fmt.Sprint(e), ""}}
-	shipErrorPage(w, cred, db, t, cols)
+func checkErrorPage(w http.ResponseWriter, cred Access, db string, t string, query string, err error) {
+	if err != nil {
+		cols := []CContext{CContext{"1", "", "Query", "", "", query, ""}, CContext{"2", "", "Result", "", "", fmt.Sprint(err), ""}}
+		shipErrorPage(w, cred, db, t, cols)
+	}
 }
 
 func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
@@ -76,10 +78,10 @@ func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
 	shipErrorPage(w, cred, db, "", cols)
 }
 
-func shipForm(w http.ResponseWriter, r *http.Request, cred Access, 
-              db string, t string,
-              action string, button string, selector string, 
-              vmap map[string]string, hiddencols []CContext) {
+func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
+	db string, t string,
+	action string, button string, selector string,
+	vmap map[string]string, hiddencols []CContext) {
 
 	cols := getColumnInfo(cred, db, t)
 	primary := getPrimary(cred, db, t)
@@ -112,7 +114,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		Table:    t,
 		Back:     linkback,
 		Columns:  newcols,
-		Hidden:	  hiddencols,
+		Hidden:   hiddencols,
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
 	}
 
@@ -124,29 +126,29 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 }
 
 func actionSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "QUERY", "Query", "true", make(map[string]string),[]CContext{})
+	shipForm(w, r, cred, db, t, "QUERY", "Query", "true", make(map[string]string), []CContext{})
 }
 
 func actionDeleteForm(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "DELETEEXEC", "Delete", "true", make(map[string]string),[]CContext{})
+	shipForm(w, r, cred, db, t, "DELETEEXEC", "Delete", "true", make(map[string]string), []CContext{})
 }
 
 func actionAdd(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	shipForm(w, r, cred, db, t, "INSERT", "Insert", "", make(map[string]string),[]CContext{})
+	shipForm(w, r, cred, db, t, "INSERT", "Insert", "", make(map[string]string), []CContext{})
 }
 
 func actionUpdateSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 	cols := getCols(cred, db, t)
-	wclauses,_ ,whereQ:= collectClauses(r, cols)
+	wclauses, _, whereQ := collectClauses(r, cols)
 	where := strings.Join(wclauses, " && ")
-	hiddencols:=[]CContext{}
-	for field, valueArray := range whereQ {    //type Values map[string][]string
+	hiddencols := []CContext{}
+	for field, valueArray := range whereQ { //type Values map[string][]string
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", valueArray[0], ""})
 	}
-	
-	count := getSingleValue(cred, db, "select count(*) from `" + t + "` where " + where)
-	if count== "1" {
-		rows,err := getRows(cred, db, "select * from `" + t + "` where " + where)
+
+	count := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
+	if count == "1" {
+		rows, err := getRows(cred, db, "select * from `"+t+"` where "+where)
 		checkY(err)
 		shipForm(w, r, cred, db, t, "UPDATEEXEC", "Update", "", getValueMap(w, db, t, cred, rows), hiddencols)
 	} else {
@@ -155,7 +157,7 @@ func actionUpdateSubset(w http.ResponseWriter, r *http.Request, cred Access, db 
 }
 
 func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-	hiddencols:=[]CContext{CContext{"", "k", "", "", "",k, ""},CContext{"", "v", "", "", "", v, ""}}
+	hiddencols := []CContext{CContext{"", "k", "", "", "", k, ""}, CContext{"", "v", "", "", "", v, ""}}
 	query := "select * from `" + t + "` where `" + k + "` = ?"
 	conn := getConnection(cred, db)
 	defer conn.Close()
@@ -163,13 +165,13 @@ func actionEdit(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	checkY(err)
 	rows, err := stmt.Query(v)
 	checkY(err)
-	shipForm(w, r, cred, db, t, "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows),hiddencols)
+	shipForm(w, r, cred, db, t, "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows), hiddencols)
 }
 
 func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Values) {
 
 	v := url.Values{}
-	var whereclauses,setclauses []string
+	var whereclauses, setclauses []string
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
 		colhtml := html.EscapeString(col)
@@ -178,35 +180,34 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 		val := sqlProtectString(valraw)
 		set := sqlProtectString(setraw)
 		if val != "" {
-			v.Add(colhtml+"W",valraw)
+			v.Add(colhtml+"W", valraw)
 			comparaw := r.FormValue(col + "O")
 			comparator := sqlProtectString(comparaw)
 			if comparator == "" {
 				whereclauses = append(whereclauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
-			} else if comparator=="~"{
-				v.Add(colhtml+"O",comparaw)
+			} else if comparator == "~" {
+				v.Add(colhtml+"O", comparaw)
 				whereclauses = append(whereclauses, "`"+colname+"` LIKE \""+val+"\"")
-			} else if comparator=="!~"{
-				v.Add(colhtml+"O",comparaw)
+			} else if comparator == "!~" {
+				v.Add(colhtml+"O", comparaw)
 				whereclauses = append(whereclauses, "`"+colname+"` NOT LIKE \""+val+"\"")
 			} else {
-				v.Add(colhtml+"O",sqlProtectNumericComparison(comparaw))
+				v.Add(colhtml+"O", sqlProtectNumericComparison(comparaw))
 				whereclauses = append(whereclauses, "`"+colname+"` "+sqlProtectNumericComparison(comparaw)+" \""+val+"\"")
 			}
-		} 
+		}
 		if set != "" {
-			v.Add(colhtml+"S",setraw)
+			v.Add(colhtml+"S", setraw)
 			setclauses = append(setclauses, "`"+colname+"` "+"="+" \""+set+"\"")
 		}
 	}
-	return whereclauses,setclauses,v
+	return whereclauses, setclauses, v
 }
 
-// TODO: submit reader to collectClauses and unify	
+// TODO: submit reader to collectClauses and unify
 func WhereQuery2Sql(q url.Values, cols []string) string {
-	
+
 	var clauses []string
-	log.Println("WhereQ2S",q)
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
 		val := sqlProtectString(q.Get(html.EscapeString(col) + "W"))
@@ -214,23 +215,22 @@ func WhereQuery2Sql(q url.Values, cols []string) string {
 			comparator := sqlProtectString(q.Get(html.EscapeString(col) + "O"))
 			if comparator == "" {
 				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
-			} else if comparator=="~"{
+			} else if comparator == "~" {
 				clauses = append(clauses, "`"+colname+"` LIKE \""+val+"\"")
-			} else if comparator=="!~"{
+			} else if comparator == "!~" {
 				clauses = append(clauses, "`"+colname+"` NOT LIKE \""+val+"\"")
 			} else {
 				clauses = append(clauses, "`"+colname+"` "+sqlProtectNumericComparison(comparator)+" \""+val+"\"")
 			}
 		}
 	}
-	log.Println("WhereQ2S",strings.Join(clauses," && "))
-	return strings.Join(clauses," && ")
-}	
+	return strings.Join(clauses, " && ")
+}
 
 func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
 	cols := getCols(cred, db, t)
-	wclauses,_ ,whereQ:= collectClauses(r, cols)
+	wclauses, _, whereQ := collectClauses(r, cols)
 	where := strings.Join(wclauses, " && ")
 	if len(where) > 0 {
 		query := "SELECT * FROM `" + t + "` WHERE " + where
@@ -241,8 +241,8 @@ func actionQuery(w http.ResponseWriter, r *http.Request, cred Access, db string,
 func actionUpdateExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
 	cols := getCols(cred, db, t)
-	wclauses,sclauses,_:= collectClauses(r, cols)
-	sets  := strings.Join(sclauses, " , ")
+	wclauses, sclauses, _ := collectClauses(r, cols)
+	sets := strings.Join(sclauses, " , ")
 	where := strings.Join(wclauses, " && ")
 	if len(sclauses) > 0 {
 		stmt := "UPDATE `" + t + "` SET " + sets + " WHERE " + where
@@ -251,22 +251,17 @@ func actionUpdateExec(w http.ResponseWriter, r *http.Request, cred Access, db st
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		_, err = statement.Exec()
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
 
-
 func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
 	cols := getCols(cred, db, t)
-	wclauses,_,_:= collectClauses(r, cols)
+	wclauses, _, _ := collectClauses(r, cols)
 	where := strings.Join(wclauses, " && ")
 	if len(where) > 0 {
 		stmt := "DELETE FROM `" + t + "` WHERE " + where
@@ -275,21 +270,17 @@ func actionDeleteExec(w http.ResponseWriter, r *http.Request, cred Access, db st
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		_, err = statement.Exec()
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
 
 func actionDeleteSubset(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
-	
+
 	cols := getCols(cred, db, t)
-	wclauses,_,_:= collectClauses(r, cols)
+	wclauses, _, _ := collectClauses(r, cols)
 	where := strings.Join(wclauses, " && ")
 	if len(where) > 0 {
 		stmt := "DELETE FROM `" + t + "` WHERE " + where
@@ -298,20 +289,16 @@ func actionDeleteSubset(w http.ResponseWriter, r *http.Request, cred Access, db 
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		_, err = statement.Exec()
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
 
 func collectSet(r *http.Request, cred Access, db string, t string) string {
 	cols := getCols(cred, db, t)
-	_,sclauses,_ := collectClauses(r, cols)
+	_, sclauses, _ := collectClauses(r, cols)
 	return strings.Join(sclauses, " , ")
 }
 
@@ -325,13 +312,9 @@ func actionInsert(w http.ResponseWriter, r *http.Request, cred Access, db string
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		_, err = statement.Exec()
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
@@ -346,13 +329,9 @@ func actionEditExec(w http.ResponseWriter, r *http.Request, cred Access, db stri
 		defer conn.Close()
 
 		statement, err := conn.Prepare(stmt)
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		_, err = statement.Exec(v)
-		if err != nil {
-			shipError(w, cred, db, t, stmt, err)
-		}
+		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t, 302)
 	}
 }
@@ -365,13 +344,9 @@ func actionRemove(w http.ResponseWriter, r *http.Request, cred Access, db string
 	defer conn.Close()
 
 	statement, err := conn.Prepare(stmt)
-	if err != nil {
-		shipError(w, cred, db, t, stmt, err)
-	}
+	checkErrorPage(w, cred, db, t, stmt, err)
 	_, err = statement.Exec(v)
-	if err != nil {
-		shipError(w, cred, db, t, stmt, err)
-	}
+	checkErrorPage(w, cred, db, t, stmt, err)
 	http.Redirect(w, r, r.URL.Host+"?db="+db+"&t="+t+"&k"+k, 302)
 }
 

@@ -23,7 +23,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access, db string, t st
 func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
 	var query string
-    nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
+	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
 	checkY(err)
 	re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
 	limits := re.FindStringSubmatch(n)
@@ -200,7 +200,7 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 
 func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, query string, where url.Values) {
 
-	wherestring :=  ""
+	wherestring := ""
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
@@ -218,7 +218,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	menu = append(menu, Entry{Link: linkselect, Text: "?"})
 	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
 	if len(where) > 0 {
-		wherestring = WhereQuery2Sql(where,getCols(cred, db, t))
+		wherestring = WhereQuery2Sql(where, getCols(cred, db, t))
 		where.Add("db", db)
 		where.Add("t", t)
 		where.Set("action", "DELETE")
@@ -234,7 +234,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 
 	rows, err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, query, err)
+		checkErrorPage(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -272,7 +272,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 			q.Del("k")
 			q.Del("v")
 			q.Set("n", strconv.Itoa(rownum))
-			row = append(row, escape(strconv.Itoa(rownum),q.Encode()))
+			row = append(row, escape(strconv.Itoa(rownum), q.Encode()))
 		}
 
 		err = rows.Scan(valuePtrs...)
@@ -286,9 +286,9 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 				q.Del("n")
 				q.Set("k", primary)
 				q.Set("v", v)
-				row = append(row, escape(v,q.Encode()))
+				row = append(row, escape(v, q.Encode()))
 			} else {
-				row = append(row, escape(v,""))
+				row = append(row, escape(v, ""))
 			}
 		}
 
@@ -331,7 +331,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 
 	rows, err := getRows(cred, db, query)
 	if err != nil {
-		shipError(w, cred, db, t, query, err)
+		checkErrorPage(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -362,7 +362,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 		}
 		row := []Entry{}
 		q.Set("n", strconv.Itoa(rownum))
-		row = append(row, escape(strconv.Itoa(rownum),q.Encode()))
+		row = append(row, escape(strconv.Itoa(rownum), q.Encode()))
 
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
@@ -375,9 +375,9 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 				q.Del("n")
 				q.Set("k", primary)
 				q.Set("v", v)
-				row = append(row, escape(v,q.Encode()))
+				row = append(row, escape(v, q.Encode()))
 			} else {
-				row = append(row, escape(v,""))
+				row = append(row, escape(v, ""))
 			}
 		}
 
@@ -406,7 +406,7 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 	i := 1
 	for f, v := range vmap {
 		var row []Entry
-		row = []Entry{escape(strconv.Itoa(i),""),escape(f,""),escape(v,"")}
+		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
 		records = append(records, row)
 		i = i + 1
 	}
@@ -456,7 +456,7 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		if f == primary {
 			f = f + " (ID)"
 		}
-		row = []Entry{escape(strconv.Itoa(i),""),escape(f,""),escape(v,"")}
+		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
 		records = append(records, row)
 		i = i + 1
 	}

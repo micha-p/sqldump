@@ -52,7 +52,7 @@ func readRequest(r *http.Request) (string, string, string, string, string, strin
 func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	db, t, o, d, n, k, v := readRequest(r)
-	
+
 	q := r.URL.Query()
 	action := q.Get("action")
 
@@ -74,13 +74,13 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionEdit(w, r, cred, db, t, k, v)
 	} else if action == "EDITEXEC" && db != "" && t != "" && k != "" && v != "" {
 		actionEditExec(w, r, cred, db, t, k, v)
-	} else if action == "DELETEFORM" && db != "" && t != "" {	// Subset and Delete 1
+	} else if action == "DELETEFORM" && db != "" && t != "" { // Subset and Delete 1
 		actionDeleteForm(w, r, cred, db, t)
-	} else if action == "DELETEEXEC" && db != "" && t != "" {	// Subset and Delete 2
+	} else if action == "DELETEEXEC" && db != "" && t != "" { // Subset and Delete 2
 		actionDeleteExec(w, r, cred, db, t)
-	} else if action == "DELETE" && db != "" && t != "" { 		// Delete a selected subset
+	} else if action == "DELETE" && db != "" && t != "" { // Delete a selected subset
 		actionDeleteSubset(w, r, cred, db, t)
-	} else if action == "UPDATE" && db != "" && t != "" {		// Update a selected subset
+	} else if action == "UPDATE" && db != "" && t != "" { // Update a selected subset
 		actionUpdateSubset(w, r, cred, db, t)
 	} else if action == "UPDATEEXEC" && db != "" && t != "" {
 		actionUpdateExec(w, r, cred, db, t)
