@@ -13,6 +13,7 @@ var database = "information_schema"
 var EXPERTFLAG bool
 var INFOFLAG bool
 var DEBUGFLAG bool
+var READONLY bool
 var CSS_FILE string
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,27 +63,27 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionSubset(w, r, cred, db, t)
 	} else if action == "QUERY" && db != "" && t != "" {
 		actionQuery(w, r, cred, db, t)
-	} else if action == "ADD" && db != "" && t != "" {
-		actionAdd(w, r, cred, db, t)
-	} else if action == "INSERT" && db != "" && t != "" {
-		actionInsert(w, r, cred, db, t)
 	} else if action == "INFO" && db != "" && t != "" {
 		actionInfo(w, r, cred, db, t)
-	} else if action == "REMOVE" && db != "" && t != "" && k != "" && v != "" {
+	} else if action == "ADD" && !READONLY && db != "" && t != "" {
+		actionAdd(w, r, cred, db, t)
+	} else if action == "INSERT" && !READONLY && db != "" && t != "" {
+		actionInsert(w, r, cred, db, t)
+	} else if action == "REMOVE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionRemove(w, r, cred, db, t, k, v)
-	} else if action == "EDIT" && db != "" && t != "" && k != "" && v != "" {
+	} else if action == "EDIT" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionEdit(w, r, cred, db, t, k, v)
-	} else if action == "EDITEXEC" && db != "" && t != "" && k != "" && v != "" {
+	} else if action == "EDITEXEC" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionEditExec(w, r, cred, db, t, k, v)
-	} else if action == "DELETEFORM" && db != "" && t != "" { // Subset and Delete 1
+	} else if action == "DELETEFORM" && !READONLY && db != "" && t != "" { // Subset and Delete 1
 		actionDeleteForm(w, r, cred, db, t)
-	} else if action == "DELETEEXEC" && db != "" && t != "" { // Subset and Delete 2
+	} else if action == "DELETEEXEC" && !READONLY && db != "" && t != "" { // Subset and Delete 2
 		actionDeleteExec(w, r, cred, db, t)
-	} else if action == "DELETE" && db != "" && t != "" { // Delete a selected subset
+	} else if action == "DELETE" && !READONLY && db != "" && t != "" { // Delete a selected subset
 		actionDeleteSubset(w, r, cred, db, t)
-	} else if action == "UPDATE" && db != "" && t != "" { // Update a selected subset
+	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { // Update a selected subset
 		actionUpdateSubset(w, r, cred, db, t)
-	} else if action == "UPDATEEXEC" && db != "" && t != "" {
+	} else if action == "UPDATEEXEC" && !READONLY && db != "" && t != "" {
 		actionUpdateExec(w, r, cred, db, t)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, cred, db, t, o, d, n, k, v)
@@ -137,9 +138,11 @@ func main() {
 	var EXPERT = flag.Bool("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
 	var CSS = flag.String("c", "", "supply customized style in CSS file")
 	var DEBUG = flag.Bool("d", false, "dynamically load html templates and css (DEBUG)")
+	var READONLYFLAG = flag.Bool("r", false, "read-only access")
 
 	flag.Parse()
 
+	READONLY = *READONLYFLAG
 	INFOFLAG = *INFO
 	DEBUGFLAG = *DEBUG
 	EXPERTFLAG = *EXPERT

@@ -5,7 +5,7 @@ A small web-based tool for database administration.
 - access via login mask or bookmark
 - credentials stored in secure cookies
 - fast dumping of database content
-- inserting and querying data
+- inserting, querying and updating data
 - potentially changing database driver (TODO)
 - templates for html
 
@@ -43,6 +43,16 @@ or on command line
     w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text 
+
+Usage of ./sqlgopher:
+	-c  supply customized style in CSS file
+	-d  dynamically load html templates and css (DEBUG)
+	-h  server name
+	-i  include INFORMATION_SCHEMA in overview
+	-p  server port
+	-r  READONLY access
+	-s  https Connection TLS
+	-x  expert mode to access privileges, routines, triggers, views (TODO)
 
 ### Security
 
