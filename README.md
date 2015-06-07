@@ -9,7 +9,7 @@ A small web-based tool for database administration.
 - fast dumping of database content
 - inserting, querying and updating data
 - templates for html
-- potentially changing database driver (TODO)
+- changing database driver in future releases (TODO)
 
 ### Installation
 
@@ -35,10 +35,7 @@ or using a prebuilt binary
 Access via browser
 
    [http://localhost:8080](http://localhost:8080)
-
-or more convenient but not secure
-
-   [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/     user=galagopher&pass=mypassword&host=localhost&port=3306)
+   [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/user=galagopher&pass=mypassword&host=localhost&port=3306)
 
 or on command line
 
