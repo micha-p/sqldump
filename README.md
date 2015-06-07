@@ -1,13 +1,15 @@
 # sqlgopher
 
-A small web-based tool for database administration.
+A small web-based tool for database administration. 
 
-- access via login mask or bookmark
+- simple user-interface (check values for action links)
+- stepping through tables with primary key
+- direct access via query with credentials (use wisely)
 - credentials stored in secure cookies
 - fast dumping of database content
 - inserting, querying and updating data
-- potentially changing database driver (TODO)
 - templates for html
+- potentially changing database driver (TODO)
 
 ### Installation
 
@@ -44,7 +46,8 @@ or on command line
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text 
 
-Usage of ./sqlgopher:
+### Command line options
+
 	-c  supply customized style in CSS file
 	-d  dynamically load html templates and css (DEBUG)
 	-h  server name
@@ -61,22 +64,27 @@ Usage of ./sqlgopher:
 - insert and query limited by request length
 - some data types cause problems at driver level
 - passwords might be supplied or bookmarked via URL
+- TLS-encryption possible
 - no javascript
 
-#### SQL-injection via Request parameters
+##### SQL-injection via Request parameters
 
 To prevent SQL-injection, all supplied identifiers are backqoted and to prevent escaping, all backquotes are escaped by doubling them. 
-Values are doublequoted, supplied double quotes are escaped the same way. Where-clauses are especially difficult to ckeck, as this would require full parsing of SQL-expressions. Therefore they are avoided (TODO).
+Values are doublequoted, supplied double quotes are escaped the same way. 
+Where-clauses are especially difficult to ckeck, as this would require full parsing of SQL-expressions. 
+Therefore they are avoided, and identiefiers and values are transmitted in separate query fields. 
 
 
-#### Javascript-Injection via Identifiers and Values
+##### Javascript-Injection via Identifiers and Values
 
-If identifiers for tables or fields contain quotes or doublequotes, control might escape from these strings. Therefore they are protected by html-escaping in templates and manually (TODO).
+If identifiers for tables or fields contain quotes or doublequotes, control might escape from these strings. 
+Therefore they are protected by escaping html in templates and manually.
 
  
-#### Login-attack via credentials
+##### Login-attack via credentials
 
-Establishing connections to databases is done by the standard library-functions. The credentials taken from a simple html-form are directly submitted to the library without any further processing. It has to be trusted to their code. 
+Establishing connections to databases is done by the standard library-functions. 
+Credentials taken from a simple html-form are directly submitted to the library without any further processing. 
 
 # License
 
