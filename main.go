@@ -61,31 +61,31 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if action == "QUERY" && db != "" && t != "" {
-		actionQUERY(w, r, cred, db, t)
+		actionQUERY(w, r, cred, db, t, o, d)
 	} else if action == "SELECT" && db != "" && t != "" {
-		actionSELECT(w, r, cred, db, t)
+		actionSELECT(w, r, cred, db, t, o, d)
 	} else if action == "INFO" && db != "" && t != "" {
 		actionINFO(w, r, cred, db, t)
 	} else if action == "ADD" && !READONLY && db != "" && t != "" {
-		actionADD(w, r, cred, db, t)
+		actionADD(w, r, cred, db, t, o, d)
 	} else if action == "INSERT" && !READONLY && db != "" && t != "" {
-		actionINSERT(w, r, cred, db, t)
+		actionINSERT(w, r, cred, db, t, o, d)
 	} else if action == "REMOVE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionREMOVE(w, r, cred, db, t, k, v)
 	} else if action == "EDIT" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionEDIT(w, r, cred, db, t, k, v)
 	} else if action == "EDITEXEC" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionEDITEXEC(w, r, cred, db, t, k, v)
-	} else if action == "DELETEFORM" && !READONLY && db != "" && t != "" { // Subset and Delete 1
-		actionDELETEFORM(w, r, cred, db, t)
-	} else if action == "DELETEEXEC" && !READONLY && db != "" && t != "" { // Subset and Delete 2
-		actionDELETEEXEC(w, r, cred, db, t)
+	} else if action == "DELETEFORM" && !READONLY && db != "" && t != "" { // Subset and Delete (Show Form)
+		actionDELETEFORM(w, r, cred, db, t, o, d)
+	} else if action == "DELETEEXEC" && !READONLY && db != "" && t != "" { // Subset and Delete (exec)
+		actionDELETEEXEC(w, r, cred, db, t, o, d)
 	} else if action == "DELETE" && !READONLY && db != "" && t != "" { // Delete a selected subset
-		actionDELETE(w, r, cred, db, t)
+		actionDELETE(w, r, cred, db, t, o, d)
 	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { // Update a selected subset
-		actionUPDATE(w, r, cred, db, t)
+		actionUPDATE(w, r, cred, db, t, o, d)
 	} else if action == "UPDATEEXEC" && !READONLY && db != "" && t != "" {
-		actionUPDATEEXEC(w, r, cred, db, t)
+		actionUPDATEEXEC(w, r, cred, db, t, o, d)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, cred, db, t, o, d, n, k, v)
 	} else if action == "BACK" {
@@ -154,7 +154,7 @@ func main() {
 
 	portstring := ":" + strconv.Itoa(*PORT)
 	var err error
-	
+
 	if CSS_FILE != "" && troubleF(CSS_FILE) == nil {
 		http.HandleFunc("/"+CSS_FILE, cssHandler)
 	}
@@ -166,12 +166,11 @@ func main() {
 	if DEBUGFLAG {
 		fmt.Println("dynamically loading html templates and css (DEBUG)")
 	}
-	
+
 	if MODIFYFLAG {
 		fmt.Println("modification of database schema enabled (TODO)")
 	}
 
-	
 	if *SECURE {
 		if troubleF("cert.pem") == nil && troubleF("key.pem") == nil {
 			fmt.Println("cert.pem and key.pem found")
@@ -191,8 +190,7 @@ func main() {
 		}
 		err = http.ListenAndServe(portstring, nil)
 	}
-    if err != nil {
-        log.Fatal("ListenAndServe: ", err)
-    }
-}	
-
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}

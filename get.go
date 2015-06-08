@@ -130,7 +130,6 @@ func getColumnMainType(cred Access, db string, t string, c string) string {
 }
 */
 
-
 func getColumnInfo(cred Access, db string, t string) []CContext {
 
 	conn := getConnection(cred, db)
@@ -169,8 +168,6 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	}
 	return m
 }
-
-
 
 func getValueMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]string {
 

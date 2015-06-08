@@ -196,12 +196,11 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, Select string, where url.Values) {
 
 	wherestring := ""
-	where.Add("db", db)
-	where.Add("t", t)
-	where.Set("action", "SELECT")
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
+	q.Add("o", o)
+	q.Add("d", d)
 	q.Add("action", "ADD")
 	linkinsert := q.Encode()
 	q.Set("action", "QUERY")
@@ -215,19 +214,6 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	menu := []Entry{}
 	menu = append(menu, Entry{Link: linkselect, Text: "?"})
 	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
-	if len(where) > 0 {
-		wherestring = WhereSelect2Pretty(where, getColumnInfo(cred, db, t))
-		where.Set("action", "DELETE")
-		linkdelete := where.Encode()
-		where.Set("action", "UPDATE")
-		linkupdate := where.Encode()
-		where.Set("action", "SELECT")
-		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
-		menu = append(menu, Entry{Link: linkdelete, Text: "-"})
-	} else {
-		menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
-	}
-	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
 	rows, err := getRows(cred, db, Select)
 	if err != nil {
@@ -240,14 +226,31 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	primary := getPrimary(cred, db, t)
 	columns, err := rows.Columns()
 	checkY(err)
+	head := createHead(db, t, o, d, "", primary, columns, q)
+
+	if len(where) > 0 {
+		head = createHead(db, t, o, d, "", primary, columns, where)
+		wherestring = WhereSelect2Pretty(where, getColumnInfo(cred, db, t))
+		where.Add("db", db)
+		where.Add("t", t)
+		where.Set("action", "DELETE")
+		linkdelete := where.Encode()
+		where.Set("action", "UPDATE")
+		linkupdate := where.Encode()
+		where.Set("action", "SELECT")
+		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
+		menu = append(menu, Entry{Link: linkdelete, Text: "-"})
+	} else {
+		menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
+	}
+	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
+
 	count := len(columns)
 	values := make([]interface{}, count)
 	valuePtrs := make([]interface{}, count)
 	for i, _ := range columns {
 		valuePtrs[i] = &values[i]
 	}
-
-	head := createHead(db, t, o, d, "", primary, columns, where)
 
 	if o != "" {
 		q.Set("o", o)
