@@ -21,14 +21,14 @@ A small web-based tool for database administration.
 ### Usage
 
 	-c  supply customized style in CSS file
-	-d  dynamically load html templates and css (DEBUG)
+	-d  DEBUG: dynamically load html templates and css
 	-h  server name
 	-i  include INFORMATION_SCHEMA in overview
 	-p  server port
 	-r  READONLY access
 	-s  https Connection TLS
-        -m  modify database schema; add, delete, alter tables (TODO)
-	-x  expert mode to access privileges, routines, triggers, views (TODO)
+        -m  modify database schema: create, alter, drop tables (Release 1.1)
+	-x  expert mode to access privileges, routines, triggers, views (Release 1.2)
 
 Example
 
@@ -60,9 +60,10 @@ or on command line
 ##### SQL-injection via Request parameters
 
 To prevent SQL-injection, all supplied identifiers are backqoted and to prevent escaping, all backquotes are escaped by doubling them. 
-Values are doublequoted, supplied double quotes are escaped the same way. 
-Where-clauses are especially difficult to ckeck, as this would require full parsing of SQL-expressions. 
-Therefore they are avoided, and identiefiers and values are transmitted in separate query fields. 
+All values are doublequoted, supplied double quotes are escaped the same way.
+Where-clauses are especially difficult to check, as this would require full parsing of SQL-expressions. 
+Therefore they are avoided, and identifiers and values are transmitted in separate query fields and quoted after importing.
+Numbers in limits are not quoted and therefore filtered by a strict regexp.
 
 
 ##### Javascript-Injection via Identifiers and Values

@@ -60,32 +60,32 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if action == "SUBSET" && db != "" && t != "" {
-		actionSubset(w, r, cred, db, t)
-	} else if action == "QUERY" && db != "" && t != "" {
-		actionQuery(w, r, cred, db, t)
+	if action == "QUERY" && db != "" && t != "" {
+		actionQUERY(w, r, cred, db, t)
+	} else if action == "SELECT" && db != "" && t != "" {
+		actionSELECT(w, r, cred, db, t)
 	} else if action == "INFO" && db != "" && t != "" {
-		actionInfo(w, r, cred, db, t)
+		actionINFO(w, r, cred, db, t)
 	} else if action == "ADD" && !READONLY && db != "" && t != "" {
-		actionAdd(w, r, cred, db, t)
+		actionADD(w, r, cred, db, t)
 	} else if action == "INSERT" && !READONLY && db != "" && t != "" {
-		actionInsert(w, r, cred, db, t)
+		actionINSERT(w, r, cred, db, t)
 	} else if action == "REMOVE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionRemove(w, r, cred, db, t, k, v)
+		actionREMOVE(w, r, cred, db, t, k, v)
 	} else if action == "EDIT" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionEdit(w, r, cred, db, t, k, v)
+		actionEDIT(w, r, cred, db, t, k, v)
 	} else if action == "EDITEXEC" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionEditExec(w, r, cred, db, t, k, v)
+		actionEDITEXEC(w, r, cred, db, t, k, v)
 	} else if action == "DELETEFORM" && !READONLY && db != "" && t != "" { // Subset and Delete 1
-		actionDeleteForm(w, r, cred, db, t)
+		actionDELETEFORM(w, r, cred, db, t)
 	} else if action == "DELETEEXEC" && !READONLY && db != "" && t != "" { // Subset and Delete 2
-		actionDeleteExec(w, r, cred, db, t)
+		actionDELETEEXEC(w, r, cred, db, t)
 	} else if action == "DELETE" && !READONLY && db != "" && t != "" { // Delete a selected subset
-		actionDeleteSubset(w, r, cred, db, t)
+		actionDELETE(w, r, cred, db, t)
 	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { // Update a selected subset
-		actionUpdateSubset(w, r, cred, db, t)
+		actionUPDATE(w, r, cred, db, t)
 	} else if action == "UPDATEEXEC" && !READONLY && db != "" && t != "" {
-		actionUpdateExec(w, r, cred, db, t)
+		actionUPDATEEXEC(w, r, cred, db, t)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, cred, db, t, o, d, n, k, v)
 	} else if action == "BACK" {
@@ -136,7 +136,7 @@ func main() {
 	var HOST = flag.String("h", "localhost", "server name")
 	var PORT = flag.Int("p", 8080, "server port")
 	var INFO = flag.Bool("i", false, "include INFORMATION_SCHEMA in overview")
-	var MODIFY = flag.Bool("m", false, "modify database schema; add, delete, alter tables (TODO)")
+	var MODIFY = flag.Bool("m", false, "modify database schema: create, alter, drop tables (TODO)")
 	var EXPERT = flag.Bool("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
 	var CSS = flag.String("c", "", "supply customized style in CSS file")
 	var DEBUG = flag.Bool("d", false, "dynamically load html templates and css (DEBUG)")

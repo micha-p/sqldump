@@ -84,7 +84,7 @@ func makeTrail(host string, db string, t string, o string, d string, k string, w
 		trail = append(trail, Entry{Link: q.Encode(), Text: k + " (ID)"})
 	}
 	if w != "" {
-		q.Add("action", "subset")
+		q.Add("action", "QUERY")
 		trail = append(trail, Entry{Link: q.Encode(), Text: w})
 	}
 	return trail

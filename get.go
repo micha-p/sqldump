@@ -9,7 +9,15 @@ import (
 	"strconv"
 )
 
-// retrieving column information might be combined better
+type CContext struct {
+	Number    string
+	Name      string
+	Label     string
+	IsNumeric string
+	IsString  string
+	Value     string
+	Readonly  string
+}
 
 func getConnection(cred Access, db string) *sql.DB {
 	conn, err := sql.Open(cred.Dbms, dsn(cred.User, cred.Pass, cred.Host, cred.Port, db))
@@ -94,6 +102,35 @@ func getPrimary(cred Access, db string, t string) string {
 	return primary
 }
 
+/*
+func getMainType(t string) string {
+	iType, _ := regexp.MatchString("int", t)
+	fType, _ := regexp.MatchString("float", t)
+	rType, _ := regexp.MatchString("real", t)
+	dType, _ := regexp.MatchString("double", t)
+	lType, _ := regexp.MatchString("decimal", t)
+	nType, _ := regexp.MatchString("numeric", t)
+	cType, _ := regexp.MatchString("char", t)
+	yType, _ := regexp.MatchString("binary", t)
+	bType, _ := regexp.MatchString("blob", t)
+	tType, _ := regexp.MatchString("text", t)
+
+	if iType || fType || rType || dType || lType || nType {
+		return "numeric"
+	} else if cType || yType || bType || tType {
+		return "string"
+	} else {
+		return ""
+	}
+}
+
+func getColumnMainType(cred Access, db string, t string, c string) string {
+	stmt := "select data_type from information_schema.columns where table_schema = '" + db + "'and table_name = '" + t + "' and column_name = '" + c+ "'"
+	return getMainType(getSingleValue(cred, db, stmt))
+}
+*/
+
+
 func getColumnInfo(cred Access, db string, t string) []CContext {
 
 	conn := getConnection(cred, db)
@@ -132,6 +169,8 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	}
 	return m
 }
+
+
 
 func getValueMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]string {
 

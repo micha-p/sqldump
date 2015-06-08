@@ -68,13 +68,13 @@ func sqlProtectString(s string) string {
 var SQLCMP = "[<=>]+"
 var SQLNUM = "-?[0-9]+.?[0-9]*(E-?[0-9]+)?"
 	
-func sqlFilterNumericComparison(t string) string {
+func sqlFilterNumericComparison(t string) (string,string) {
 	re := regexp.MustCompile("^ *(" + SQLCMP + ") *(" + SQLNUM + ") *$")
 	rm := re.FindStringSubmatch(t)
 	if len(rm)>2 {
-		return rm[1] + rm[2]
+		return rm[1],rm[2]
 	} else {
-		return ""
+		return "",""
 	}
 }
 	
