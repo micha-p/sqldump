@@ -23,10 +23,8 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access, db string, t st
 func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
 	query := "select * from `" + t + "`"
-	re := regexp.MustCompile("^ *(\\d+) *$")
-	nnumber := re.FindString(n)
-	re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
-	limits := re.FindStringSubmatch(n)
+	nnumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
+	limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
 
 	if k != "" && v != "" && k == getPrimary(cred, db, t) {
 		query = query + " where `" + k + "` =" + v

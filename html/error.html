@@ -17,7 +17,7 @@
 		<input type="hidden" name="db" value="{{.Database}}">
 		<input type="hidden" name="t"  value="{{.Table}}">
 		<table>
-			<tr> <th>Error</th> <th></th> <tr>
+			<tr> <th>Type</th> <th>Content</th> <tr>
 			{{range .Columns}}<tr> <td>{{.Label}}</td> <td>{{.Value}}</td> <tr>
 			{{end}}
 		</table>
