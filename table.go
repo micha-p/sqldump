@@ -74,9 +74,9 @@ func makeTrail(host string, db string, t string, o string, d string, k string, w
 	if o != "" {
 		q.Add("o", o)
 		if d != "" {
-			q.Add("d", d)
 			trail = append(trail, Entry{Link: q.Encode(), Text: o + "&darr;"})
 		} else {
+			q.Add("d", "1")
 			trail = append(trail, Entry{Link: q.Encode(), Text: o + "&uarr;"})
 		}
 	} else if k != "" {

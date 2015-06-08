@@ -16,24 +16,24 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access, db string, t st
 	} else if t == "" {
 		dumpTables(w, db, cred)
 	} else {
-		dumpSelection(w, cred, db, t, o, d, n, k, v)
+		dumpqueryion(w, cred, db, t, o, d, n, k, v)
 	}
 }
 
-func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
+func dumpqueryion(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
-	Select := "select * from `" + t + "`"
+	query := "select * from `" + t + "`"
 	nnumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 	limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
 
 	if k != "" && v != "" && k == getPrimary(cred, db, t) {
-		Select = Select + " where `" + k + "` =" + v
-		dumpKeyValue(w, db, t, k, v, cred, Select)
+		query = query + " where `" + k + "` =" + v
+		dumpKeyValue(w, db, t, k, v, cred, query)
 	} else if nnumber != "" {
 		if o != "" {
-			Select = Select + " order by `" + o + "`"
+			query = query + " order by `" + o + "`"
 			if d != "" {
-				Select = Select + " desc"
+				query = query + " desc"
 			}
 		}
 		nint, err := strconv.Atoi(nnumber)
@@ -41,8 +41,8 @@ func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o st
 		maxint, err := strconv.Atoi(getCount(cred, db, t))
 		checkY(err)
 		nint = minI(nint, maxint)
-		Select = Select + " limit 1 offset " + strconv.Itoa(nint-1)
-		dumpFields(w, db, t, o, d, nnumber, nint, maxint, cred, Select)
+		query = query + " limit 1 offset " + strconv.Itoa(nint-1)
+		dumpFields(w, db, t, o, d, nnumber, nint, maxint, cred, query)
 	} else if len(limits) == 3 {
 		startint, err := strconv.Atoi(limits[1])
 		checkY(err)
@@ -52,22 +52,16 @@ func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o st
 		maxint, err := strconv.Atoi(getCount(cred, db, t))
 		checkY(err)
 		endint = minI(endint, maxint)
-		Select = Select + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
+		query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
 		if o != "" {
-			Select = "select t.* from (" + Select + ") t order by `" + o + "`"
+			query = "select t.* from (" + query + ") t order by `" + o + "`"
 			if d != "" {
-				Select = Select + " desc"
+				query = query + " desc"
 			}
 		}
-		dumpRange(w, db, t, o, d, startint, endint, maxint, cred, Select)
+		dumpRange(w, db, t, o, d, startint, endint, maxint, cred, query)
 	} else {
-		if o != "" {
-			Select = Select + " order by `" + o + "`"
-			if d != "" {
-				Select = Select + " desc"
-			}
-		}
-		dumpRows(w, db, t, o, d, cred, Select, url.Values{})
+		dumpRows(w, db, t, o, d, cred, query, url.Values{})
 	}
 }
 
@@ -193,14 +187,21 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	return head
 }
 
-func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, Select string, where url.Values) {
+func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cred Access, query string, where url.Values) {
 
 	wherestring := ""
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
-	q.Add("o", o)
-	q.Add("d", d)
+	if o != "" {
+		q.Add("o", o)
+		query = query + " order by `" + o + "`"
+		if d != "" {
+			q.Add("d", d)
+			query = query + " desc"
+		}
+	}
+
 	q.Add("action", "ADD")
 	linkinsert := q.Encode()
 	q.Set("action", "QUERY")
@@ -215,9 +216,9 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	menu = append(menu, Entry{Link: linkselect, Text: "?"})
 	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
 
-	rows, err := getRows(cred, db, Select)
+	rows, err := getRows(cred, db, query)
 	if err != nil {
-		checkErrorPage(w, cred, db, t, Select, err)
+		checkErrorPage(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -228,41 +229,12 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	checkY(err)
 	head := createHead(db, t, o, d, "", primary, columns, q)
 
-	if len(where) > 0 {
-		head = createHead(db, t, o, d, "", primary, columns, where)
-		wherestring = WhereSelect2Pretty(where, getColumnInfo(cred, db, t))
-		where.Add("db", db)
-		where.Add("t", t)
-		where.Set("action", "DELETE")
-		linkdelete := where.Encode()
-		where.Set("action", "UPDATE")
-		linkupdate := where.Encode()
-		where.Set("action", "SELECT")
-		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
-		menu = append(menu, Entry{Link: linkdelete, Text: "-"})
-	} else {
-		menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
-	}
-	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
-
 	count := len(columns)
 	values := make([]interface{}, count)
 	valuePtrs := make([]interface{}, count)
 	for i, _ := range columns {
 		valuePtrs[i] = &values[i]
 	}
-
-	if o != "" {
-		q.Set("o", o)
-	} else {
-		q.Del("o")
-	}
-	if d != "" {
-		q.Set("d", d)
-	} else {
-		q.Del("d")
-	}
-
 	records := [][]Entry{}
 	rownum := 1
 	for rows.Next() {
@@ -297,18 +269,33 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	}
 
 	var limitstring, link string
-	if len(q) == 0 {
+	if len(where) > 0 {
+		limitstring = ""
+		link = ""
+		wherestring = WhereSelect2Pretty(where, getColumnInfo(cred, db, t))
+		where.Add("db", db)
+		where.Add("t", t)
+		where.Set("action", "DELETE")
+		linkdelete := where.Encode()
+		where.Set("action", "UPDATE")
+		linkupdate := where.Encode()
+		where.Set("action", "SELECT")
+		head = createHead(db, t, o, d, "", primary, columns, where)
+		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
+		menu = append(menu, Entry{Link: linkdelete, Text: "-"})
+	} else {
 		limitstring = "1-" + strconv.Itoa(rownum-1)
 		q.Set("n", limitstring)
 		link = q.Encode()
-	} else {
-		limitstring = ""
-		link = ""
+		menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
 	}
+	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
+
+
 	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, head, records, menu, wherestring)
 }
 
-func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, Select string) {
+func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, query string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -329,9 +316,9 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 	limitstring := strconv.Itoa(start) + "-" + strconv.Itoa(end)
 	q.Add("n", limitstring)
 
-	rows, err := getRows(cred, db, Select)
+	rows, err := getRows(cred, db, query)
 	if err != nil {
-		checkErrorPage(w, cred, db, t, Select, err)
+		checkErrorPage(w, cred, db, t, query, err)
 		return
 	} else {
 		defer rows.Close()
@@ -395,9 +382,9 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 }
 
 // Dump all fields of a record, one column per line
-func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, nint int, nmax int, cred Access, Select string) {
+func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, n string, nint int, nmax int, cred Access, query string) {
 
-	rows, err := getRows(cred, db, Select)
+	rows, err := getRows(cred, db, query)
 	checkY(err)
 	vmap := getValueMap(w, db, t, cred, rows)
 	head := []Entry{{"#", ""}, {"Column", ""}, {"Data", ""}}
@@ -441,9 +428,9 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 	tableOutFields(w, cred, db, t, o, d, "", n, linkleft, linkright, head, records, menu)
 }
 
-func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, Select string) {
+func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
 
-	rows, err := getRows(cred, db, Select)
+	rows, err := getRows(cred, db, query)
 	checkY(err)
 	vmap := getValueMap(w, db, t, cred, rows)
 	primary := getPrimary(cred, db, t)

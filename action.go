@@ -148,6 +148,12 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 			} else if comp == "!~" {
 				v.Add(colhtml+"O", comp)
 				whereclauses = append(whereclauses, "`"+colname+"` NOT LIKE \""+sqlProtectString(val)+"\"")
+			} else if comp == "==" {
+				v.Add(colhtml+"O", comp)
+				whereclauses = append(whereclauses, "BINARY `"+colname+"` = \""+sqlProtectString(val)+"\"")
+			} else if comp == "!=" {
+				v.Add(colhtml+"O", comp)
+				whereclauses = append(whereclauses, "BINARY `"+colname+"` != \""+sqlProtectString(val)+"\"")
 			} else {
 				v.Add(colhtml+"O", comp)
 				if sqlFilterNumber(val) != "" {
@@ -180,6 +186,10 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 				clauses = append(clauses, colname+" LIKE \""+val+"\"")
 			} else if comp == "!~" {
 				clauses = append(clauses, colname+" NOT LIKE \""+val+"\"")
+			} else if comp == "==" {
+				clauses = append(clauses, colname + " == \""+val+"\"")
+			} else if comp == "!=" {
+				clauses = append(clauses, colname + " != \""+val+"\"")
 			} else {
 				if col.IsNumeric != "" {
 					clauses = append(clauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
