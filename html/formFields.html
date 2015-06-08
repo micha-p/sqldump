@@ -1,7 +1,7 @@
 <html>
 <head>
 <title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}} -- {{.Action}}</title> 
-{{if .CSS}}<link rel="stylesheet" type="text/css" href="html/table.css"/>{{end}}
+{{if .CSS}}<link rel="stylesheet" type="text/css" href="{{.CSS}}"/>{{end}}
 
 <body>
 {{define "tselector"}}

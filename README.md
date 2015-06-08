@@ -20,7 +20,8 @@ A small web-based tool for database administration.
 
 ### Usage
 
-	cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -x -d -c="html/table.css"
+	cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -d -c="html/table.css"
+    cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -p 8081 -i -d -c="html/table_px.css"
     
 	-c  supply customized style in CSS file
 	-d  DEBUG: dynamically load html templates and css
