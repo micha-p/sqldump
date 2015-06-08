@@ -1,7 +1,8 @@
 package main
 
 import "io/ioutil"
-import "text/template" // change to html/template impossible as query=parameter would be escaped too
+import "text/template" // html/template can't be used as query=parameter would be escaped too
+import "path/filepath"
 
 var templateFormFields = template.New("formfields")
 var templateTable = template.New("table")
@@ -14,7 +15,8 @@ func initTemplate() {
 	templateTable = template.New("table")
 	templateError = template.New("error")
 
-	in, err := ioutil.ReadFile("html/login.html")
+	f, _ := filepath.Abs("html/login.html")
+	in, err := ioutil.ReadFile(f)
 	checkY(err)
 	loginPage = string(in)
 

@@ -175,30 +175,32 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
 		colhtml := html.EscapeString(col)
-		valraw := r.FormValue(col + "W")
-		setraw := r.FormValue(col + "S")
-		val := sqlProtectString(valraw)
-		set := sqlProtectString(setraw)
+		val := r.FormValue(col + "W")
+		set := r.FormValue(col + "S")
 		if val != "" {
-			v.Add(colhtml+"W", valraw)
-			comparaw := r.FormValue(col + "O")
-			comparator := sqlProtectString(comparaw)
-			if comparator == "" {
-				whereclauses = append(whereclauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
-			} else if comparator == "~" {
-				v.Add(colhtml+"O", comparaw)
-				whereclauses = append(whereclauses, "`"+colname+"` LIKE \""+val+"\"")
-			} else if comparator == "!~" {
-				v.Add(colhtml+"O", comparaw)
-				whereclauses = append(whereclauses, "`"+colname+"` NOT LIKE \""+val+"\"")
+			v.Add(colhtml+"W", val)
+			comp := r.FormValue(col + "O")
+			if comp == "" {
+				whereclauses = append(whereclauses, "`"+colname+"`"+sqlFilterNumericComparison(val))
+			} else if comp == "~" {
+				v.Add(colhtml+"O", comp)
+				whereclauses = append(whereclauses, "`"+colname+"` LIKE \""+sqlProtectString(val)+"\"")
+			} else if comp == "!~" {
+				v.Add(colhtml+"O", comp)
+				whereclauses = append(whereclauses, "`"+colname+"` NOT LIKE \""+sqlProtectString(val)+"\"")
 			} else {
-				v.Add(colhtml+"O", sqlProtectNumericComparison(comparaw))
-				whereclauses = append(whereclauses, "`"+colname+"` "+sqlProtectNumericComparison(comparaw)+" \""+val+"\"")
+				if sqlFilterNumber(val) != "" {
+					whereclauses = append(whereclauses, "`"+colname+"` "+sqlFilterComparator(comp)+" \""+sqlFilterNumber(val)+"\"")
+				} else {
+					whereclauses = append(whereclauses, "`"+colname+"` "+sqlFilterComparator(comp)+" \""+sqlProtectString(val)+"\"")
+				}
+				v.Add(colhtml+"O", sqlFilterNumericComparison(comp))
+				whereclauses = append(whereclauses, "`"+colname+"` "+sqlFilterNumericComparison(comp)+" \""+sqlProtectString(val)+"\"")
 			}
 		}
 		if set != "" {
-			v.Add(colhtml+"S", setraw)
-			setclauses = append(setclauses, "`"+colname+"` "+"="+" \""+set+"\"")
+			v.Add(colhtml+"S", set)
+			setclauses = append(setclauses, "`"+colname+"` "+"="+" \""+sqlProtectString(set)+"\"")
 		}
 	}
 	return whereclauses, setclauses, v
@@ -214,13 +216,17 @@ func WhereQuery2Sql(q url.Values, cols []string) string {
 		if val != "" {
 			comparator := sqlProtectString(q.Get(html.EscapeString(col) + "O"))
 			if comparator == "" {
-				clauses = append(clauses, "`"+colname+"`"+sqlProtectNumericComparison(val))
+				clauses = append(clauses, "`"+colname+"`"+sqlFilterNumericComparison(val))
 			} else if comparator == "~" {
-				clauses = append(clauses, "`"+colname+"` LIKE \""+val+"\"")
+				clauses = append(clauses, "`"+colname+"` LIKE \""+sqlProtectString(val)+"\"")
 			} else if comparator == "!~" {
-				clauses = append(clauses, "`"+colname+"` NOT LIKE \""+val+"\"")
+				clauses = append(clauses, "`"+colname+"` NOT LIKE \""+sqlProtectString(val)+"\"")
 			} else {
-				clauses = append(clauses, "`"+colname+"` "+sqlProtectNumericComparison(comparator)+" \""+val+"\"")
+				if sqlFilterNumber(val) != "" {
+					clauses = append(clauses, "`"+colname+"` "+sqlFilterComparator(comparator)+" \""+sqlFilterNumber(val)+"\"")
+				} else {
+					clauses = append(clauses, "`"+colname+"` "+sqlFilterComparator(comparator)+" \""+sqlProtectString(val)+"\"")
+				}
 			}
 		}
 	}

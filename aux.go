@@ -65,10 +65,29 @@ func sqlProtectString(s string) string {
 	}
 }
 
-// TODO improve with real regexp
-func sqlProtectNumericComparison(t string) string {
-	reNumeric := regexp.MustCompile("[^-><=!0-9. eE]*")
-	return reNumeric.ReplaceAllString(t, "")
+var SQLCMP = "[<=>]+"
+var SQLNUM = "-?[0-9]+.?[0-9]*(E-?[0-9]+)?"
+	
+func sqlFilterNumericComparison(t string) string {
+	re := regexp.MustCompile("^ *(" + SQLCMP + ") *(" + SQLNUM + ") *$")
+	rm := re.FindStringSubmatch(t)
+	if len(rm)>2 {
+		return rm[1] + rm[2]
+	} else {
+		return ""
+	}
+}
+	
+func sqlFilterNumber(t string) string {
+	re := regexp.MustCompile("^ *(" + SQLNUM + ") *$")
+	rm := re.FindString(t)
+	return rm
+}
+
+func sqlFilterComparator(t string) string {
+	re := regexp.MustCompile("^ *(" + SQLCMP + ") *$")
+	rm := re.FindString(t)
+	return rm
 }
 
 func troubleF(filename string) error {
