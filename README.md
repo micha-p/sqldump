@@ -20,6 +20,8 @@ A small web-based tool for database administration.
 
 ### Usage
 
+	cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -x -d -c="html/table.css"
+    
 	-c  supply customized style in CSS file
 	-d  DEBUG: dynamically load html templates and css
 	-h  server name
@@ -27,20 +29,14 @@ A small web-based tool for database administration.
 	-p  server port
 	-r  READONLY access
 	-s  https Connection TLS
-        -m  modify database schema: create, alter, drop tables (Release 1.1)
+    -m  modify database schema: create, alter, drop tables (Release 1.1)
 	-x  expert mode to access privileges, routines, triggers, views (Release 1.2)
 
-Example
 
-    cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -x -d -c="html/table.css"
-
-
-Access via browser
 
    [http://localhost:8080](http://localhost:8080)
+   
    [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/user=galagopher&pass=mypassword&host=localhost&port=3306)
-
-or on command line
 
     w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
@@ -55,7 +51,7 @@ or on command line
 - TLS-encryption possible
 - no javascript
 
-##### SQL-injection via Request parameters
+##### SQL-injection via Request values
 
 To prevent SQL-injection, all supplied identifiers are backqoted and to prevent escaping, all backquotes are escaped by doubling them. 
 All values are doublequoted, supplied double quotes are escaped the same way.
@@ -63,9 +59,9 @@ Where-clauses are especially difficult to check, as this would require full pars
 Therefore they are avoided, and identifiers and values are transmitted in separate query fields and quoted after importing.
 Numbers in limits are not quoted and therefore filtered by a strict regular expression. 
 
-##### SQL-injection via names of input forms
+##### SQL-injection via Names of input fields
 
-Query identifiers as taken from input forms might be altered as well, but as these values are looked up taking column names, they are just ignored.
+Query keys as taken from input forms might be altered as well, but as these values are looked up taking column names, they are just ignored.
 
 
 ##### Javascript-Injection via Identifiers and Values
@@ -85,7 +81,7 @@ Credentials taken from a simple html-form are directly submitted to the library 
 
 - insert and query limited by request length
 - some data types cause problems at driver level
-- only one where clause per field
+- only one where clause per field (will be improved in future versions)
 
 # License
 

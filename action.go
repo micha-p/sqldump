@@ -126,6 +126,7 @@ func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	shipForm(w, r, cred, db, t, "", "", "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows), hiddencols)
 }
 
+// TODO: to allow for submitting multiple clauses for a field, they should be numbered W1, O1 ...
 func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Values) {
 
 	v := url.Values{}
