@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 type EContext struct {
@@ -26,7 +27,7 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 		Table:    t,
 		Back:     makeBack(cred.Host, db, t, "", "", ""),
 		Columns:  cols,
-		Trail:    makeTrail(cred.Host, db, t, "", "", "", ""),
+		Trail:    makeTrail(cred.Host, db, t, "", "", "", "", url.Values{}),
 	}
 
 	if DEBUGFLAG {

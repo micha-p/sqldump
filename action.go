@@ -37,8 +37,7 @@ type FContext struct {
 
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 	db string, t string, o string, d string,
-	action string, button string, selector string,
-	vmap map[string]string, hiddencols []CContext) {
+	action string, button string, selector string, vmap map[string]string, hiddencols []CContext) {
 
 	cols := getColumnInfo(cred, db, t)
 	primary := getPrimary(cred, db, t)
@@ -74,7 +73,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		Back:     linkback,
 		Columns:  newcols,
 		Hidden:   hiddencols,
-		Trail:    makeTrail(cred.Host, db, t, o, d, "", ""),
+		Trail:    makeTrail(cred.Host, db, t, o, d, "", "", url.Values{}),
 	}
 
 	if DEBUGFLAG {

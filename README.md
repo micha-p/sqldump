@@ -51,8 +51,6 @@ or on command line
 
 - no encrypted connection to mysql server
 - use only in trusted environments
-- insert and query limited by request length
-- some data types cause problems at driver level
 - passwords might be supplied or bookmarked via URL
 - TLS-encryption possible
 - no javascript
@@ -63,7 +61,11 @@ To prevent SQL-injection, all supplied identifiers are backqoted and to prevent 
 All values are doublequoted, supplied double quotes are escaped the same way.
 Where-clauses are especially difficult to check, as this would require full parsing of SQL-expressions. 
 Therefore they are avoided, and identifiers and values are transmitted in separate query fields and quoted after importing.
-Numbers in limits are not quoted and therefore filtered by a strict regexp.
+Numbers in limits are not quoted and therefore filtered by a strict regular expression. 
+
+##### SQL-injection via names of input forms
+
+Query identifiers as taken from input forms might be altered as well, but as these values are looked up taking column names, they are just ignored.
 
 
 ##### Javascript-Injection via Identifiers and Values
@@ -76,6 +78,14 @@ Therefore they are protected by escaping html in templates and manually.
 
 Establishing connections to databases is done by the standard library-functions. 
 Credentials taken from a simple html-form are directly submitted to the library without any further processing. 
+
+
+
+# Limitations
+
+- insert and query limited by request length
+- some data types cause problems at driver level
+- only one where clause per field
 
 # License
 
