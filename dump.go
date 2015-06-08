@@ -22,31 +22,29 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access, db string, t st
 
 func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
 
-	var query string
-	nnumber, err := regexp.MatchString("^ *\\d+ *$", n)
-	checkY(err)
+	query := "select * from `" + t + "`"
+	re := regexp.MustCompile("^ *(\\d+) *$")
+	nnumber := re.FindString(n)
 	re := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$")
 	limits := re.FindStringSubmatch(n)
 
 	if k != "" && v != "" && k == getPrimary(cred, db, t) {
-		query = "select * from `" + t + "` where `" + k + "` =" + v
+		query = query + " where `" + k + "` =" + v
 		dumpKeyValue(w, db, t, k, v, cred, query)
-	} else if nnumber {
+	} else if nnumber != "" {
 		if o != "" {
-			query = "select * from `" + t + "` order by `" + o + "`"
+			query = query + " order by `" + o + "`"
 			if d != "" {
 				query = query + " desc"
 			}
-		} else {
-			query = "select * from `" + t + "`"
 		}
-		nint, err := strconv.Atoi(n)
+		nint, err := strconv.Atoi(nnumber)
 		checkY(err)
 		maxint, err := strconv.Atoi(getCount(cred, db, t))
 		checkY(err)
 		nint = minI(nint, maxint)
 		query = query + " limit 1 offset " + strconv.Itoa(nint-1)
-		dumpFields(w, db, t, o, d, n, nint, maxint, cred, query)
+		dumpFields(w, db, t, o, d, nnumber, nint, maxint, cred, query)
 	} else if len(limits) == 3 {
 		startint, err := strconv.Atoi(limits[1])
 		checkY(err)
@@ -56,7 +54,7 @@ func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o st
 		maxint, err := strconv.Atoi(getCount(cred, db, t))
 		checkY(err)
 		endint = minI(endint, maxint)
-		query = "select * from `" + t + "` limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
+		query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
 		if o != "" {
 			query = "select t.* from (" + query + ") t order by `" + o + "`"
 			if d != "" {
@@ -65,7 +63,6 @@ func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o st
 		}
 		dumpRange(w, db, t, o, d, startint, endint, maxint, cred, query)
 	} else {
-		query = "select * from `" + t + "`"
 		if o != "" {
 			query = query + " order by `" + o + "`"
 			if d != "" {

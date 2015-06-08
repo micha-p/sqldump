@@ -80,14 +80,12 @@ func sqlFilterNumericComparison(t string) string {
 	
 func sqlFilterNumber(t string) string {
 	re := regexp.MustCompile("^ *(" + SQLNUM + ") *$")
-	rm := re.FindString(t)
-	return rm
+	return re.FindString(t)
 }
 
 func sqlFilterComparator(t string) string {
 	re := regexp.MustCompile("^ *(" + SQLCMP + ") *$")
-	rm := re.FindString(t)
-	return rm
+	return re.FindString(t)
 }
 
 func troubleF(filename string) error {

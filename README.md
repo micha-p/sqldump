@@ -2,7 +2,7 @@
 
 A small web-based tool for database administration. 
 
-- simple user-interface (check values for action links)
+- simple user-interface (links are below values!)
 - stepping through tables with primary key
 - direct access via query with credentials (use wisely)
 - credentials stored in secure cookies
@@ -20,16 +20,19 @@ A small web-based tool for database administration.
 
 ### Usage
 
-Run server for web interface
+	-c  supply customized style in CSS file
+	-d  dynamically load html templates and css (DEBUG)
+	-h  server name
+	-i  include INFORMATION_SCHEMA in overview
+	-p  server port
+	-r  READONLY access
+	-s  https Connection TLS
+        -m  modify database schema; add, delete, alter tables (TODO)
+	-x  expert mode to access privileges, routines, triggers, views (TODO)
 
-    export GOPATH=$PWD
-    go run sqlgopher.go init.go dump.go aux.go auth.go table.go action.go cert.go get.go -d -c="html/table.css"
+Example
 
-or using a prebuilt binary
-
-    export GOPATH=$PWD
-    go build sqlgopher.go init.go dump.go aux.go auth.go table.go action.go cert.go get.go
-    ./sqlgopher -d -c="html/table.css"
+    cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -x -d -c="html/table.css"
 
 
 Access via browser
@@ -43,16 +46,6 @@ or on command line
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text 
 
-### Command line options
-
-	-c  supply customized style in CSS file
-	-d  dynamically load html templates and css (DEBUG)
-	-h  server name
-	-i  include INFORMATION_SCHEMA in overview
-	-p  server port
-	-r  READONLY access
-	-s  https Connection TLS
-	-x  expert mode to access privileges, routines, triggers, views (TODO)
 
 ### Security
 
