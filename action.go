@@ -51,7 +51,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		readonly := ""
 		value := html.EscapeString(vmap[col.Name].String)
 		valid := ""
-		if vmap[col.Name].Valid {
+		if len(vmap)==0 || vmap[col.Name].Valid {
 			valid = "valid"
 			log.Println(value,valid)
 		}
