@@ -291,7 +291,6 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	}
 	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
-
 	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, head, records, menu, wherestring, where)
 }
 
@@ -378,7 +377,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 	linkleft := q.Encode()
 	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
 	linkright := q.Encode()
-	tableOutRows(w, cred, db, t, o, d, limitstring, linkleft, linkright, head, records, menu, "",url.Values{})
+	tableOutRows(w, cred, db, t, o, d, limitstring, linkleft, linkright, head, records, menu, "", url.Values{})
 }
 
 // Dump all fields of a record, one column per line

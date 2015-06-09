@@ -61,7 +61,7 @@ func makeBack(host string, db string, t string, o string, d string, k string) st
 
 func makeTrail(host string, db string, t string, o string, d string, k string, w string, wq url.Values) []Entry {
 
-    q := url.Values{}
+	q := url.Values{}
 
 	trail := []Entry{Entry{host, ""}}
 
@@ -111,7 +111,7 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 		Counter:  "",
 		Left:     "",
 		Right:    "",
-		Trail:    makeTrail(cred.Host, db, t, "", "", "", "",url.Values{}),
+		Trail:    makeTrail(cred.Host, db, t, "", "", "", "", url.Values{}),
 		Menu:     menu,
 	}
 	if DEBUGFLAG {
@@ -121,9 +121,9 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string, 
-	              n string, linkleft string, linkright string, 
-	              head []Entry, records [][]Entry, menu []Entry, where string, whereQ url.Values) {
+func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o string, d string,
+	n string, linkleft string, linkright string,
+	head []Entry, records [][]Entry, menu []Entry, where string, whereQ url.Values) {
 
 	initTemplate()
 	c := Context{
@@ -141,7 +141,7 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, o str
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host, db, t, o, d, "", where,whereQ),
+		Trail:    makeTrail(cred.Host, db, t, o, d, "", where, whereQ),
 		Menu:     menu,
 	}
 
@@ -168,7 +168,7 @@ func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, o s
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host, db, t, o, d, k, "",url.Values{}),
+		Trail:    makeTrail(cred.Host, db, t, o, d, k, "", url.Values{}),
 		Menu:     menu,
 	}
 
