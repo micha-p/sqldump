@@ -36,6 +36,7 @@
 </SELECT>{{end}}
 {{define "selector"}}{{if .IsNumeric}}{{template "nselector" .Name}}{{else if .IsString}}{{template "tselector" .Name}}{{else}}{{template "oselector" .Name}}{{end}}{{end}}
 {{define "set"}}<input class="cell" type="text" name="{{.Name}}S" value="{{.Value}}">{{end}}
+{{define "null"}}<input class="cell" type="checkbox" name="{{.Name}}N" value=1{{if .Valid}}{{else}} checked="checked"{{end}}>{{end}}
 {{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
 {{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 {{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
@@ -59,8 +60,8 @@
 		{{end}}<table>
 			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> </tr>
 			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "selector" .}}</td> <td>{{template "field" .}}</td> </tr>
-			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Data</th> </tr>
-			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "set" .}}</td> </tr>
+			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Null</th> <th>Data</th> </tr>
+			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "null" .}}</td> <td>{{template "set" .}}</td> </tr>
 			{{end}}{{end}}
 		</table>
 		<br>

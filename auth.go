@@ -62,7 +62,9 @@ func setCredentials(w http.ResponseWriter, r *http.Request, cred Access) {
 			Path:  "/",
 		}
 		http.SetCookie(w, c)
-		log.Println("[Cookie] " + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")")
+		if DEBUGFLAG {
+			log.Println("[Cookie] " + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")")
+		}
 	}
 }
 

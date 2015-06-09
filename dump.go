@@ -372,12 +372,13 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 
 	rows, err := getRows(cred, db, query)
 	checkY(err)
-	vmap := getValueMap(w, db, t, cred, rows)
+	vmap := getNullStringMap(w, db, t, cred, rows)
 	head := []Entry{{"#", ""}, {"Column", ""}, {"Data", ""}}
 	records := [][]Entry{}
 
 	i := 1
-	for f, v := range vmap {
+	for f, nv := range vmap {
+		v := nv.String
 		var row []Entry
 		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
 		records = append(records, row)
@@ -418,13 +419,14 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 
 	rows, err := getRows(cred, db, query)
 	checkY(err)
-	vmap := getValueMap(w, db, t, cred, rows)
+	vmap := getNullStringMap(w, db, t, cred, rows)
 	primary := getPrimary(cred, db, t)
 	head := []Entry{{"#", ""}, {"Column", ""}, {"Data", ""}}
 	records := [][]Entry{}
 
 	i := 1
-	for f, v := range vmap {
+	for f, nv := range vmap {
+		v := nv.String
 		var row []Entry
 		if f == primary {
 			f = f + " (ID)"

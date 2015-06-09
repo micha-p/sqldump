@@ -23,12 +23,14 @@ func getNullString(val interface{}) sql.NullString {
 	}
 }
 
+// This struct is filled with column info, but might also ship a single value
 type CContext struct {
 	Number    string
 	Name      string
 	Label     string
 	IsNumeric string
 	IsString  string
+	Valid     string
 	Value     string
 	Readonly  string
 }
@@ -168,20 +170,20 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		tType, _ := regexp.MatchString("text", t)
 
 		if iType || fType || rType || dType || lType || nType {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "numeric", "", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "numeric", "", "", "", ""})
 		} else if cType || yType || bType || tType {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "", "string", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "", "string", "", "", ""})
 		} else {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "", "", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "", "", "", "", ""})
 		}
 		i = i + 1
 	}
 	return m
 }
 
-func getValueMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]string {
+func getNullStringMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]sql.NullString {
 
-	vmap := make(map[string]string)
+	vmap := make(map[string]sql.NullString)
 	defer rows.Close()
 
 	columns, err := rows.Columns()
@@ -198,7 +200,7 @@ func getValueMap(w http.ResponseWriter, db string, t string, cred Access, rows *
 	checkY(err)
 
 	for i, _ := range columns {
-		vmap[columns[i]] = getNullString(values[i]).String
+		vmap[columns[i]] = getNullString(values[i])
 	}
 	return vmap
 }

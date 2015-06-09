@@ -40,7 +40,9 @@ func escapeNull() Entry {
 func sqlProtectIdentifier(s string) string {
 	if s != "" && strings.ContainsAny(s, "`") {
 		r := strings.Replace(s, "`", "``", -1)
-		log.Println("[SQLINJECTION?]", s+" -> "+r)
+		if DEBUGFLAG {
+			log.Println("[SQLINJECTION?]", s+" -> "+r)
+		}
 		return r
 	} else {
 		return s
@@ -62,7 +64,9 @@ func sqlProtectIdentifier(s string) string {
 func sqlProtectString(s string) string {
 	if s != "" && strings.ContainsAny(s, "\"") {
 		r := strings.Replace(s, "\"", "\"\"", -1)
-		log.Println("[SQLINJECTION?]", s+" -> "+r)
+		if DEBUGFLAG {
+			log.Println("[SQLINJECTION?]", s+" -> "+r)
+		}
 		return r
 	} else {
 		return s

@@ -50,7 +50,12 @@ A small web-based tool for database administration.
 - use only in trusted environments
 - passwords might be supplied or bookmarked via URL
 - TLS-encryption possible
-- no javascript
+
+
+##### Javascript
+
+This tool does not rely on javascript at all. However, when toggling null values or entering nonempty strings, it might be useful. 
+Scripts might be used in user-supplied templates.
 
 ##### SQL-injection via Request values
 

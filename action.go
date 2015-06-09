@@ -11,6 +11,7 @@ package main
 */
 
 import (
+	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 	"log"
@@ -35,9 +36,11 @@ type FContext struct {
 	Trail    []Entry
 }
 
+// INSERT provides an empty vmap, EDIT/UPDATE provides a filled vmap
+
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 	db string, t string, o string, d string,
-	action string, button string, selector string, vmap map[string]string, hiddencols []CContext) {
+	action string, button string, selector string, vmap map[string]sql.NullString, hiddencols []CContext) {
 
 	cols := getColumnInfo(cred, db, t)
 	primary := getPrimary(cred, db, t)
@@ -46,15 +49,20 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 	for _, col := range cols {
 		name := html.EscapeString(col.Name)
 		readonly := ""
-		value := html.EscapeString(vmap[col.Name])
+		value := html.EscapeString(vmap[col.Name].String)
+		valid := ""
+		if vmap[col.Name].Valid {
+			valid = "valid"
+			log.Println(value,valid)
+		}
 		label := ""
 		if name == primary {
 			label = name + " (ID)"
-			readonly = value
+			readonly = "1"
 		} else {
 			label = name
 		}
-		newcols = append(newcols, CContext{col.Number, name, label, col.IsNumeric, col.IsString, value, readonly})
+		newcols = append(newcols, CContext{col.Number, name, label, col.IsNumeric, col.IsString, valid, value, readonly})
 	}
 
 	q := r.URL.Query()
@@ -84,15 +92,15 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 }
 
 func actionQUERY(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "SELECT", "Select", "true", make(map[string]string), []CContext{})
+	shipForm(w, r, cred, db, t, o, d, "SELECT", "Select", "true", make(map[string]sql.NullString), []CContext{})
 }
 
 func actionDELETEFORM(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "DELETEEXEC", "Delete", "true", make(map[string]string), []CContext{})
+	shipForm(w, r, cred, db, t, o, d, "DELETEEXEC", "Delete", "true", make(map[string]sql.NullString), []CContext{})
 }
 
 func actionADD(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "INSERT", "Insert", "", make(map[string]string), []CContext{})
+	shipForm(w, r, cred, db, t, o, d, "INSERT", "Insert", "", make(map[string]sql.NullString), []CContext{})
 }
 
 func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
@@ -101,16 +109,16 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	where := strings.Join(wclauses, " && ")
 	hiddencols := []CContext{}
 	for field, valueArray := range whereQ { //type Values map[string][]string
-		hiddencols = append(hiddencols, CContext{"", field, "", "", "", valueArray[0], ""})
+		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "valid", valueArray[0], ""})
 	}
 
 	count := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
 	if count == "1" {
 		rows, err := getRows(cred, db, "select * from `"+t+"` where "+where)
 		checkY(err)
-		shipForm(w, r, cred, db, t, o, d, "UPDATEEXEC", "Update", "", getValueMap(w, db, t, cred, rows), hiddencols)
+		shipForm(w, r, cred, db, t, o, d, "UPDATEEXEC", "Update", "", getNullStringMap(w, db, t, cred, rows), hiddencols)
 	} else {
-		shipForm(w, r, cred, db, t, o, d, "UPDATEEXEC", "Update", "", make(map[string]string), hiddencols)
+		shipForm(w, r, cred, db, t, o, d, "UPDATEEXEC", "Update", "", make(map[string]sql.NullString), hiddencols)
 	}
 }
 
@@ -122,11 +130,12 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 	for _, col := range cols {
 		colname := sqlProtectIdentifier(col)
 		colhtml := html.EscapeString(col)
-		val := r.FormValue(col + "W")
-		set := r.FormValue(col + "S")
+		val := r.FormValue(colhtml + "W")
+		set := r.FormValue(colhtml + "S")
+		null := r.FormValue(colhtml + "N")
 		if val != "" {
 			v.Add(colhtml+"W", val)
-			comp := r.FormValue(col + "O")
+			comp := r.FormValue(colhtml + "O")
 			if comp == "" {
 				comp, val = sqlFilterNumericComparison(val)
 				whereclauses = append(whereclauses, "`"+colname+"`"+sqlFilterComparator(comp)+"'"+sqlFilterNumber(val)+"'")
@@ -151,9 +160,14 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 				}
 			}
 		}
-		if set != "" {
+		if null != "" {
+			v.Add(colhtml+"N", null)
+			setclauses = append(setclauses, "`"+colname+"`"+"=NULL")
+		} else if set != "" {
 			v.Add(colhtml+"S", set)
-			setclauses = append(setclauses, "`"+colname+"` "+"="+" \""+sqlProtectString(set)+"\"")
+			setclauses = append(setclauses, "`"+colname+"`"+"="+"\""+sqlProtectString(set)+"\"")
+		} else {
+			setclauses = append(setclauses, "`"+colname+"`"+"="+"\"\"")
 		}
 	}
 	return whereclauses, setclauses, v
@@ -307,7 +321,8 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string
  * However, these tempates only deal with values, not with identifiers. */
 
 func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-	hiddencols := []CContext{CContext{"", "k", "", "", "", k, ""}, CContext{"", "v", "", "", "", v, ""}}
+	hiddencols := []CContext{CContext{"", "k", "", "", "", "valid", k, ""},
+		CContext{"", "v", "", "", "", "valid", v, ""}}
 	stmt := "select * from `" + t + "` where `" + k + "`=?"
 	conn := getConnection(cred, db)
 	defer conn.Close()
@@ -317,7 +332,7 @@ func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	checkY(err)
 	rows, err := preparedStmt.Query(v)
 	checkY(err)
-	shipForm(w, r, cred, db, t, "", "", "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows), hiddencols)
+	shipForm(w, r, cred, db, t, "", "", "EDITEXEC", "Submit", "", getNullStringMap(w, db, t, cred, rows), hiddencols)
 }
 
 func actionEDITEXEC(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
