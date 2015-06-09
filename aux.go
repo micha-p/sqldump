@@ -15,6 +15,10 @@ func escape(name string, link string) Entry {
 	return Entry{Text: html.EscapeString(name), Link: strings.Replace(html.EscapeString(link), "%3d", "=", -1)}
 }
 
+func escapeNull() Entry {
+	return Entry{Text: "<font color=\"red\"><em>NULL</em></font>", Link: ""}
+}
+
 /* 	https://dev.mysql.com/doc/refman/5.1/en/identifiers.html
 
     Identifiers are converted to Unicode internally. They may contain these characters:

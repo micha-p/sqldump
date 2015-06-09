@@ -114,7 +114,6 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	}
 }
 
-
 // TODO: to allow for submitting multiple clauses for a field, they should be numbered W1, O1 ...
 func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Values) {
 
@@ -172,13 +171,13 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 				comp, val = sqlFilterNumericComparison(val)
 				clauses = append(clauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
 			} else if comp == "~" {
-				clauses = append(clauses, colname + " LIKE \"" + val + "\"")
+				clauses = append(clauses, colname+" LIKE \""+val+"\"")
 			} else if comp == "!~" {
-				clauses = append(clauses, colname + " NOT LIKE \"" + val + "\"")
+				clauses = append(clauses, colname+" NOT LIKE \""+val+"\"")
 			} else if comp == "==" {
-				clauses = append(clauses, colname + "==\"" + val + "\"")
+				clauses = append(clauses, colname+"==\""+val+"\"")
 			} else if comp == "!=" {
-				clauses = append(clauses, colname + "!=\"" + val + "\"")
+				clauses = append(clauses, colname+"!=\""+val+"\"")
 			} else {
 				if col.IsNumeric != "" {
 					clauses = append(clauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
@@ -307,7 +306,6 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string
  * They use prepared statements.
  * However, these tempates only deal with values, not with identifiers. */
 
-
 func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
 	hiddencols := []CContext{CContext{"", "k", "", "", "", k, ""}, CContext{"", "v", "", "", "", v, ""}}
 	stmt := "select * from `" + t + "` where `" + k + "`=?"
@@ -356,7 +354,6 @@ func actionREMOVE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	checkErrorPage(w, cred, db, t, stmt, err)
 	http.Redirect(w, r, "?"+q.Encode(), 302)
 }
-
 
 /*
  show columns from posts;

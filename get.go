@@ -2,12 +2,26 @@ package main
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 )
+
+// http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
+// http://blog.golang.org/laws-of-reflection
+
+func getNullString(val interface{}) sql.NullString {
+	b, ok := val.([]byte)
+	if val == nil {
+		return sql.NullString{"NULL", false}
+	} else if ok {
+		return sql.NullString{string(b), true}
+	} else {
+		return sql.NullString{fmt.Sprint(val), true}
+	}
+}
 
 type CContext struct {
 	Number    string
@@ -44,12 +58,8 @@ func getSingleValue(cred Access, db string, stmt string) string {
 	var valuePtr interface{}
 	valuePtr = &value
 	err := row.Scan(valuePtr)
-
-	if err == nil {
-		return dumpValue(value)
-	} else {
-		return "NULL"
-	}
+	checkY(err)
+	return getNullString(value).String
 }
 
 func getCount(cred Access, db string, t string) string {
@@ -188,7 +198,7 @@ func getValueMap(w http.ResponseWriter, db string, t string, cred Access, rows *
 	checkY(err)
 
 	for i, _ := range columns {
-		vmap[columns[i]] = dumpValue(values[i])
+		vmap[columns[i]] = getNullString(values[i]).String
 	}
 	return vmap
 }

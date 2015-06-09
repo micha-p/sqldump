@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -118,28 +117,6 @@ func dumpTables(w http.ResponseWriter, db string, cred Access) {
 	tableOutSimple(w, cred, db, "", head, records, []Entry{})
 }
 
-// http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
-// http://blog.golang.org/laws-of-reflection
-
-func dumpValue(val interface{}) string {
-
-	var r string
-	b, ok := val.([]byte)
-
-	if ok {
-		r = string(b)
-		if r == "" {
-			r = "NULL"
-		}
-	} else {
-		r = fmt.Sprint(val)
-		if r == "" {
-			r = "NULL NOT OK"
-		}
-	}
-	return r
-}
-
 func showNumsBool(primary string, o string) bool {
 	if primary == "" || o == "" || (o != "" && o != primary) {
 		return true
@@ -251,16 +228,21 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		checkY(err)
 
 		for i, _ := range columns {
-			v := dumpValue(values[i])
-			if columns[i] == primary {
-				q.Del("o")
-				q.Del("d")
-				q.Del("n")
-				q.Set("k", primary)
-				q.Set("v", v)
-				row = append(row, escape(v, q.Encode()))
+			nv := getNullString(values[i])
+			if nv.Valid {
+				v := nv.String
+				if columns[i] == primary {
+					q.Del("o")
+					q.Del("d")
+					q.Del("n")
+					q.Set("k", primary)
+					q.Set("v", v)
+					row = append(row, escape(v, q.Encode()))
+				} else {
+					row = append(row, escape(v, ""))
+				}
 			} else {
-				row = append(row, escape(v, ""))
+				row = append(row, escapeNull())
 			}
 		}
 
@@ -354,16 +336,21 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 		checkY(err)
 
 		for i, _ := range columns {
-			v := dumpValue(values[i])
-			if columns[i] == primary {
-				q.Del("o")
-				q.Del("d")
-				q.Del("n")
-				q.Set("k", primary)
-				q.Set("v", v)
-				row = append(row, escape(v, q.Encode()))
+			nv := getNullString(values[i])
+			if nv.Valid {
+				v := nv.String
+				if columns[i] == primary {
+					q.Del("o")
+					q.Del("d")
+					q.Del("n")
+					q.Set("k", primary)
+					q.Set("v", v)
+					row = append(row, escape(v, q.Encode()))
+				} else {
+					row = append(row, escape(v, ""))
+				}
 			} else {
-				row = append(row, escape(v, ""))
+				row = append(row, escapeNull())
 			}
 		}
 
