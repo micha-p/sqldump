@@ -179,14 +179,14 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		}
 	}
 
-	q.Add("action", "ADD")
-	linkinsert := q.Encode()
 	q.Set("action", "QUERY")
 	linkselect := q.Encode()
-	q.Set("action", "INFO")
-	linkinfo := q.Encode()
+	q.Add("action", "ADD")
+	linkinsert := q.Encode()
 	q.Set("action", "DELETEFORM")
 	linkdeleteF := q.Encode()
+	q.Set("action", "INFO")
+	linkinfo := q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
@@ -457,19 +457,19 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	menu = append(menu, Entry{Link: linkremove, Text: "-"})
 	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
-	next := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` > "+v+" order by `"+k+"` limit 1")
-	if next == "NULL" {
-		next = v
+	next, err := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` > "+v+" order by `"+k+"` limit 1")
+	if err == nil {
+		q.Set("v", next)
+	} else {
+		q.Set("v", v)
 	}
-	prev := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` < "+v+" order by `"+k+"` desc limit 1")
-	if prev == "NULL" {
-		prev = v
-	}
-
-	q.Set("v", prev)
-	linkleft := q.Encode()
-	q.Set("v", next)
 	linkright := q.Encode()
-
+	prev, err := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` < "+v+" order by `"+k+"` desc limit 1")
+	if err == nil {
+		q.Set("v", prev)
+	} else {
+		q.Set("v", v)
+	}
+	linkleft := q.Encode()
 	tableOutFields(w, cred, db, t, "", "", k, v, linkleft, linkright, head, records, menu)
 }

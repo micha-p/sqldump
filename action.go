@@ -112,7 +112,7 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
 	}
 
-	count := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
+	count, _ := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
 	if count == "1" {
 		rows, err := getRows(cred, db, "select * from `"+t+"` where "+where)
 		checkY(err)
@@ -399,11 +399,21 @@ func actionINFO(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
+	q.Set("action", "QUERY")
+	linkselect := q.Encode()
+	q.Add("action", "ADD")
+	linkinsert := q.Encode()
+	q.Set("action", "DELETEFORM")
+	linkdeleteF := q.Encode()
+	q.Set("action", "INFO")
+	linkinfo := q.Encode()
+	q.Del("action")
 
 	menu := []Entry{}
-	q.Set("action", "ADD")
-	linkinsert := q.Encode()
-	menu = append(menu, Entry{"+", linkinsert})
+	menu = append(menu, Entry{Link: linkselect, Text: "?"})
+	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
+	menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
+	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
 	records := [][]Entry{}
 	head := []Entry{{"#", ""}, {"Field", ""}, {"Type", ""}, {"Null", ""}, {"Key", ""}, {"Default", ""}, {"Extra", ""}}

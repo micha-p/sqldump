@@ -51,7 +51,7 @@ func getRows(cred Access, db string, stmt string) (*sql.Rows, error) {
 	return rows, err
 }
 
-func getSingleValue(cred Access, db string, stmt string) string {
+func getSingleValue(cred Access, db string, stmt string) (string, error) {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 	log.Println("[SQL]", stmt)
@@ -61,8 +61,7 @@ func getSingleValue(cred Access, db string, stmt string) string {
 	var valuePtr interface{}
 	valuePtr = &value
 	err := row.Scan(valuePtr)
-	checkY(err)
-	return getNullString(value).String
+	return getNullString(value).String, err
 }
 
 func getCount(cred Access, db string, t string) string {

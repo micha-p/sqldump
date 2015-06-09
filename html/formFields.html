@@ -5,7 +5,7 @@
 
 <body>
 {{define "tselector"}}
-<SELECT name="{{.Name}}O">
+<SELECT name="{{.Name}}O" style="width: 100%">
       <OPTION value="~"> &sim; </OPTION>
       <OPTION value="!~"> !&sim; </OPTION>
       <option disabled val="" class="select-hr"></option>
@@ -20,7 +20,7 @@
       <OPTION value="!0"> !0 </OPTION>
 {{end}}</SELECT>{{end}}
 {{define "nselector"}}
-<SELECT name="{{.Name}}O">
+<SELECT name="{{.Name}}O" style="width: 100%">
       <OPTION value=""> &nbsp;&nbsp;&nbsp; </OPTION>
       <OPTION value="="> = </OPTION>
       <OPTION value="<>"> &ne; </OPTION>
@@ -33,7 +33,7 @@
       <OPTION value="!0"> !0 </OPTION>
 {{end}}</SELECT>{{end}}
 {{define "oselector"}}
-<SELECT name="{{.Name}}O"> 
+<SELECT name="{{.Name}}O" style="width: 100%"> 
       <OPTION value="="> =  </OPTION>
       <OPTION value="<>"> &ne; </OPTION>
       <OPTION value=">"> &gt; </OPTION>
