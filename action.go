@@ -53,7 +53,6 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		valid := ""
 		if len(vmap) == 0 || vmap[col.Name].Valid {
 			valid = "valid"
-			log.Println(value, valid)
 		}
 		label := ""
 		if name == primary {
