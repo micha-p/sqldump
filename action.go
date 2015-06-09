@@ -114,17 +114,6 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	}
 }
 
-func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-	hiddencols := []CContext{CContext{"", "k", "", "", "", k, ""}, CContext{"", "v", "", "", "", v, ""}}
-	Select := "select * from `" + t + "` where `" + k + "` = ?"
-	conn := getConnection(cred, db)
-	defer conn.Close()
-	stmt, err := conn.Prepare(Select)
-	checkY(err)
-	rows, err := stmt.Query(v)
-	checkY(err)
-	shipForm(w, r, cred, db, t, "", "", "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows), hiddencols)
-}
 
 // TODO: to allow for submitting multiple clauses for a field, they should be numbered W1, O1 ...
 func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Values) {
@@ -141,7 +130,7 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 			comp := r.FormValue(col + "O")
 			if comp == "" {
 				comp, val = sqlFilterNumericComparison(val)
-				whereclauses = append(whereclauses, "`"+colname+"`"+sqlFilterComparator(comp)+" \""+sqlFilterNumber(val)+"\"")
+				whereclauses = append(whereclauses, "`"+colname+"`"+sqlFilterComparator(comp)+"'"+sqlFilterNumber(val)+"'")
 			} else if comp == "~" {
 				v.Add(colhtml+"O", comp)
 				whereclauses = append(whereclauses, "`"+colname+"` LIKE \""+sqlProtectString(val)+"\"")
@@ -150,16 +139,16 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 				whereclauses = append(whereclauses, "`"+colname+"` NOT LIKE \""+sqlProtectString(val)+"\"")
 			} else if comp == "==" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, "BINARY `"+colname+"` = \""+sqlProtectString(val)+"\"")
+				whereclauses = append(whereclauses, "BINARY `"+colname+"`=\""+sqlProtectString(val)+"\"")
 			} else if comp == "!=" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, "BINARY `"+colname+"` != \""+sqlProtectString(val)+"\"")
+				whereclauses = append(whereclauses, "BINARY `"+colname+"`!=\""+sqlProtectString(val)+"\"")
 			} else {
 				v.Add(colhtml+"O", comp)
 				if sqlFilterNumber(val) != "" {
-					whereclauses = append(whereclauses, "`"+colname+"` "+sqlFilterComparator(comp)+"'"+sqlFilterNumber(val)+"'")
+					whereclauses = append(whereclauses, "`"+colname+"`"+sqlFilterComparator(comp)+"'"+sqlFilterNumber(val)+"'")
 				} else {
-					whereclauses = append(whereclauses, "`"+colname+"` "+sqlFilterComparator(comp)+" \""+sqlProtectString(val)+"\"")
+					whereclauses = append(whereclauses, "`"+colname+"`"+sqlFilterComparator(comp)+"\""+sqlProtectString(val)+"\"")
 				}
 			}
 		}
@@ -183,13 +172,13 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 				comp, val = sqlFilterNumericComparison(val)
 				clauses = append(clauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
 			} else if comp == "~" {
-				clauses = append(clauses, colname+" LIKE \""+val+"\"")
+				clauses = append(clauses, colname + " LIKE \"" + val + "\"")
 			} else if comp == "!~" {
-				clauses = append(clauses, colname+" NOT LIKE \""+val+"\"")
+				clauses = append(clauses, colname + " NOT LIKE \"" + val + "\"")
 			} else if comp == "==" {
-				clauses = append(clauses, colname+" == \""+val+"\"")
+				clauses = append(clauses, colname + "==\"" + val + "\"")
 			} else if comp == "!=" {
-				clauses = append(clauses, colname+" != \""+val+"\"")
+				clauses = append(clauses, colname + "!=\"" + val + "\"")
 			} else {
 				if col.IsNumeric != "" {
 					clauses = append(clauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
@@ -230,9 +219,9 @@ func actionUPDATEEXEC(w http.ResponseWriter, r *http.Request, cred Access, db st
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
-		statement, err := conn.Prepare(stmt)
+		preparedStmt, err := conn.Prepare(stmt)
 		checkErrorPage(w, cred, db, t, stmt, err)
-		_, err = statement.Exec()
+		_, err = preparedStmt.Exec()
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	}
@@ -254,9 +243,9 @@ func actionDELETEEXEC(w http.ResponseWriter, r *http.Request, cred Access, db st
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
-		statement, err := conn.Prepare(stmt)
+		preparedStmt, err := conn.Prepare(stmt)
 		checkErrorPage(w, cred, db, t, stmt, err)
-		_, err = statement.Exec()
+		_, err = preparedStmt.Exec()
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	}
@@ -274,13 +263,13 @@ func actionDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	where := strings.Join(wclauses, " && ")
 	if len(where) > 0 {
 		stmt := "DELETE FROM `" + t + "` WHERE " + where
-		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
-		statement, err := conn.Prepare(stmt)
+		log.Println("[SQL]", stmt)
+		preparedStmt, err := conn.Prepare(stmt)
 		checkErrorPage(w, cred, db, t, stmt, err)
-		_, err = statement.Exec()
+		_, err = preparedStmt.Exec()
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	}
@@ -306,50 +295,68 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
-		statement, err := conn.Prepare(stmt)
+		preparedStmt, err := conn.Prepare(stmt)
 		checkErrorPage(w, cred, db, t, stmt, err)
-		_, err = statement.Exec()
+		_, err = preparedStmt.Exec()
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	}
 }
 
-func actionEDITEXEC(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+/* The next three functions deal with modifications in tables with primary key:
+ * They use prepared statements.
+ * However, these tempates only deal with values, not with identifiers. */
 
+
+func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+	hiddencols := []CContext{CContext{"", "k", "", "", "", k, ""}, CContext{"", "v", "", "", "", v, ""}}
+	stmt := "select * from `" + t + "` where `" + k + "`=?"
+	conn := getConnection(cred, db)
+	defer conn.Close()
+
+	log.Println("[SQL]", stmt, " <= ", v)
+	preparedStmt, err := conn.Prepare(stmt)
+	checkY(err)
+	rows, err := preparedStmt.Query(v)
+	checkY(err)
+	shipForm(w, r, cred, db, t, "", "", "EDITEXEC", "Submit", "", getValueMap(w, db, t, cred, rows), hiddencols)
+}
+
+func actionEDITEXEC(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
 	clauses := collectSet(r, cred, db, t)
 	if len(clauses) > 0 {
 		stmt := "UPDATE `" + t + "` SET " + clauses + " WHERE `" + k + "` = ?"
-		log.Println("[SQL]", stmt, v)
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
-		statement, err := conn.Prepare(stmt)
+		log.Println("[SQL]", stmt, " <= ", v)
+		preparedStmt, err := conn.Prepare(stmt)
 		checkErrorPage(w, cred, db, t, stmt, err)
-		_, err = statement.Exec(v)
+		_, err = preparedStmt.Exec(v)
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	}
 }
 
 func actionREMOVE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
 	stmt := "DELETE FROM `" + t + "` WHERE `" + k + "` = ?"
-	log.Println("[SQL]", stmt, v)
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
-	statement, err := conn.Prepare(stmt)
+	log.Println("[SQL]", stmt, " <= ", v)
+	preparedStmt, err := conn.Prepare(stmt)
 	checkErrorPage(w, cred, db, t, stmt, err)
-	_, err = statement.Exec(v)
+	_, err = preparedStmt.Exec(v)
 	checkErrorPage(w, cred, db, t, stmt, err)
 	http.Redirect(w, r, "?"+q.Encode(), 302)
 }
+
 
 /*
  show columns from posts;
