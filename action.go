@@ -51,9 +51,9 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		readonly := ""
 		value := html.EscapeString(vmap[col.Name].String)
 		valid := ""
-		if len(vmap)==0 || vmap[col.Name].Valid {
+		if len(vmap) == 0 || vmap[col.Name].Valid {
 			valid = "valid"
-			log.Println(value,valid)
+			log.Println(value, valid)
 		}
 		label := ""
 		if name == primary {
@@ -62,7 +62,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		} else {
 			label = name
 		}
-		newcols = append(newcols, CContext{col.Number, name, label, col.IsNumeric, col.IsString, valid, value, readonly})
+		newcols = append(newcols, CContext{col.Number, name, label, col.IsNumeric, col.IsString, col.Nullable, valid, value, readonly})
 	}
 
 	q := r.URL.Query()
@@ -109,7 +109,7 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	where := strings.Join(wclauses, " && ")
 	hiddencols := []CContext{}
 	for field, valueArray := range whereQ { //type Values map[string][]string
-		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "valid", valueArray[0], ""})
+		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
 	}
 
 	count := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
@@ -133,9 +133,9 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 		val := r.FormValue(colhtml + "W")
 		set := r.FormValue(colhtml + "S")
 		null := r.FormValue(colhtml + "N")
-		if val != "" {
+		comp := r.FormValue(colhtml + "O")
+		if val != "" || comp == "=0" || comp == "!0" {
 			v.Add(colhtml+"W", val)
-			comp := r.FormValue(colhtml + "O")
 			if comp == "" {
 				comp, val = sqlFilterNumericComparison(val)
 				whereclauses = append(whereclauses, "`"+colname+"`"+sqlFilterComparator(comp)+"'"+sqlFilterNumber(val)+"'")
@@ -151,6 +151,12 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 			} else if comp == "!=" {
 				v.Add(colhtml+"O", comp)
 				whereclauses = append(whereclauses, "BINARY `"+colname+"`!=\""+sqlProtectString(val)+"\"")
+			} else if comp == "=0" {
+				v.Add(colhtml+"O", comp)
+				whereclauses = append(whereclauses, "`"+colname+"` IS NULL")
+			} else if comp == "!0" {
+				v.Add(colhtml+"O", comp)
+				whereclauses = append(whereclauses, "`"+colname+"` IS NOT NULL")
 			} else {
 				v.Add(colhtml+"O", comp)
 				if sqlFilterNumber(val) != "" {
@@ -179,8 +185,8 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 	for _, col := range ccols {
 		colname := col.Label
 		val := q.Get(html.EscapeString(col.Name) + "W")
-		if val != "" {
-			comp := q.Get(html.EscapeString(col.Name) + "O")
+		comp := q.Get(html.EscapeString(col.Name) + "O")
+		if val != "" || comp == "=0" || comp == "!0" {
 			if comp == "" {
 				comp, val = sqlFilterNumericComparison(val)
 				clauses = append(clauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
@@ -192,6 +198,10 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 				clauses = append(clauses, colname+"==\""+val+"\"")
 			} else if comp == "!=" {
 				clauses = append(clauses, colname+"!=\""+val+"\"")
+			} else if comp == "=0" {
+				clauses = append(clauses, colname+" IS NULL")
+			} else if comp == "!0" {
+				clauses = append(clauses, colname+" IS NOT NULL")
 			} else {
 				if col.IsNumeric != "" {
 					clauses = append(clauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
@@ -321,8 +331,8 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string
  * However, these tempates only deal with values, not with identifiers. */
 
 func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-	hiddencols := []CContext{CContext{"", "k", "", "", "", "valid", k, ""},
-		CContext{"", "v", "", "", "", "valid", v, ""}}
+	hiddencols := []CContext{CContext{"", "k", "", "", "", "", "valid", k, ""},
+		CContext{"", "v", "", "", "", "", "valid", v, ""}}
 	stmt := "select * from `" + t + "` where `" + k + "`=?"
 	conn := getConnection(cred, db)
 	defer conn.Close()

@@ -377,7 +377,7 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 	records := [][]Entry{}
 
 	i := 1
-	for f, nv := range vmap {
+	for f, nv := range vmap { // TODO should be range cols
 		v := nv.String
 		var row []Entry
 		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
@@ -425,7 +425,7 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	records := [][]Entry{}
 
 	i := 1
-	for f, nv := range vmap {
+	for f, nv := range vmap { // TODO should be range cols
 		v := nv.String
 		var row []Entry
 		if f == primary {

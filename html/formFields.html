@@ -5,42 +5,66 @@
 
 <body>
 {{define "tselector"}}
-<SELECT name="{{.}}O" style="width:90%;" >
+<SELECT name="{{.Name}}O">
       <OPTION value="~"> &sim; </OPTION>
       <OPTION value="!~"> !&sim; </OPTION>
+      <option disabled val="" class="select-hr"></option>
       <OPTION value="=="> == </OPTION>
       <OPTION value="!="> != </OPTION>
       <OPTION value=">"> &gt; </OPTION>
       <OPTION value=">="> &ge; </OPTION>
       <OPTION value="<"> &lt; </OPTION>
-      <OPTION value="<="> &le; </OPTION>
-</SELECT>{{end}}
+      <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+      <option disabled val="" class="select-hr"></option>
+      <OPTION value="=0"> =0 </OPTION>
+      <OPTION value="!0"> !0 </OPTION>
+{{end}}</SELECT>{{end}}
 {{define "nselector"}}
-<SELECT name="{{.}}O" style="width:90%;" >
-      <OPTION value=""> &nbsp; </OPTION>
+<SELECT name="{{.Name}}O">
+      <OPTION value=""> &nbsp;&nbsp;&nbsp; </OPTION>
       <OPTION value="="> = </OPTION>
       <OPTION value="<>"> &ne; </OPTION>
       <OPTION value=">"> &gt; </OPTION>
       <OPTION value=">="> &ge; </OPTION>
       <OPTION value="<"> &lt; </OPTION>
-      <OPTION value="<="> &le; </OPTION>
-</SELECT>{{end}}
+      <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+      <option disabled val="" class="select-hr"></option>
+      <OPTION value="=0"> =0 </OPTION>
+      <OPTION value="!0"> !0 </OPTION>
+{{end}}</SELECT>{{end}}
 {{define "oselector"}}
-<SELECT name="{{.}}O" style="width:90%;" > 
+<SELECT name="{{.Name}}O"> 
       <OPTION value="="> =  </OPTION>
       <OPTION value="<>"> &ne; </OPTION>
       <OPTION value=">"> &gt; </OPTION>
       <OPTION value=">="> &ge; </OPTION>
       <OPTION value="<"> &lt; </OPTION>
-      <OPTION value="<="> &le; </OPTION>
-</SELECT>{{end}}
-{{define "selector"}}{{if .IsNumeric}}{{template "nselector" .Name}}{{else if .IsString}}{{template "tselector" .Name}}{{else}}{{template "oselector" .Name}}{{end}}{{end}}
+      <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+      <option disabled val="" class="select-hr"></option>
+      <OPTION value="=0"> =0 </OPTION>
+      <OPTION value="!0"> !0 </OPTION>
+{{end}}</SELECT>{{end}}
+{{define "selector"}}{{if .IsNumeric}}{{template "nselector" .}}{{else if .IsString}}{{template "tselector" .}}{{else}}{{template "oselector" .}}{{end}}{{end}}
 {{define "set"}}<input class="cell" type="text" name="{{.Name}}S" value="{{.Value}}">{{end}}
-{{define "null"}}<input class="cell" type="checkbox" name="{{.Name}}N" value=1{{if .Valid}}{{else}} checked="checked"{{end}}>{{end}}
+{{define "null"}}<input class="cell" type="checkbox" id= name="{{.Name}}N" value=1{{if .Valid}}{{else}} checked="checked"{{end}}>{{end}}
 {{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
 {{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 {{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
 {{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "where" .}}{{end}}{{end}}
+
+<!-- 
+<input
+    id="example"
+    name="example" 
+    onClick="toggle('example', 'disableMe')" 
+    type="checkbox" value="1" /> When this is checked, something is disabled <br />
+
+<input
+    id="disableMe"
+    name="disableMe"
+    type="text"
+    value="This input box will get disabled" />
+-->
 
 {{if .Trail}}<div class="top">
 	<div class="breadcrumb">

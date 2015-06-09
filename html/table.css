@@ -27,7 +27,7 @@ th > a:visited {color: #74AD6E;}               		/* my green */
 th > a:hover {color: orange;text-decoration: underline}
 th > a:active {color: red;}
 td {
-	padding: 0.5vw 0.5vw 0.5vw 1vw;
+	padding: 0.5vw 0.5vw 0.5vw 0.5vw;
     border-right: 1px solid #715524;
 	border-bottom: 1px solid #715524;
 	background: #fff;
@@ -60,6 +60,8 @@ input.range {
 	margin-top: auto;
 }   
 
+option.select-hr { border-bottom: 1px dotted #000; font-size: 0px; margin: 3px 0px 3px 0px; }
+input[type=select] {padding: 0.1vw}
 input[type=text]:hover {background:#F0F0F0;color: #715524;        							/* my brown */}
 input[type=text]:active {background:#74AD6E;color: #715524;        							/* my brown */}		/* my green */
 

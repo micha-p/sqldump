@@ -58,6 +58,8 @@ input.range {
 	margin-top: auto;
 }   
 
+option.select-hr { border-bottom: 1px dotted #000; font-size: 0px;}
+
 input[type=text]:hover {background:#F0F0F0;color: #715524;        							/* my brown */}
 input[type=text]:active {background:#74AD6E;color: #715524;        							/* my brown */}		/* my green */
 

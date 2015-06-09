@@ -39,13 +39,13 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 
 func checkErrorPage(w http.ResponseWriter, cred Access, db string, t string, query string, err error) {
 	if err != nil {
-		cols := []CContext{CContext{"1", "", "Query", "", "", "valid", query, ""},
-			CContext{"2", "", "Error", "", "", "valid", fmt.Sprint(err), ""}}
+		cols := []CContext{CContext{"1", "", "Query", "", "", "", "valid", query, ""},
+			CContext{"2", "", "Error", "", "", "", "valid", fmt.Sprint(err), ""}}
 		shipErrorPage(w, cred, db, t, cols)
 	}
 }
 
 func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
-	cols := []CContext{CContext{"1", "", "Message", "", "", "valid", msg, ""}}
+	cols := []CContext{CContext{"1", "", "Message", "", "", "", "valid", msg, ""}}
 	shipErrorPage(w, cred, db, "", cols)
 }

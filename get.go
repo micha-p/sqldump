@@ -30,6 +30,7 @@ type CContext struct {
 	Label     string
 	IsNumeric string
 	IsString  string
+	Nullable  string
 	Valid     string
 	Value     string
 	Readonly  string
@@ -158,6 +159,11 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
 
+		nullable := ""
+		if yes, _ := regexp.MatchString("YES", n); yes {
+			nullable = "YES"
+		}
+
 		iType, _ := regexp.MatchString("int", t)
 		fType, _ := regexp.MatchString("float", t)
 		rType, _ := regexp.MatchString("real", t)
@@ -170,11 +176,11 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 		tType, _ := regexp.MatchString("text", t)
 
 		if iType || fType || rType || dType || lType || nType {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "numeric", "", "", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "numeric", "", nullable, "", "", ""})
 		} else if cType || yType || bType || tType {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "", "string", "", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "", "string", nullable, "", "", ""})
 		} else {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "", "", "", "", ""})
+			m = append(m, CContext{strconv.Itoa(i), f, f, "", "", nullable, "", "", ""})
 		}
 		i = i + 1
 	}
