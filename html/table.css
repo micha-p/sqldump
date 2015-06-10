@@ -1,5 +1,6 @@
 html { 
-	font-size:1.33vw;
+	font-size:1rem;									/* line 1 px border radius 5 px padding 1 rem */
+	font-family: sans-serif;
 }
 
 a {text-decoration: none}
@@ -9,14 +10,12 @@ a:hover {color: orange;text-decoration: underline}
 a:active {color: red;}
 
 table {
-	padding: 0;
-    text-align: left;
+	text-align: left;
     text-decoration: none;
-    font-family: sans-serif;
-    font-size: 1.2vw
+    font-size: 0.825em;
 }
 th {
-	padding: 0.5vw 0.5vw 0.5vw 1vw;
+	padding: 4px 8px;
     border-right: 1px solid #715524;
 	border-bottom: 1px solid #715524;
     font-weight: bold;
@@ -27,13 +26,12 @@ th > a:visited {color: #74AD6E;}               		/* my green */
 th > a:hover {color: orange;text-decoration: underline}
 th > a:active {color: red;}
 td {
-	padding: 0.5vw 0.5vw 0.5vw 0.5vw;
+	padding: 4px 8px;
     border-right: 1px solid #715524;
 	border-bottom: 1px solid #715524;
 	background: #fff;
 	color: #715524;        							/* my brown */
 }
-
 
 input.cell
     {
@@ -46,18 +44,15 @@ input.range {
 	outline: none;
 	display: block;
 	float: left;
-	font-family: sans-serif;
-	font-size: 1.33vw;
-	line-height: 2.5vw;
+	font-size: 1rem;
+	line-height: 2rem;
+	height: 2rem;
 	color: white;
-	padding: 0 1vw 0 1vw;
+	padding: 0px 8px;
 	background: #74AD6E;							/* my green */
 	position: relative;
 	border: none;  
-	margin-left: auto;
-	margin-right: auto;
-	margin-bottom: auto;
-	margin-top: auto;
+	margin: 0px;
 }   
 
 option.select-hr { border-bottom: 1px dotted #000; font-size: 0px; margin: 3px 0px 3px 0px; }
@@ -69,15 +64,15 @@ button {
 	color: white; 
 	background: #715524;							/* my brown */
     border: none;
-	border-radius: 0.33vw; 
-    height: 2.5vw;
+	border-radius: 5px; 
+    height: 32px;
 }
 button:hover { color: orange;}
 button:active { color: red;}
 
 
 .counter {
-	border-radius: 0.33vw;
+	border-radius: 5px;
 	margin-left: auto;
 	margin-right: auto;
 }
@@ -87,16 +82,15 @@ button:active { color: red;}
 	outline: none;
 	display: block;
 	float: left;
-	font-family: sans-serif;
-	line-height: 2.5vw;
+	line-height: 2rem;
 	color: white;
-	padding: 0 1vw 0 1vw;
+	padding: 0px 8px;
 	background: #74AD6E;
 	position: relative;
 }
 
-.counter a.count:first-child {border-radius: 0.33vw 0 0 0.33vw;}
-.counter a.count:last-child {border-radius: 0 0.33vw 0.33vw 0;}
+.counter a.count:first-child {border-radius: 5px 0 0 5px;}
+.counter a.count:last-child {border-radius: 0 5px 5px 0;}
 .counter a.count:active, .counter a.count:hover{	background: #715524;}
 .counter a.count:active {color:orange;}
 
@@ -111,23 +105,22 @@ button:active { color: red;}
 	display: block;
 	float: left;
 	font-family: sans-serif;
-	line-height: 2.5vw;
+	line-height: 2rem;
 	color: white;
-	padding: 0 1vw 0 1vw;
+	padding: 0 10px;
 	background: #74AD6E;
 	position: relative;
 }
 
-.right a.count:first-child {border-radius: 0.33vw 0 0 0.33vw;}
-.right a.count:last-child {border-radius: 0 0.33vw 0.33vw 0;}
+.right a.count:first-child {border-radius: 5px 0 0 5px;}
+.right a.count:last-child {border-radius: 0 5px 5px 0;}
 .right a.count:active, .right a.count:hover{	background: #715524;}
 .right a.count:active {color:orange;}
 
 
 .top {
     width: 100%;
-    padding: 0.33vw;
-    height: 5vw;
+    height: 3rem;
     display: flex;
 }
 
@@ -140,7 +133,6 @@ button:active { color: red;}
     text-align: center;
 	display: inline-block;
 	overflow: hidden;
-	border-radius: 0.33vw;
 	float: left;
 }
 
@@ -150,22 +142,22 @@ button:active { color: red;}
 	display: block;
 	float: left;
 	font-family: sans-serif;
-	line-height: 2.5vw;
+	line-height: 2rem;
 	color: white;
-	padding: 0 2vw 0 2.5vw; /* 20px + 18px */
+	padding: 0 1rem 0 2rem;
 	background: #74AD6E;
 	position: relative;
 }
 .breadcrumb a.trail:first-child {
-	padding-left: 2vw;
-	border-radius: 0.33vw 0 0 0.33vw; /*to match with the parent's radius*/
+	padding-left: 0.5rem;
+	border-radius: 5px 0 0 5px; /*to match with the parent's radius*/
 }
 .breadcrumb a.trail:first-child:before {
-	left: 1vw;
+	left: 15px;
 }
 .breadcrumb a.trail:last-child {
-	border-radius: 0 0.33vw 0.33vw 0; /*this was to prevent glitches on hover*/
-	padding-right: 1.5vw;
+	border-radius: 0 5px 5px 0; /*this was to prevent glitches on hover*/
+	padding-right: 15px;
 }
 
 .breadcrumb a.trail:active, .breadcrumb a.trail:hover{	background: #715524;}
@@ -175,17 +167,17 @@ button:active { color: red;}
 	content: '';
 	position: absolute;
 	top: 0; 
-	right: -1.25vw; /*half of square's length*/
+	right: -1rem; /*half of square's length*/
 	/*same dimension as the line-height of .breadcrumb a */
-	width: 2.5vw; 
-	height: 2.4vw;
+	width: 2rem; 
+	height: 1.9rem;
 	transform: scale(0.707) rotate(45deg);
 	z-index: 1;
 	background: #74AD6E;
 	box-shadow: 
 		2px -2px 0 2px rgba(0, 0, 0, 0.4), 
 		3px -3px 0 2px rgba(255, 255, 255, 0.1);
-	border-radius: 0 0.33vw 0 0.33vw;
+	border-radius: 0 5px 0 5px;
 }
 
 .breadcrumb a.trail:last-child:after {

@@ -3,6 +3,7 @@
 A small web-based tool for database administration. 
 
 - simple user-interface (links are below values!)
+- free of any language, just using well-known symbols, handlers and links
 - stepping through tables with primary key
 - direct access via query with credentials (use wisely)
 - credentials stored in secure cookies
@@ -21,7 +22,6 @@ A small web-based tool for database administration.
 ### Usage
 
 	cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -d -c="html/table.css"
-    cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -p 8081 -i -d -c="html/table_px.css"
     
 	-c  supply customized style in CSS file
 	-d  DEBUG: dynamically load html templates and css
@@ -30,7 +30,7 @@ A small web-based tool for database administration.
 	-p  server port
 	-r  READONLY access
 	-s  https Connection TLS
-    -m  modify database schema: create, alter, drop tables (Release 1.1)
+	-m  modify database schema: create, alter, drop tables (Release 1.1)
 	-x  expert mode to access privileges, routines, triggers, views (Release 1.2)
 
 
@@ -42,6 +42,18 @@ A small web-based tool for database administration.
     w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text 
+
+### Interface
+
+Symbol 	|	Action
+--------|-------------
++ 		|	Add
+~ 		|	Change
+- 		|	Remove
+i 		|	Info
+<		|   Left (towards start)
+>		|   Right (towards end)
+#		|   Handle
 
 
 ### Security
