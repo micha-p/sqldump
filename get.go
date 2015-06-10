@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
+	"html"
 	"regexp"
 	"strconv"
 )
@@ -15,7 +15,7 @@ import (
 func getNullString(val interface{}) sql.NullString {
 	b, ok := val.([]byte)
 	if val == nil {
-		return sql.NullString{"NULL", false}
+		return sql.NullString{"", false}
 	} else if ok {
 		return sql.NullString{string(b), true}
 	} else {
@@ -97,7 +97,7 @@ func getPrimary(cred Access, db string, t string) string {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 	// rows, err := conn.Query("show columns from ?", t) // does not work??
-	rows, err := conn.Query("show columns from `" + t + "`")
+	rows, err := conn.Query("show columns from `" + t + "` WHERE `Key` LIKE 'PRI'")
 	checkY(err)
 	defer rows.Close()
 
@@ -186,11 +186,36 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	return m
 }
 
-func getNullStringMap(w http.ResponseWriter, db string, t string, cred Access, rows *sql.Rows) map[string]sql.NullString {
+func getColumnInfoFilled(cred Access, db string, t string, primary string, rows *sql.Rows) []CContext {
+
+	// TODO more efficient
+	cols := getColumnInfo(cred, db, t)
+	vmap := getNullStringMap(rows)
+	
+	
+	newcols := []CContext{}
+	for _, col := range cols {
+		name := html.EscapeString(col.Name)
+		readonly := ""
+		value := html.EscapeString(vmap[col.Name].String)
+		valid := ""
+		if len(vmap) == 0 || vmap[col.Name].Valid {
+			valid = "valid"
+		}
+		if name == primary {
+			readonly = "1"
+		}
+		newcols = append(newcols, CContext{col.Number, name, name, col.IsNumeric, col.IsString, col.Nullable, valid, value, readonly})
+	}
+	return newcols
+}
+
+
+
+
+func getNullStringMap(rows *sql.Rows) map[string]sql.NullString {
 
 	vmap := make(map[string]sql.NullString)
-	defer rows.Close()
-
 	columns, err := rows.Columns()
 	checkY(err)
 	count := len(columns)

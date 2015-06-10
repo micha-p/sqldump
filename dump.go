@@ -138,7 +138,7 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	for _, title := range columns {
 		var titlestring string
 		if primary == title {
-			titlestring = title + " (ID)"
+			titlestring = title
 			if o == title {
 				titlestring = "# " + titlestring
 			}
@@ -179,20 +179,6 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		}
 	}
 
-	q.Set("action", "QUERY")
-	linkselect := q.Encode()
-	q.Add("action", "ADD")
-	linkinsert := q.Encode()
-	q.Set("action", "DELETEFORM")
-	linkdeleteF := q.Encode()
-	q.Set("action", "INFO")
-	linkinfo := q.Encode()
-	q.Del("action")
-
-	menu := []Entry{}
-	menu = append(menu, Entry{Link: linkselect, Text: "?"})
-	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
-
 	rows, err := getRows(cred, db, query)
 	if err != nil {
 		checkErrorPage(w, cred, db, t, query, err)
@@ -220,6 +206,8 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		if showNumsBool(primary, o) {
 			q.Del("k")
 			q.Del("v")
+			q.Set("d",d)
+			q.Set("o",o)
 			q.Set("n", strconv.Itoa(rownum))
 			row = append(row, escape(strconv.Itoa(rownum), q.Encode()))
 		}
@@ -239,7 +227,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 					q.Set("v", v)
 					row = append(row, escape(v, q.Encode()))
 				} else {
-					row = append(row, escape(v, ""))
+					row = append(row, escape(v, "")) // TODO add single where clause
 				}
 			} else {
 				row = append(row, escapeNull())
@@ -250,6 +238,19 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		rownum = rownum + 1
 	}
 
+	q.Set("action", "QUERY")
+	linkselect := q.Encode()
+	q.Set("action", "ADD")
+	linkinsert := q.Encode()
+    q.Set("action", "UPDATEFORM")
+	linkupdate := q.Encode()
+	q.Set("action", "QUERYDELETE")
+	linkdeleteF := q.Encode()
+	q.Set("action", "INFO")
+	linkinfo := q.Encode()
+	q.Del("action")
+
+	menu := []Entry{}
 	var limitstring, link string
 	if len(where) > 0 {
 		limitstring = ""
@@ -257,18 +258,26 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 		wherestring = WhereSelect2Pretty(where, getColumnInfo(cred, db, t))
 		where.Add("db", db)
 		where.Add("t", t)
+		where.Set("action", "QUERY")
+		linkselect = q.Encode()
+		where.Set("action", "ADD")
+		linkinsert = q.Encode()
+		where.Set("action", "UPDATEFORM")
+		linkupdate = where.Encode()
 		where.Set("action", "DELETE")
 		linkdelete := where.Encode()
-		where.Set("action", "UPDATE")
-		linkupdate := where.Encode()
-		where.Set("action", "SELECT")
 		head = createHead(db, t, o, d, "", primary, columns, where)
+		menu = append(menu, Entry{Link: linkselect, Text: "?"})
+		menu = append(menu, Entry{Link: linkinsert, Text: "+"})
 		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
 		menu = append(menu, Entry{Link: linkdelete, Text: "-"})
 	} else {
 		limitstring = "1-" + strconv.Itoa(rownum-1)
 		q.Set("n", limitstring)
 		link = q.Encode()
+		menu = append(menu, Entry{Link: linkselect, Text: "?"})
+		menu = append(menu, Entry{Link: linkinsert, Text: "+"})
+		menu = append(menu, Entry{Link: linkupdate, Text: "~"})
 		menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
 	}
 	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
@@ -372,7 +381,7 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 
 	rows, err := getRows(cred, db, query)
 	checkY(err)
-	vmap := getNullStringMap(w, db, t, cred, rows)
+	vmap := getNullStringMap(rows)
 	head := []Entry{{"#", ""}, {"Column", ""}, {"Data", ""}}
 	records := [][]Entry{}
 
@@ -419,7 +428,7 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 
 	rows, err := getRows(cred, db, query)
 	checkY(err)
-	vmap := getNullStringMap(w, db, t, cred, rows)
+	vmap := getNullStringMap(rows)
 	primary := getPrimary(cred, db, t)
 	head := []Entry{{"#", ""}, {"Column", ""}, {"Data", ""}}
 	records := [][]Entry{}
@@ -429,7 +438,7 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		v := nv.String
 		var row []Entry
 		if f == primary {
-			f = f + " (ID)"
+			f = "# " + f
 		}
 		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
 		records = append(records, row)
@@ -445,16 +454,16 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	linkinfo := q.Encode()
 	q.Add("k", k)
 	q.Add("v", v)
-	q.Set("action", "REMOVE")
-	linkremove := q.Encode()
-	q.Set("action", "EDIT")
+	q.Set("action", "DELETEPRI")
+	linkDELETEPRI := q.Encode()
+	q.Set("action", "EDITFORM")
 	linkedit := q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
 	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
 	menu = append(menu, Entry{Link: linkedit, Text: "~"})
-	menu = append(menu, Entry{Link: linkremove, Text: "-"})
+	menu = append(menu, Entry{Link: linkDELETEPRI, Text: "-"})
 	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
 	next, err := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` > "+v+" order by `"+k+"` limit 1")

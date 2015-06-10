@@ -66,8 +66,8 @@ i 		|	Info
 
 ##### Javascript
 
-This tool does not rely on javascript at all. However, when toggling null values or entering nonempty strings, it might be useful. 
-Scripts might be used in user-supplied templates.
+The provided html-templates do not use javascript at all. However, when toggling null values or entering nonempty strings, scripts might be useful and
+ might be used in user-supplied templates.
 
 ##### SQL-injection via Request values
 

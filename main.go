@@ -70,22 +70,20 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 		actionADD(w, r, cred, db, t, o, d)
 	} else if action == "INSERT" && !READONLY && db != "" && t != "" {
 		actionINSERT(w, r, cred, db, t, o, d)
-	} else if action == "REMOVE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionREMOVE(w, r, cred, db, t, k, v)
-	} else if action == "EDIT" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionEDIT(w, r, cred, db, t, k, v)
-	} else if action == "EDITEXEC" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionEDITEXEC(w, r, cred, db, t, k, v)
-	} else if action == "DELETEFORM" && !READONLY && db != "" && t != "" { // Subset and Delete (Show Form)
-		actionDELETEFORM(w, r, cred, db, t, o, d)
-	} else if action == "DELETEEXEC" && !READONLY && db != "" && t != "" { // Subset and Delete (exec)
-		actionDELETEEXEC(w, r, cred, db, t, o, d)
-	} else if action == "DELETE" && !READONLY && db != "" && t != "" { // Delete a selected subset
+	} else if action == "QUERYDELETE" && !READONLY && db != "" && t != "" { // Create subset for DELETE
+		actionQUERYDELETE(w, r, cred, db, t, o, d)
+	} else if action == "DELETE" && !READONLY && db != "" && t != "" { 		// DELETE a selected subset
 		actionDELETE(w, r, cred, db, t, o, d)
-	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { // Update a selected subset
+	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { 		// UPDATE a selected subset
 		actionUPDATE(w, r, cred, db, t, o, d)
-	} else if action == "UPDATEEXEC" && !READONLY && db != "" && t != "" {
-		actionUPDATEEXEC(w, r, cred, db, t, o, d)
+	} else if action == "UPDATEFORM" && !READONLY && db != "" && t != "" {	// ask for changed values
+		actionUPDATEFORM(w, r, cred, db, t, o, d)
+	} else if action == "EDITFORM" && !READONLY && db != "" && t != "" && k != "" && v != "" {
+		actionEDITFORM(w, r, cred, db, t, k, v)
+	} else if action == "UPDATEPRI" && !READONLY && db != "" && t != "" && k != "" && v != "" {
+		actionUPDATEPRI(w, r, cred, db, t, k, v)
+	} else if action == "DELETEPRI" && !READONLY && db != "" && t != "" && k != "" && v != "" {
+		actionDELETEPRI(w, r, cred, db, t, k, v)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, cred, db, t, o, d, n, k, v)
 	} else if action == "BACK" {

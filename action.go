@@ -11,7 +11,6 @@ package main
 */
 
 import (
-	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 	"log"
@@ -36,33 +35,11 @@ type FContext struct {
 	Trail    []Entry
 }
 
-// INSERT provides an empty vmap, EDIT/UPDATE provides a filled vmap
+// ADD provides columns without values, EDIT/UPDATE provide a filled vmap
 
 func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 	db string, t string, o string, d string,
-	action string, button string, selector string, vmap map[string]sql.NullString, hiddencols []CContext) {
-
-	cols := getColumnInfo(cred, db, t)
-	primary := getPrimary(cred, db, t)
-	newcols := []CContext{}
-
-	for _, col := range cols {
-		name := html.EscapeString(col.Name)
-		readonly := ""
-		value := html.EscapeString(vmap[col.Name].String)
-		valid := ""
-		if len(vmap) == 0 || vmap[col.Name].Valid {
-			valid = "valid"
-		}
-		label := ""
-		if name == primary {
-			label = name + " (ID)"
-			readonly = "1"
-		} else {
-			label = name
-		}
-		newcols = append(newcols, CContext{col.Number, name, label, col.IsNumeric, col.IsString, col.Nullable, valid, value, readonly})
-	}
+	action string, button string, selector string, showncols []CContext, hiddencols []CContext) {
 
 	q := r.URL.Query()
 	q.Del("action")
@@ -78,7 +55,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		Order:    o,
 		Desc:     d,
 		Back:     linkback,
-		Columns:  newcols,
+		Columns:  showncols,
 		Hidden:   hiddencols,
 		Trail:    makeTrail(cred.Host, db, t, o, d, "", "", url.Values{}),
 	}
@@ -90,36 +67,20 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 	checkY(err)
 }
 
+/* The next three functions generate empty forms for doing QUERY, QUERYDELETE, ADD */
+
 func actionQUERY(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "SELECT", "Select", "true", make(map[string]sql.NullString), []CContext{})
+	shipForm(w, r, cred, db, t, o, d, "SELECT", "Select", "true", getColumnInfo(cred, db, t),[]CContext{})
 }
 
-func actionDELETEFORM(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "DELETEEXEC", "Delete", "true", make(map[string]sql.NullString), []CContext{})
+func actionQUERYDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+	shipForm(w, r, cred, db, t, o, d, "DELETE", "Delete", "true", getColumnInfo(cred, db, t), []CContext{})
 }
 
 func actionADD(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "INSERT", "Insert", "", make(map[string]sql.NullString), []CContext{})
+	shipForm(w, r, cred, db, t, o, d, "INSERT", "Insert", "", getColumnInfo(cred, db, t), []CContext{})
 }
 
-func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	cols := getCols(cred, db, t)
-	wclauses, _, whereQ := collectClauses(r, cols)
-	where := strings.Join(wclauses, " && ")
-	hiddencols := []CContext{}
-	for field, valueArray := range whereQ { //type Values map[string][]string
-		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
-	}
-
-	count, _ := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
-	if count == "1" {
-		rows, err := getRows(cred, db, "select * from `"+t+"` where "+where)
-		checkY(err)
-		shipForm(w, r, cred, db, t, o, d, "UPDATEEXEC", "Update", "", getNullStringMap(w, db, t, cred, rows), hiddencols)
-	} else {
-		shipForm(w, r, cred, db, t, o, d, "UPDATEEXEC", "Update", "", make(map[string]sql.NullString), hiddencols)
-	}
-}
 
 // TODO: to allow for submitting multiple clauses for a field, they should be numbered W1, O1 ...
 func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Values) {
@@ -224,7 +185,37 @@ func actionSELECT(w http.ResponseWriter, r *http.Request, cred Access, db string
 	}
 }
 
-func actionUPDATEEXEC(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+
+func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+
+	q := url.Values{}
+	q.Add("db", db)
+	q.Add("t", t)
+	q.Add("o", o)
+	q.Add("d", d)
+	cols := getCols(cred, db, t)
+	_, sclauses, _ := collectClauses(r, cols)
+	clauses := strings.Join(sclauses, " , ")
+	if len(clauses) > 0 {
+		stmt := "INSERT INTO `" + t + "` SET " + clauses
+		log.Println("[SQL]", stmt)
+		conn := getConnection(cred, db)
+		defer conn.Close()
+
+		preparedStmt, err := conn.Prepare(stmt)
+		checkErrorPage(w, cred, db, t, stmt, err)
+		_, err = preparedStmt.Exec()
+		checkErrorPage(w, cred, db, t, stmt, err)
+		http.Redirect(w, r, "?"+q.Encode(), 302)
+	}
+}
+
+/* the next three functions deal with tables where a primary key is not existant or not in use
+ * 
+ * UPDATE and DELETE process the requeted actions
+ * UPDATEFORM aks for changed values and is filled, if there is just one selected row */
+ 
+func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -249,32 +240,8 @@ func actionUPDATEEXEC(w http.ResponseWriter, r *http.Request, cred Access, db st
 	}
 }
 
-func actionDELETEEXEC(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	q.Add("o", o)
-	q.Add("d", d)
-	cols := getCols(cred, db, t)
-	wclauses, _, _ := collectClauses(r, cols)
-	where := strings.Join(wclauses, " && ")
-	if len(where) > 0 {
-		stmt := "DELETE FROM `" + t + "` WHERE " + where
-		log.Println("[SQL]", stmt)
-		conn := getConnection(cred, db)
-		defer conn.Close()
-
-		preparedStmt, err := conn.Prepare(stmt)
-		checkErrorPage(w, cred, db, t, stmt, err)
-		_, err = preparedStmt.Exec()
-		checkErrorPage(w, cred, db, t, stmt, err)
-		http.Redirect(w, r, "?"+q.Encode(), 302)
-	}
-}
 
 func actionDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
@@ -297,40 +264,36 @@ func actionDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	}
 }
 
-func collectSet(r *http.Request, cred Access, db string, t string) string {
+func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
 	cols := getCols(cred, db, t)
-	_, sclauses, _ := collectClauses(r, cols)
-	return strings.Join(sclauses, " , ")
-}
+	wclauses, _, whereQ := collectClauses(r, cols)
+	where := strings.Join(wclauses, " && ")
 
-func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+	hiddencols := []CContext{}
+	for field, valueArray := range whereQ { //type Values map[string][]string
+		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
+	}
 
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	q.Add("o", o)
-	q.Add("d", d)
-	clauses := collectSet(r, cred, db, t)
-	if len(clauses) > 0 {
-		stmt := "INSERT INTO `" + t + "` SET " + clauses
-		log.Println("[SQL]", stmt)
-		conn := getConnection(cred, db)
-		defer conn.Close()
-
-		preparedStmt, err := conn.Prepare(stmt)
-		checkErrorPage(w, cred, db, t, stmt, err)
-		_, err = preparedStmt.Exec()
-		checkErrorPage(w, cred, db, t, stmt, err)
-		http.Redirect(w, r, "?"+q.Encode(), 302)
+	count, _ := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
+	if count == "1" {
+		rows, err := getRows(cred, db, "select * from `"+t+"` where "+where)	
+		checkY(err)
+		defer rows.Close()
+		shipForm(w, r, cred, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(cred, db, t, "", rows), hiddencols)
+	} else {
+		shipForm(w, r, cred, db, t, o, d, "UPDATE", "Update", "", getColumnInfo(cred, db, t), hiddencols)
 	}
 }
+
+
 
 /* The next three functions deal with modifications in tables with primary key:
  * They use prepared statements.
  * However, these tempates only deal with values, not with identifiers. */
 
-func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
-	hiddencols := []CContext{CContext{"", "k", "", "", "", "", "valid", k, ""},
+func actionEDITFORM(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+	hiddencols := []CContext{
+		CContext{"", "k", "", "", "", "", "valid", k, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
 	stmt := "select * from `" + t + "` where `" + k + "`=?"
 	conn := getConnection(cred, db)
@@ -341,15 +304,19 @@ func actionEDIT(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	checkY(err)
 	rows, err := preparedStmt.Query(v)
 	checkY(err)
-	shipForm(w, r, cred, db, t, "", "", "EDITEXEC", "Submit", "", getNullStringMap(w, db, t, cred, rows), hiddencols)
+	defer rows.Close()
+	primary:=getPrimary(cred, db, t)
+	shipForm(w, r, cred, db, t, "", "", "UPDATEPRI", "Submit", "", getColumnInfoFilled(cred, db, t, primary, rows), hiddencols)
 }
 
-func actionEDITEXEC(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+func actionUPDATEPRI(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
-	clauses := collectSet(r, cred, db, t)
-	if len(clauses) > 0 {
+	cols := getCols(cred, db, t)
+	_, sclauses, _ := collectClauses(r, cols)
+	clauses := strings.Join(sclauses, " , ")
+	if len(sclauses) > 0 {
 		stmt := "UPDATE `" + t + "` SET " + clauses + " WHERE `" + k + "` = ?"
 		conn := getConnection(cred, db)
 		defer conn.Close()
@@ -363,7 +330,7 @@ func actionEDITEXEC(w http.ResponseWriter, r *http.Request, cred Access, db stri
 	}
 }
 
-func actionREMOVE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+func actionDELETEPRI(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
@@ -400,9 +367,9 @@ func actionINFO(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	q.Add("t", t)
 	q.Set("action", "QUERY")
 	linkselect := q.Encode()
-	q.Add("action", "ADD")
+	q.Set("action", "ADD")
 	linkinsert := q.Encode()
-	q.Set("action", "DELETEFORM")
+	q.Set("action", "QUERYDELETE")
 	linkdeleteF := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()

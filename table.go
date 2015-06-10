@@ -91,7 +91,7 @@ func makeTrail(host string, db string, t string, o string, d string, k string, w
 		}
 	} else if k != "" {
 		q.Add("k", k)
-		trail = append(trail, Entry{Link: q.Encode(), Text: k + " (ID)"})
+		trail = append(trail, Entry{Link: q.Encode(), Text: "# " + k})
 	}
 	return trail
 }
