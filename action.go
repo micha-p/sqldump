@@ -57,7 +57,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		Back:     linkback,
 		Columns:  showncols,
 		Hidden:   hiddencols,
-		Trail:    makeTrail(cred.Host, db, t, o, d, "", "", url.Values{}),
+		Trail:    makeTrail(cred.Host, db, t, "", o, d, "", "", url.Values{}),
 	}
 
 	if DEBUGFLAG {

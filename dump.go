@@ -117,48 +117,39 @@ func dumpTables(w http.ResponseWriter, db string, cred Access) {
 	tableOutSimple(w, cred, db, "", head, records, []Entry{})
 }
 
-func showNumsBool(primary string, o string) bool {
-	if primary == "" || o == "" || (o != "" && o != primary) {
-		return true
-	} else {
-		return false
-	}
-}
 
 func createHead(db string, t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
 	root := url.Values{}
 	head := []Entry{}
+	root.Add("db", db)
+	root.Add("t", t)
+	root.Add("n", n)
+	head = append(head, Entry{"#  ", root.Encode()})
 
-	if showNumsBool(primary, o) {
-		root.Add("db", db)
-		root.Add("t", t)
-		root.Add("n", n)
-		head = append(head, Entry{"#", root.Encode()})
-	}
 	for _, title := range columns {
-		var titlestring string
-		if primary == title {
-			titlestring = title
-			if o == title {
-				titlestring = "# " + titlestring
-			}
-		} else {
-			titlestring = title
-		}
-
 		if o == title {
 			q.Set("o", title)
-			if d == "" {
-				q.Set("d", "1")
-				head = append(head, Entry{Link: q.Encode(), Text: titlestring + "&uarr;"})
+			if primary == title {
+				if d == "" {
+					q.Set("d", "1")
+					head = append(head, Entry{Link: q.Encode(), Text: title + "&uArr;"})
+				} else {
+					q.Del("d")
+					head = append(head, Entry{Link: q.Encode(), Text: title + "&dArr;"})
+				}
 			} else {
-				q.Del("d")
-				head = append(head, Entry{Link: q.Encode(), Text: titlestring + "&darr;"})
+				if d == "" {
+					q.Set("d", "1")
+					head = append(head, Entry{Link: q.Encode(), Text: title + "&uarr;"})
+				} else {
+					q.Del("d")
+					head = append(head, Entry{Link: q.Encode(), Text: title + "&darr;"})
+				}
 			}
 		} else {
 			q.Set("o", title)
 			q.Del("d")
-			head = append(head, Entry{Link: q.Encode(), Text: titlestring})
+			head = append(head, Entry{Link: q.Encode(), Text: title + "&nbsp;"})
 		}
 	}
 	return head
@@ -203,14 +194,12 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	for rows.Next() {
 
 		row := []Entry{}
-		if showNumsBool(primary, o) {
-			q.Del("k")
-			q.Del("v")
-			q.Set("d",d)
-			q.Set("o",o)
-			q.Set("n", strconv.Itoa(rownum))
-			row = append(row, escape(strconv.Itoa(rownum), q.Encode()))
-		}
+		q.Del("k")
+		q.Del("v")
+		q.Set("d",d)
+		q.Set("o",o)
+		q.Set("n", strconv.Itoa(rownum))
+		row = append(row, escape(strconv.Itoa(rownum), q.Encode()))
 
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
@@ -282,7 +271,7 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	}
 	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
 
-	tableOutRows(w, cred, db, t, o, d, limitstring, link, link, head, records, menu, wherestring, where)
+	tableOutRows(w, cred, db, t, primary, o, d, limitstring, link, link, head, records, menu, wherestring, where)
 }
 
 func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, start int, end int, max int, cred Access, query string) {
@@ -373,7 +362,7 @@ func dumpRange(w http.ResponseWriter, db string, t string, o string, d string, s
 	linkleft := q.Encode()
 	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
 	linkright := q.Encode()
-	tableOutRows(w, cred, db, t, o, d, limitstring, linkleft, linkright, head, records, menu, "", url.Values{})
+	tableOutRows(w, cred, db, t, primary, o, d, limitstring, linkleft, linkright, head, records, menu, "", url.Values{})
 }
 
 // Dump all fields of a record, one column per line
@@ -421,7 +410,7 @@ func dumpFields(w http.ResponseWriter, db string, t string, o string, d string, 
 	v.Set("n", right)
 	linkright := v.Encode()
 
-	tableOutFields(w, cred, db, t, o, d, "", n, linkleft, linkright, head, records, menu)
+	tableOutFields(w, cred, db, t, "", o, d, "", n, linkleft, linkright, head, records, menu)
 }
 
 func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
@@ -437,9 +426,6 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	for f, nv := range vmap { // TODO should be range cols
 		v := nv.String
 		var row []Entry
-		if f == primary {
-			f = "# " + f
-		}
 		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
 		records = append(records, row)
 		i = i + 1
@@ -480,5 +466,5 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		q.Set("v", v)
 	}
 	linkleft := q.Encode()
-	tableOutFields(w, cred, db, t, "", "", k, v, linkleft, linkright, head, records, menu)
+	tableOutFields(w, cred, db, t, primary, k, "", k, v, linkleft, linkright, head, records, menu)
 }
