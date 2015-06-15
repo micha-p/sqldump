@@ -123,11 +123,11 @@ func makeArrow(title string, primary string, d string) string{
 }
 
 func createHead(db string, t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
-	root := url.Values{}
 	head := []Entry{}
-	root.Add("db", db)
-	root.Add("t", t)
-	head = append(head, escape("#",q.Encode()))
+	home := url.Values{}
+	home.Add("db", db)
+	home.Add("t", t)
+	head = append(head, escape("#",home.Encode()))
 
 	for _, title := range columns {
 		if o == title {
