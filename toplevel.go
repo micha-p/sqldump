@@ -22,7 +22,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, cred Access, db string, t st
 func dumpHome(w http.ResponseWriter, cred Access) {
 
 	q := url.Values{}
-	rows, err := getRows(cred, "", "show databases")
+	rows, err := getRows(cred, "", "SHOW DATABASES")
 	checkY(err)
 	defer rows.Close()
 
@@ -48,7 +48,7 @@ func dumpTables(w http.ResponseWriter, db string, cred Access) {
 
 	q := url.Values{}
 	q.Add("db", db)
-	rows, err := getRows(cred, db, "show tables")
+	rows, err := getRows(cred, db, "SHOW TABLES")
 	checkY(err)
 	defer rows.Close()
 
