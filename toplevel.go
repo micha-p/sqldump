@@ -27,7 +27,7 @@ func dumpHome(w http.ResponseWriter, cred Access) {
 	defer rows.Close()
 
 	records := [][]Entry{}
-	head := []Entry{{"#", ""}, {"Database", ""}}
+	head := []Entry{{"#", "", ""}, {"Database", "", ""}}
 	var n int = 1
 	for rows.Next() {
 		var field string
@@ -53,7 +53,7 @@ func dumpTables(w http.ResponseWriter, db string, cred Access) {
 	defer rows.Close()
 
 	records := [][]Entry{}
-	head := []Entry{{"#", ""}, {"Table", ""}, {"Rows", ""}}
+	head := []Entry{{"#", "", ""}, {"Table", "", ""}, {"Rows", "", ""}}
 
 	var n int = 1
 	for rows.Next() {

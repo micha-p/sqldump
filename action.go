@@ -376,13 +376,13 @@ func actionINFO(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 	q.Del("action")
 
 	menu := []Entry{}
-	menu = append(menu, Entry{Link: linkselect, Text: "?"})
-	menu = append(menu, Entry{Link: linkinsert, Text: "+"})
-	menu = append(menu, Entry{Link: linkdeleteF, Text: "-"})
-	menu = append(menu, Entry{Link: linkinfo, Text: "i"})
+	menu = append(menu, escape("?",linkselect))
+	menu = append(menu, escape("+",linkinsert))
+	menu = append(menu, escape("-",linkdeleteF))
+	menu = append(menu, escape("i",linkinfo))
 
 	records := [][]Entry{}
-	head := []Entry{{"#", ""}, {"Field", ""}, {"Type", ""}, {"Null", ""}, {"Key", ""}, {"Default", ""}, {"Extra", ""}}
+	head := []Entry{escape("#"), escape("Field"), escape ("Type"), escape("Null"), escape("Key"), escape("Default"), escape("Extra")}
 
 	var i int = 1
 	for rows.Next() {
@@ -390,7 +390,7 @@ func actionINFO(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
 		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
-		records = append(records, []Entry{{strconv.Itoa(i), ""}, escape(f, ""), {t, ""}, {n, ""}, {k, ""}, {string(d), ""}, {e, ""}})
+		records = append(records, []Entry{escape(strconv.Itoa(i)), escape(f),escape(t),escape(n),escape(k),escape(string(d)),escape(e)})
 		i = i + 1
 	}
 	tableOutSimple(w, cred, db, t, head, records, menu)

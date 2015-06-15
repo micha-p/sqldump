@@ -10,12 +10,16 @@ import (
 /* 	Any identifier with double quotes in its name has to be escaped.
  */
 
-func escape(name string, link string) Entry {
-	return Entry{Text: name, Link: "/?"+link}
+func escape(name string, link ... string) Entry {
+	if len(link)>0 {
+		return Entry{Text: name, Link: "/?"+link[0], Null: ""}
+	} else {
+		return Entry{Text: name, Link: "", Null: ""}
+	}
 }
 
 func escapeNull() Entry {
-	return Entry{Text: "<font color=\"red\"><em>NULL</em></font>", Link: ""}
+	return Entry{Text: "", Link: "" , Null: "NULL"}
 }
 
 /* 	https://dev.mysql.com/doc/refman/5.1/en/identifiers.html

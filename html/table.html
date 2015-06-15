@@ -7,10 +7,12 @@
 {{if .Trail}}<div class="top">
 	<div class="breadcrumb">
 	    <a href="logout" class="trail">&times;</a>{{range .Trail}}
-	    <a href="/?{{.Link}}" class="trail">{{.Text}}{{.Link}}</a>{{end}}
-	</div>{{if .Counter}}
+	    <a href="{{.Link}}" class="trail">{{.Text}}</a>{{end}}
+	</div>
+
+{{if .Counter}}
 	<form class="counter" action="/">{{if .Left}}
-	    <a href="/?{{.Left}}" class="count"> &lt; </a>{{end}}			
+	    <a href="{{.Left.Link}}" class="count"> {{.Left.Text}} </a>{{end}}			
 		<input type="hidden" name="action" value="GOTO">
 		<input type="hidden" name="db"     value="{{.Database}}">
 		<input type="hidden" name="t"      value="{{.Table}}">{{if .Order}}
@@ -18,19 +20,21 @@
 		<input type="hidden" name="d"      value="{{.Desc}}">{{end}}
 	    <input type="text"   name="n"      value="{{.Counter}}" class="range" size=2 >	
 	    <button type="submit" hidden='hidden'>go</button>{{if .Right}}
-	    <a ref="/?{{.Right}}" class="count" > &gt; </a>{{end}}		
-    </form>{{end}}{{if .Menu}}
+	    <a href="{{.Right.Link}}" class="count" > {{.Right.Text}} </a>{{end}}		
+    </form>{{end}}
+
+{{if .Menu}}
 	<div class="right">{{range .Menu}}
-		<a href="/?{{.Link}}" class="count" >[{{.Text}}]</a>{{end}}
+		<a href="{{.Link}}" class="count" >[{{.Text}}]</a>{{end}}
 	</div>{{end}}
 </div>{{end}}
 
-{{define "entry"}}{{if .Link}}<a href="/?{{.Link}}">{{.Text}} -> {{.Link}}</a>{{else}}{{.Text}}{{end}}{{end}}
+{{define "entry"}}{{if .Null}}<font color="red"><em>{{.Null}}</em></font>{{else}}{{if .Link}}<a href="{{.Link}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}{{end}}
 <div class="main">
    <table>
-   <tr>{{range .Head}} <th>{{template "entry" .}}</th> {{end}}{{if .Trail}}{{else}}<th>{{template "entry" .Back}}</th> {{end}}</tr>
-{{range .Records}}   <tr>{{range .}} <td>{{template "entry" .}}</td>{{end}} </tr>
-{{end}}   </table>
+   <tr>{{range .Head}} <th>{{template "entry" .}}</th> {{end}}{{if .Trail}}{{else}}<th>{{template "entry" .Back}}</th> {{end}}</tr>{{range .Records}}
+   <tr>{{range .}} <td>{{template "entry" .}}</td>{{end}} </tr>{{end}}
+   </table>
 </div>
 
 </body>

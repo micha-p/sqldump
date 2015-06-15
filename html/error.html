@@ -7,7 +7,7 @@
 {{if .Trail}}<div class="top">
 	<div class="breadcrumb">
 	    <a class="trail" href="logout">&times;</a>{{range .Trail}}
-	    <a class="trail" href="/?{{.Link}}">{{.Text}}</a>{{end}}
+	    <a class="trail" href="{{.Link}}">{{.Text}}</a>{{end}}
 	</div>    
 </div>{{end}}
 
