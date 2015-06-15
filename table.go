@@ -17,6 +17,7 @@ import (
 type Entry struct {
 	Text string
 	Link string
+	Null string
 }
 
 type Context struct {
@@ -32,8 +33,8 @@ type Context struct {
 	Head     []Entry
 	Records  [][]Entry
 	Counter  string
-	Left     string
-	Right    string
+	Left     Entry
+	Right    Entry
 	Trail    []Entry
 	Menu     []Entry
 }
@@ -63,15 +64,15 @@ func makeTrail(host string, db string, t string, primary string, o string, d str
 
 	q := url.Values{}
 
-	trail := []Entry{Entry{host, ""}}
+	trail := []Entry{Entry{host, "", ""}}
 
 	if db != "" {
 		q.Add("db", db)
-		trail = append(trail, Entry{Link: q.Encode(), Text: db})
+		trail = append(trail, escape(db, q.Encode()))
 	}
 	if t != "" {
 		q.Add("t", t)
-		trail = append(trail, Entry{Link: q.Encode(), Text: t})
+		trail = append(trail, escape(t, q.Encode()))
 	}
 
 	wq.Set("db", db)
@@ -79,30 +80,82 @@ func makeTrail(host string, db string, t string, primary string, o string, d str
 	wq.Del("o")
 	wq.Del("d")
 	if w != "" {
-		trail = append(trail, Entry{Link: wq.Encode(), Text: w})
+		trail = append(trail, escape(w, wq.Encode()))
 	}
 	if o != "" {
 		wq.Add("o", o)
 		if o == primary {
 			if d != "" {
 				wq.Add("d", d)
-				trail = append(trail, Entry{Link: wq.Encode(), Text: o + "&dArr;"})
+				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
 			} else {
-				trail = append(trail, Entry{Link: wq.Encode(), Text: o + "&uArr;"})
+				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
 			}
 		} else {
 			if d != "" {
 				wq.Add("d", d)
-				trail = append(trail, Entry{Link: wq.Encode(), Text: o + "&darr;"})
+				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
 			} else {
-				trail = append(trail, Entry{Link: wq.Encode(), Text: o + "&uarr;"})
+				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
 			}
 		}
 	} else if k != "" {
 		q.Add("k", k)
-		trail = append(trail, Entry{Link: q.Encode(), Text: k})
+		trail = append(trail, escape(k, q.Encode()))
 	}
 	return trail
+}
+
+func makeArrow(title string, primary string, d string) string{
+	if title == primary {
+		if d == "" {
+			return title + "⇑"
+		} else {
+			return title + "⇓"
+		}
+	} else {
+		if d == "" {
+			return title + "↑"
+		} else {
+			return title + "↓"
+		}
+	}
+}
+
+func createHead(db string, t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
+	root := url.Values{}
+	head := []Entry{}
+	root.Add("db", db)
+	root.Add("t", t)
+	head = append(head, escape("#",q.Encode()))
+
+	for _, title := range columns {
+		if o == title {
+			q.Set("o", title)
+			if primary == title {
+				if d == "" {
+					q.Set("d", "1")
+					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+				} else {
+					q.Del("d")
+					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+				}
+			} else {
+				if d == "" {
+					q.Set("d", "1")
+					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+				} else {
+					q.Del("d")
+					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+				}
+			}
+		} else {
+			q.Set("o", title)
+			q.Del("d")
+			head = append(head, escape(title, q.Encode()))
+		}
+	}
+	return head
 }
 
 func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
@@ -120,8 +173,8 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 		Head:     head,
 		Back:     makeBack(cred.Host, db, t, "", "", ""),
 		Counter:  "",
-		Left:     "",
-		Right:    "",
+		Left:     Entry{},
+		Right:    Entry{},
 		Trail:    makeTrail(cred.Host, db, t, "", "", "", "", "", url.Values{}),
 		Menu:     menu,
 	}
@@ -133,7 +186,7 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 }
 
 func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, primary string, o string, d string,
-	n string, linkleft string, linkright string,
+	n string, linkleft Entry, linkright Entry,
 	head []Entry, records [][]Entry, menu []Entry, where string, whereQ url.Values) {
 
 	initTemplate()
@@ -160,7 +213,9 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, prima
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, cred Access, db string, t string, primary string ,o string, d string, k string, n string, linkleft string, linkright string, head []Entry, records [][]Entry, menu []Entry) {
+func tableOutFields(w http.ResponseWriter, cred Access, 
+	db string, t string, primary string ,o string, d string, k string, n string, 
+	linkleft Entry, linkright Entry, head []Entry, records [][]Entry, menu []Entry) {
 
 	initTemplate()
 
