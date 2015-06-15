@@ -176,11 +176,11 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 
 func actionSELECT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
 
+	var query string 
 	cols := getCols(cred, db, t)
 	wclauses, _, whereQ := collectClauses(r, cols)
-	where := strings.Join(wclauses, " && ")
-	if where != "" {
-		query := "Select * FROM `" + t + "` WHERE " + where
+	if len(wclauses) > 0 {
+		query = sqlStar(t) + sqlWhereClauses(wclauses)	
 		dumpRows(w, db, t, o, d, cred, query, whereQ)
 	}
 }
@@ -195,9 +195,8 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string
 	q.Add("d", d)
 	cols := getCols(cred, db, t)
 	_, sclauses, _ := collectClauses(r, cols)
-	clauses := strings.Join(sclauses, " , ")
-	if len(clauses) > 0 {
-		stmt := "INSERT INTO `" + t + "` SET " + clauses
+	if len(sclauses) > 0 {
+		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
 		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()
@@ -224,10 +223,8 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	q.Add("d", o)
 	cols := getCols(cred, db, t)
 	wclauses, sclauses, _ := collectClauses(r, cols)
-	sets := strings.Join(sclauses, " , ")
-	where := strings.Join(wclauses, " && ")
 	if len(sclauses) > 0 {
-		stmt := "UPDATE `" + t + "` SET " + sets + " WHERE " + where
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
 		log.Println("[SQL]", stmt)
 		conn := getConnection(cred, db)
 		defer conn.Close()
@@ -249,9 +246,8 @@ func actionDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string
 	q.Add("d", d)
 	cols := getCols(cred, db, t)
 	wclauses, _, _ := collectClauses(r, cols)
-	where := strings.Join(wclauses, " && ")
-	if len(where) > 0 {
-		stmt := "DELETE FROM `" + t + "` WHERE " + where
+	if len(wclauses) > 0 {
+		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
@@ -267,16 +263,14 @@ func actionDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string
 func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
 	cols := getCols(cred, db, t)
 	wclauses, _, whereQ := collectClauses(r, cols)
-	where := strings.Join(wclauses, " && ")
-
 	hiddencols := []CContext{}
 	for field, valueArray := range whereQ { //type Values map[string][]string
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
 	}
 
-	count, _ := getSingleValue(cred, db, "select count(*) from `"+t+"` where "+where)
+	count, _ := getSingleValue(cred, db, sqlCount(t) + sqlWhereClauses(wclauses))
 	if count == "1" {
-		rows, err := getRows(cred, db, "select * from `"+t+"` where "+where)	
+		rows, err := getRows(cred, db, sqlStar(t) + sqlWhereClauses(wclauses))	
 		checkY(err)
 		defer rows.Close()
 		shipForm(w, r, cred, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(cred, db, t, "", rows), hiddencols)
@@ -295,7 +289,7 @@ func actionEDITFORM(w http.ResponseWriter, r *http.Request, cred Access, db stri
 	hiddencols := []CContext{
 		CContext{"", "k", "", "", "", "", "valid", k, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
-	stmt := "select * from `" + t + "` where `" + k + "`=?"
+	stmt := sqlStar(t) + sqlWhere(k,"=","?")
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
@@ -315,9 +309,8 @@ func actionUPDATEPRI(w http.ResponseWriter, r *http.Request, cred Access, db str
 	q.Add("t", t)
 	cols := getCols(cred, db, t)
 	_, sclauses, _ := collectClauses(r, cols)
-	clauses := strings.Join(sclauses, " , ")
 	if len(sclauses) > 0 {
-		stmt := "UPDATE `" + t + "` SET " + clauses + " WHERE `" + k + "` = ?"
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere(k,"=","?")
 		conn := getConnection(cred, db)
 		defer conn.Close()
 
@@ -334,7 +327,7 @@ func actionDELETEPRI(w http.ResponseWriter, r *http.Request, cred Access, db str
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
-	stmt := "DELETE FROM `" + t + "` WHERE `" + k + "` = ?"
+	stmt := sqlDelete(t) + sqlWhere(k,"=","?")
 	conn := getConnection(cred, db)
 	defer conn.Close()
 
@@ -358,7 +351,7 @@ func actionDELETEPRI(w http.ResponseWriter, r *http.Request, cred Access, db str
 
 func actionINFO(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
 
-	rows, err := getRows(cred, db, "show columns from `"+t+"`")
+	rows, err := getRows(cred, db, sqlColumns(t))
 	checkY(err)
 	defer rows.Close()
 

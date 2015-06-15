@@ -8,21 +8,15 @@ import (
 )
 
 func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, k string, v string) {
-
-	query := "select * from `" + t + "`"
+	query := sqlStar(t)
 	nnumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 	limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
 
 	if k != "" && v != "" && k == getPrimary(cred, db, t) {
-		query = query + " where `" + k + "` =" + v
+		query = query + sqlWhere(k,"=",v)
 		dumpKeyValue(w, db, t, k, v, cred, query)
 	} else if nnumber != "" {
-		if o != "" {
-			query = query + " order by `" + o + "`"
-			if d != "" {
-				query = query + " desc"
-			}
-		}
+		query = query + sqlOrder(o,d)
 		nint, err := strconv.Atoi(nnumber)
 		checkY(err)
 		maxint, err := strconv.Atoi(getCount(cred, db, t))
@@ -41,10 +35,7 @@ func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o st
 		endint = minI(endint, maxint)
 		query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
 		if o != "" {
-			query = "select t.* from (" + query + ") t order by `" + o + "`"
-			if d != "" {
-				query = query + " desc"
-			}
+			query = "select t.* from (" + query + ") t " + sqlOrder(o,d)
 		}
 		dumpRange(w, db, t, o, d, startint, endint, maxint, cred, query)
 	} else {
@@ -61,10 +52,9 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	q.Add("t", t)
 	if o != "" {
 		q.Add("o", o)
-		query = query + " order by `" + o + "`"
+		query = query + sqlOrder(o,d)
 		if d != "" {
 			q.Add("d", d)
-			query = query + " desc"
 		}
 	}
 
@@ -351,14 +341,14 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	menu = append(menu, escape("-",linkDELETEPRI))
 	menu = append(menu, escape("i",linkinfo))
 
-	next, err := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` > "+v+" order by `"+k+"` limit 1")
+	next, err := getSingleValue(cred, db, sqlSelect(k,t) + sqlWhere(k,">",v) + sqlOrder(k,"") + "` limit 1")
 	if err == nil {
 		q.Set("v", next)
 	} else {
 		q.Set("v", v)
 	}
 	linkright := escape(">",q.Encode())
-	prev, err := getSingleValue(cred, db, "select `"+k+"` from `"+t+"` where `"+k+"` < "+v+" order by `"+k+"` desc limit 1")
+	prev, err := getSingleValue(cred, db, sqlSelect(k,t) + sqlWhere(k,"<",v) + sqlOrder(k,"1") + " limit 1")
 	if err == nil {
 		q.Set("v", prev)
 	} else {

@@ -66,7 +66,7 @@ func getSingleValue(cred Access, db string, stmt string) (string, error) {
 
 func getCount(cred Access, db string, t string) string {
 
-	countstmt := "select count(*) from `" + t + "`"
+	countstmt := sqlCount(t)
 	conn := getConnection(cred, db)
 	defer conn.Close()
 	log.Println("[SQL]", countstmt)
@@ -83,8 +83,7 @@ func getCols(cred Access, db string, t string) []string {
 	conn := getConnection(cred, db)
 	defer conn.Close()
 	log.Println("[SQL]", "get columns", db, t)
-	// rows, err := conn.Query("select * from ? limit 1") // does not work??
-	rows, err := conn.Query("select * from `" + t + "` limit 0")
+	rows, err := conn.Query(sqlStar(t) + " limit 0")
 	checkY(err)
 	defer rows.Close()
 
@@ -96,8 +95,7 @@ func getPrimary(cred Access, db string, t string) string {
 
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	// rows, err := conn.Query("show columns from ?", t) // does not work??
-	rows, err := conn.Query("show columns from `" + t + "` WHERE `Key` LIKE 'PRI'")
+	rows, err := conn.Query(sqlColumns(t) + " WHERE `Key` LIKE 'PRI'")
 	checkY(err)
 	defer rows.Close()
 
@@ -146,7 +144,7 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 
 	conn := getConnection(cred, db)
 	defer conn.Close()
-	rows, err := conn.Query("show columns from `" + t + "`")
+	rows, err := conn.Query(sqlColumns(t))
 	checkY(err)
 	defer rows.Close()
 

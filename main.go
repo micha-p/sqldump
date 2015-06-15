@@ -42,13 +42,13 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 
 func readRequest(r *http.Request) (string, string, string, string, string, string, string) {
 	q := r.URL.Query()
-	db := sqlProtectIdentifier(q.Get("db"))
-	t := sqlProtectIdentifier(q.Get("t"))
-	o := sqlProtectIdentifier(q.Get("o"))
-	d := sqlProtectIdentifier(q.Get("d"))
-	k := sqlProtectIdentifier(q.Get("k"))
-	n := sqlProtectString(q.Get("n"))
-	v := sqlProtectString(q.Get("v"))
+	db := q.Get("db")
+	t := q.Get("t")
+	o := q.Get("o")
+	d := q.Get("d")
+	k := q.Get("k")
+	n := q.Get("n")
+	v := q.Get("v")
 	return db, t, o, d, n, k, v
 }
 
