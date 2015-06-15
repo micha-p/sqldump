@@ -17,6 +17,7 @@ var MODIFYFLAG bool
 var READONLY bool
 var CSS_FILE string
 
+// restrict GET to reserved files
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	if troubleF("favicon.ico") == nil {
 		http.ServeFile(w, r, "favicon.ico")
@@ -24,7 +25,6 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 		http.StatusText(404)
 	}
 }
-
 func cssHandler(w http.ResponseWriter, r *http.Request) {
 	if troubleF(CSS_FILE) == nil {
 		http.ServeFile(w, r, CSS_FILE)
@@ -33,6 +33,7 @@ func cssHandler(w http.ResponseWriter, r *http.Request) {
 		http.StatusText(404)
 	}
 }
+
 
 func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -137,7 +138,7 @@ func main() {
 	var MODIFY = flag.Bool("m", false, "modify database schema: create, alter, drop tables (TODO)")
 	var EXPERT = flag.Bool("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
 	var CSS = flag.String("c", "", "supply customized style in CSS file")
-	var DEBUG = flag.Bool("d", false, "dynamically load html templates and css (DEBUG)")
+	var DEBUG = flag.Bool("d", false, "dynamically load  templates and css (DEBUG)")
 	var READONLYFLAG = flag.Bool("r", false, "read-only access")
 
 	flag.Parse()
@@ -159,10 +160,12 @@ func main() {
 	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
+	http.HandleFunc("/test", testHandler)
 	http.HandleFunc("/", indexHandler)
 
+
 	if DEBUGFLAG {
-		fmt.Println("dynamically loading html templates and css (DEBUG)")
+		fmt.Println("dynamically loading  templates and css (DEBUG)")
 	}
 
 	if MODIFYFLAG {

@@ -63,7 +63,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 	if DEBUGFLAG {
 		initTemplate()
 	}
-	err := templateFormFields.Execute(w, c)
+	err := templateForm.Execute(w, c)
 	checkY(err)
 }
 

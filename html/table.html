@@ -6,11 +6,11 @@
 
 {{if .Trail}}<div class="top">
 	<div class="breadcrumb">
-	    <a class="trail" href="logout">&times;</a>{{range .Trail}}
-	    <a class="trail" href="/?{{.Link}}">{{.Text}}</a>{{end}}
+	    <a href="logout" class="trail">&times;</a>{{range .Trail}}
+	    <a href="/?{{.Link}}" class="trail">{{.Text}}{{.Link}}</a>{{end}}
 	</div>{{if .Counter}}
 	<form class="counter" action="/">{{if .Left}}
-	    <a class="count" href="/?{{.Left}}"> &lt; </a>{{end}}			
+	    <a href="/?{{.Left}}" class="count"> &lt; </a>{{end}}			
 		<input type="hidden" name="action" value="GOTO">
 		<input type="hidden" name="db"     value="{{.Database}}">
 		<input type="hidden" name="t"      value="{{.Table}}">{{if .Order}}
@@ -18,14 +18,15 @@
 		<input type="hidden" name="d"      value="{{.Desc}}">{{end}}
 	    <input type="text"   name="n"      value="{{.Counter}}" class="range" size=2 >	
 	    <button type="submit" hidden='hidden'>go</button>{{if .Right}}
-	    <a class="count" href="/?{{.Right}}"> &gt; </a>{{end}}		
+	    <a ref="/?{{.Right}}" class="count" > &gt; </a>{{end}}		
     </form>{{end}}{{if .Menu}}
 	<div class="right">{{range .Menu}}
-		<a class="count" href="/?{{.Link}}">[{{.Text}}]</a>{{end}}
+		<a href="/?{{.Link}}" class="count" >[{{.Text}}]</a>{{end}}
 	</div>{{end}}
 </div>{{end}}
 
-<div class="main">{{define "entry"}}{{if .Link}}<a href="/?{{.Link}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}
+{{define "entry"}}{{if .Link}}<a href="/?{{.Link}}">{{.Text}} -> {{.Link}}</a>{{else}}{{.Text}}{{end}}{{end}}
+<div class="main">
    <table>
    <tr>{{range .Head}} <th>{{template "entry" .}}</th> {{end}}{{if .Trail}}{{else}}<th>{{template "entry" .Back}}</th> {{end}}</tr>
 {{range .Records}}   <tr>{{range .}} <td>{{template "entry" .}}</td>{{end}} </tr>

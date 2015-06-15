@@ -1,7 +1,6 @@
 package main
 
 import (
-	"html"
 	"log"
 	"os"
 	"regexp"
@@ -12,7 +11,7 @@ import (
  */
 
 func escape(name string, link string) Entry {
-	return Entry{Text: html.EscapeString(name), Link: strings.Replace(html.EscapeString(link), "%3d", "=", -1)}
+	return Entry{Text: name, Link: "/?"+link}
 }
 
 func escapeNull() Entry {
