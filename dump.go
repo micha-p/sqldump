@@ -33,13 +33,11 @@ func dumpSelection(w http.ResponseWriter, cred Access, db string, t string, o st
 		maxint, err := strconv.Atoi(getCount(cred, db, t))
 		checkY(err)
 		endint = minI(endint, maxint)
-		query = query + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
-		if o != "" {
-			query = "select t.* from (" + query + ") t " + sqlOrder(o,d)
-		}
+		query = query + sqlOrder(o,d) + " limit " + strconv.Itoa(1+endint-startint) + " offset " + strconv.Itoa(startint-1)
 		dumpRange(w, db, t, o, d, startint, endint, maxint, cred, query)
+	/* if where is present: query = "select t.* from (" + query + ") t " + sqlOrder(o,d) */
 	} else {
-		dumpRows(w, db, t, o, d, cred, query, url.Values{})
+		dumpRows(w, db, t, o, d, cred, query + sqlOrder(o,d), url.Values{})
 	}
 }
 
@@ -52,10 +50,9 @@ func dumpRows(w http.ResponseWriter, db string, t string, o string, d string, cr
 	q.Add("t", t)
 	if o != "" {
 		q.Add("o", o)
-		query = query + sqlOrder(o,d)
-		if d != "" {
-			q.Add("d", d)
-		}
+	}
+	if d != "" {
+		q.Add("d", d)
 	}
 
 	rows, err := getRows(cred, db, query)
