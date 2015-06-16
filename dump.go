@@ -50,7 +50,7 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB, host st
 }
 
 
-func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query string) {
+func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -146,7 +146,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, linkleft, linkright, head, records, menu, "", url.Values{})
 }
 
-func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query string, q url.Values) {
+func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring, q url.Values) {
 
 	q.Add("db", db)
 	q.Add("t", t)
@@ -238,7 +238,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", Entry{}, Entry{}, head, records, menu, wherestring, q)
 }
 
-func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int, end int, max int, query string) {
+func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int, end int, max int, query sqlstring) {
 
 	q := url.Values{}
 	q.Add("db", db)

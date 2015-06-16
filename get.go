@@ -37,19 +37,19 @@ type CContext struct {
 }
 
 // TODO remove host, db as conn is db specific
-func getRows(conn *sql.DB, stmt string) (*sql.Rows, error) {
+func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error) {
 	err := conn.Ping()
 	checkY(err)
-	log.Println("[SQL]", stmt)
-	rows, err := conn.Query(stmt)
+	log.Println("[SQL]")
+	rows, err := sqlQuery(conn, stmt)
 	return rows, err
 }
 
-func getSingleValue(conn *sql.DB, host string, db string, stmt string) (string, error) {
-	log.Println("[SQL]", stmt)
+func getSingleValue(conn *sql.DB, host string, db string, stmt sqlstring) (string, error) {
+	log.Println("[SQL]", sql2string(stmt))
 	err := conn.Ping()
 	checkY(err)
-	row := conn.QueryRow(stmt)
+	row := sqlQueryRow(conn, stmt)
 
 	var value interface{}
 	var valuePtr interface{}
@@ -59,11 +59,11 @@ func getSingleValue(conn *sql.DB, host string, db string, stmt string) (string, 
 }
 
 func getCount(conn *sql.DB, t string) string {
-	countstmt := sqlCount(t)
-	log.Println("[SQL]", countstmt)
+	stmt := sqlCount(t)
+	log.Println("[SQL]", sql2string(stmt))
 	err := conn.Ping()
 	checkY(err)
-	row := conn.QueryRow(countstmt)
+	row := sqlQueryRow(conn, stmt)
 
 	var field string
 	row.Scan(&field)
@@ -80,7 +80,7 @@ func getCols(conn *sql.DB, t string) []string {
 	log.Println("[SQL]", "get columns", t)
 	err := conn.Ping()
 	checkY(err)
-	rows, err := conn.Query(sqlStar(t) + " limit 0")
+	rows, err := sqlQuery(conn, sqlStar(t) + sqlLimit(0,0))
 	checkY(err)
 	defer rows.Close()
 
@@ -91,7 +91,7 @@ func getCols(conn *sql.DB, t string) []string {
 func getPrimary(conn *sql.DB, t string) string {
 	err := conn.Ping()
 	checkY(err)
-	rows, err := conn.Query(sqlColumns(t) + " WHERE `Key` LIKE 'PRI'")
+	rows, err := sqlQuery(conn, sqlColumns(t) + sqlWhere("Key","=","PRI"))
 	checkY(err)
 	defer rows.Close()
 
@@ -139,7 +139,7 @@ func getColumnMainType(conn *sql.DB, host string, db string, t string, c string)
 func getColumnInfo(conn *sql.DB, t string) []CContext {
 	err := conn.Ping()
 	checkY(err)
-	rows, err := conn.Query(sqlColumns(t))
+	rows, err := sqlQuery(conn, sqlColumns(t))
 	checkY(err)
 	defer rows.Close()
 

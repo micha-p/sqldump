@@ -5,20 +5,52 @@ import (
 	"regexp"
 	"strings"
 	"strconv"
+	"database/sql"
 )
 
-/* sql escaping using prepared statements in Go is restricted, as it does not work for identifiers 
- * TODO: provide special type sqlstring */
+/* sql escaping using prepared statements in Go is restricted, as it does not work for identifiers */
 
-func sqlStar(t string) string{
-	return "SELECT * FROM `" + sqlProtectIdentifier(t) + "`"
+
+// special type to prevent mixture with normal strings
+type sqlstring string
+
+func sql2string(s sqlstring) string {
+	return string(s)
 }
 
-func sqlSelect(c string, t string) string{
-	return "SELECT `" + sqlProtectIdentifier(c) + "` FROM `" + sqlProtectIdentifier(t) + "`"
+func string2sql(s string) sqlstring {
+	return sqlstring(s)
+}
+// Interface functions to underlying sql driver
+
+func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, error) {
+	stmt, err := conn.Prepare(sql2string(s))
+	return stmt, err
 }
 
-func sqlOrder(order string, desc string)string{
+func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows,error) {
+	stmtstr := string(s)
+	log.Println("[SQL]", stmtstr)
+	stmt, err := conn.Query(stmtstr)
+	return stmt, err
+}
+
+func sqlQueryRow(conn *sql.DB, s sqlstring) *sql.Row {
+	return conn.QueryRow(sql2string(s))
+}
+
+
+// functions to prepare sql statements
+
+func sqlStar(t string) sqlstring{
+	return string2sql("SELECT * FROM `" + sqlProtectIdentifier(t) + "`")
+}
+
+func sqlSelect(c string, t string) sqlstring{
+	return string2sql("SELECT `" + sqlProtectIdentifier(c) + "` FROM `" + sqlProtectIdentifier(t) + "`")
+}
+
+func sqlOrder(order string, desc string) sqlstring{
 	var query string
 	if order != "" {
 		query = " ORDER BY `" + sqlProtectIdentifier(order) + "`"
@@ -26,52 +58,54 @@ func sqlOrder(order string, desc string)string{
 			query = query + " DESC"
 		}
 	}
-	return query
+	return string2sql(query)
 }
 
 // records start with number 1. Every child knows
 
-func sqlLimit(limit int, offset int)string{
+func sqlLimit(limit int, offset int)sqlstring{
 	query := " LIMIT " + strconv.Itoa(maxI(limit,1))
 	if offset > 0 {
 		query = query + " OFFSET " + strconv.Itoa(offset - 1)
 	}
-	return query
+	return string2sql(query)
 }
 
 
-func sqlCount(t string)string{
-	return "SELECT COUNT(*) FROM `" + sqlProtectIdentifier(t) + "`"
+func sqlCount(t string)sqlstring{
+	return string2sql("SELECT COUNT(*) FROM `" + sqlProtectIdentifier(t) + "`")
 }
 
-func sqlColumns(t string)string{
-	return "SHOW COLUMNS FROM `" + sqlProtectIdentifier(t) + "`"
+func sqlColumns(t string)sqlstring{
+	return string2sql("SHOW COLUMNS FROM `" + sqlProtectIdentifier(t) + "`")
 }
 
-func sqlInsert(t string)string{
-	return "INSERT INTO `" + sqlProtectIdentifier(t) + "`"
+func sqlInsert(t string)sqlstring{
+	return string2sql("INSERT INTO `" + sqlProtectIdentifier(t) + "`")
 }
 
-func sqlUpdate(t string)string{
-	return "UPDATE `" + sqlProtectIdentifier(t) + "`"
+func sqlUpdate(t string)sqlstring{
+	return string2sql("UPDATE `" + sqlProtectIdentifier(t) + "`")
 }
 
-func sqlDelete(t string)string{
-	return "DELETE FROM `" + sqlProtectIdentifier(t) + "`"
+func sqlDelete(t string)sqlstring{
+	return string2sql("DELETE FROM `" + sqlProtectIdentifier(t) + "`")
 }
 
-func sqlWhere(k string, c string, v string)string{
-	return " WHERE `" + sqlProtectIdentifier(k) + "`" + sqlFilterComparator(c) + "\"" + sqlProtectString(v) + "\""
+func sqlWhere(k string, c string, v string)sqlstring{
+	return string2sql(" WHERE `" + sqlProtectIdentifier(k) + "`" + sqlFilterComparator(c) + "\"" + sqlProtectString(v) + "\"")
 }
 
-func sqlWhereClauses(clauses []string)string{
-	return " WHERE " + strings.Join(clauses, " && ")
+func sqlWhereClauses(clauses []string)sqlstring{
+	return string2sql(" WHERE " + strings.Join(clauses, " && "))
 }
 
-func sqlSetClauses(clauses []string)string{
-	return " SET " + strings.Join(clauses, " , ")
+func sqlSetClauses(clauses []string)sqlstring{
+	return string2sql(" SET " + strings.Join(clauses, " , "))
 }
 
+
+// Filter and Escapes
 
 
 /* 	https://dev.mysql.com/doc/refman/5.1/en/identifiers.html

@@ -147,7 +147,6 @@ func main() {
 	var READONLYFLAG = flag.Bool("r", false, "read-only access")
 
 	flag.Parse()
-
 	READONLY = *READONLYFLAG
 	INFOFLAG = *INFO
 	DEBUGFLAG = *DEBUG

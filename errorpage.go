@@ -37,9 +37,10 @@ func shipErrorPage(w http.ResponseWriter, host string, db string, t string, cols
 	checkY(err)
 }
 
-func checkErrorPage(w http.ResponseWriter, host string, db string, t string, query string, err error) {
+func checkErrorPage(w http.ResponseWriter, host string, db string, t string, query sqlstring, err error) {
 	if err != nil {
-		cols := []CContext{CContext{"1", "", "Query", "", "", "", "valid", query, ""},
+		s := sql2string(query)
+		cols := []CContext{CContext{"1", "", "Query", "", "", "", "valid", s, ""},
 			CContext{"2", "", "Error", "", "", "", "valid", fmt.Sprint(err), ""}}
 		shipErrorPage(w, host, db, t, cols)
 	}
