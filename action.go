@@ -1,15 +1,5 @@
 package main
 
-/*
-<form  action="/login">
-   <label for="user">User</label><input type="text"     id="user" name="user"><br>
-   <label for="pass">Pass</label><input type="password" id="pass" name="pass"><br>
-   <label for="host">Host</label><input type="text"     id="host" name="host" value="localhost"><br>
-   <label for="port">Port</label><input type="text"     id="port" name="port" value="3306"><br>
-   <button type="submit">Select</button>
-</form>
-*/
-
 import (
 	_ "github.com/go-sql-driver/mysql"
 	"html"

@@ -64,7 +64,7 @@ func makeTrail(host string, db string, t string, primary string, o string, d str
 
 	q := url.Values{}
 
-	trail := []Entry{Entry{host, "", ""}}
+	trail := []Entry{Entry{host, "/", ""}}
 
 	if db != "" {
 		q.Add("db", db)
