@@ -14,7 +14,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, d
 		return
 	} else if t == "" {
 		dumpTables(w, db, conn, host)
-	} else if k != "" && v != "" && k == getPrimary(conn, host, db, t) {
+	} else if k != "" && v != "" && k == getPrimary(conn, t) {
 		dumpKeyValue(w, db, t, k, v, conn, host, sqlStar(t) + sqlWhere(k,"=",v))
 	} else{
 		dumpSelection(w, r, conn, host, db, t, o, d, n, k, v)
@@ -25,7 +25,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, d
 func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
-	rows, err := getRows(conn, host, "", "SHOW DATABASES")
+	rows, err := getRows(conn, "SHOW DATABASES")
 	checkY(err)
 	defer rows.Close()
 
@@ -51,7 +51,7 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 
 	q := url.Values{}
 	q.Add("db", db)
-	rows, err := getRows(conn, host, db, "SHOW TABLES")
+	rows, err := getRows(conn, "SHOW TABLES")
 	checkY(err)
 	defer rows.Close()
 
@@ -63,7 +63,7 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 		var field string
 		var nrows string
 		rows.Scan(&field)
-		nrows = getCount(conn, host, db, field)
+		nrows = getCount(conn, field)
 
 		q.Set("t", field)
 		link := q.Encode()
