@@ -142,7 +142,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	menu = append(menu, escape("~", linkupdate))
 	menu = append(menu, escape("-", linkdeleteF))
 	menu = append(menu, escape("i", linkinfo))
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, linkleft, linkright, head, records, menu, "", url.Values{})
+	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, "", url.Values{})
 }
 
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring, q url.Values) {
@@ -234,7 +234,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	menu = append(menu, escape("-", linkdelete))
 	menu = append(menu, escape("i", linkinfo))
 	wherestring := WhereSelect2Pretty(q, getColumnInfo(conn, t))
-	tableOutRows(w, conn, host, db, t, primary, o, d, "", Entry{}, Entry{}, head, records, menu, wherestring, q)
+	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, wherestring, q)
 }
 
 func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int, end int, max int, query sqlstring) {
@@ -319,11 +319,15 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		rownum = rownum + 1
 	}
 
+	q.Del("o")
+	q.Del("d")
+	q.Del("k")
+	q.Del("v")
 	left := maxI(start-rowrange, 1)
 	right := minI(end+rowrange, max)
 	q.Set("n", strconv.Itoa(left)+"-"+strconv.Itoa(left+rowrange-1))
 	linkleft := escape("<", q.Encode())
 	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
 	linkright := escape(">", q.Encode())
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, linkleft, linkright, head, records, menu, "", url.Values{})
+	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, "", url.Values{})
 }

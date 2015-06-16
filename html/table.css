@@ -50,7 +50,7 @@ input.range {
 	line-height: 2rem;
 	height: 2rem;
 	color: white;
-	padding: 0px 8px;
+	padding: 0px 4px;
 	background: #74AD6E;							/* my green */
 	position: relative;
 	border: none;  
@@ -75,11 +75,11 @@ button:active { color: red;}
 
 .counter {
 	border-radius: 5px;
-	margin-left: auto;
+	margin-left: 8px;
 	margin-right: auto;
 }
 
-.counter a.count {
+.count {
 	text-decoration: none;
 	outline: none;
 	display: block;
@@ -91,10 +91,13 @@ button:active { color: red;}
 	position: relative;
 }
 
-.counter a.count:first-child {border-radius: 5px 0 0 5px;}
-.counter a.count:last-child {border-radius: 0 5px 5px 0;}
-.counter a.count:active, .counter a.count:hover{	background: #715524;}
-.counter a.count:active {color:orange;}
+label.count{color: white; padding: 0px 4px;}
+a.count{color: white; padding: 0px 4px;}
+a.count:first-child {padding: 0px 8px; border-radius: 5px 0 0 5px;}
+a.count:last-child {padding: 0px 8px; border-radius: 0 5px 5px 0;}
+a.count:active, .counter a.count:hover {text-decoration: none; background: #715524;}
+a.count:active {text-decoration: none; color:orange;}
+
 
 .right {	
     margin-left: auto;	

@@ -34,6 +34,7 @@ type Context struct {
 	Head     []Entry
 	Records  [][]Entry
 	Counter  string
+	Label  	 string
 	Left     Entry
 	Right    Entry
 	Trail    []Entry
@@ -174,6 +175,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  "",
+		Label:	  "",
 		Left:     Entry{},
 		Right:    Entry{},
 		Trail:    makeTrail(host, db, t, "", "", "", "", "", url.Values{}),
@@ -187,7 +189,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 }
 
 func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
-	n string, linkleft Entry, linkright Entry,
+	n string, counterLabel string, linkleft Entry, linkright Entry,
 	head []Entry, records [][]Entry, menu []Entry, where string, whereQ url.Values) {
 
 	initTemplate()
@@ -204,6 +206,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  n,
+		Label:	  counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, primary, o, d, "", where, whereQ),
@@ -215,7 +218,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 }
 
 func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
-	db string, t string, primary string, o string, d string, k string, n string,
+	db string, t string, primary string, o string, d string, k string, n string, counterLabel string,
 	linkleft Entry, linkright Entry, head []Entry, records [][]Entry, menu []Entry) {
 
 	initTemplate()
@@ -233,6 +236,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  n,
+		Label:	  counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, primary, o, d, k, "", url.Values{}),
