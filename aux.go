@@ -36,7 +36,11 @@ func checkY(err error) {
 }
 
 // Compose dataSourceName from components and globals
+// https://github.com/go-sql-driver/mysql/#dsn-data-source-name
 func dsn(user string, pw string, host string, port string, db string) string {
+	if DEBUGFLAG {
+		log.Println("[DSN]", user + "@tcp(" + host + ":" + port + ")/" + db)
+	}
 	return user + ":" + pw + "@tcp(" + host + ":" + port + ")/" + db
 }
 

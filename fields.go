@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"database/sql"
 )
 
 // Dump all fields of a record, one column per line
 
-func dumpFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, nint int, query string, v url.Values) {
+func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int, query string, v url.Values) {
 
-	rows, err := getRows(cred, db, query)
+	rows, err := getRows(conn, host, db, query)
 	defer rows.Close()
 	checkY(err)
 	vmap := getNullStringMap(rows)	
@@ -61,15 +62,15 @@ func dumpFields(w http.ResponseWriter, cred Access, db string, t string, o strin
 	v.Set("n", right)
 	linkright := escape(">",v.Encode())
 
-	tableOutFields(w, cred, db, t, "", o, d, "", n, linkleft, linkright, head, records, menu)
+	tableOutFields(w, conn, host, db, t, "", o, d, "", n, linkleft, linkright, head, records, menu)
 }
 
-func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, cred Access, query string) {
+func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, conn *sql.DB, host string, query string) {
 
-	rows, err := getRows(cred, db, query)
+	rows, err := getRows(conn, host, db, query)
 	checkY(err)
 	vmap := getNullStringMap(rows)
-	primary := getPrimary(cred, db, t)
+	primary := getPrimary(conn, host, db, t)
 	head := []Entry{escape("#"), escape("Column"), escape("Data")}
 	records := [][]Entry{}
 
@@ -103,19 +104,19 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	menu = append(menu, escape("-",linkDELETEPRI))
 	menu = append(menu, escape("i",linkinfo))
 
-	next, err := getSingleValue(cred, db, sqlSelect(k,t) + sqlWhere(k,">",v) + sqlOrder(k,"") + sqlLimit(1,0))
+	next, err := getSingleValue(conn, host, db, sqlSelect(k,t) + sqlWhere(k,">",v) + sqlOrder(k,"") + sqlLimit(1,0))
 	if err == nil {
 		q.Set("v", next)
 	} else {
 		q.Set("v", v)
 	}
 	linkright := escape(">",q.Encode())
-	prev, err := getSingleValue(cred, db, sqlSelect(k,t) + sqlWhere(k,"<",v) + sqlOrder(k,"1") + sqlLimit(1,0))
+	prev, err := getSingleValue(conn, host, db, sqlSelect(k,t) + sqlWhere(k,"<",v) + sqlOrder(k,"1") + sqlLimit(1,0))
 	if err == nil {
 		q.Set("v", prev)
 	} else {
 		q.Set("v", v)
 	}
 	linkleft := escape("<",q.Encode())
-	tableOutFields(w, cred, db, t, primary, k, "", k, v, linkleft, linkright, head, records, menu)
+	tableOutFields(w, conn, host, db, t, primary, k, "", k, v, linkleft, linkright, head, records, menu)
 }

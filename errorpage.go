@@ -17,7 +17,7 @@ type EContext struct {
 	Trail    []Entry
 }
 
-func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols []CContext) {
+func shipErrorPage(w http.ResponseWriter, host string, db string, t string, cols []CContext) {
 
 	c := EContext{
 		CSS:      CSS_FILE,
@@ -25,9 +25,9 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 		Button:   "Back",
 		Database: db,
 		Table:    t,
-		Back:     makeBack(cred.Host, db, t, "", "", ""),
+		Back:     makeBack(host, db, t, "", "", ""),
 		Columns:  cols,
-		Trail:    makeTrail(cred.Host, db, t, "", "","", "", "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "","", "", "", url.Values{}),
 	}
 
 	if DEBUGFLAG {
@@ -37,15 +37,15 @@ func shipErrorPage(w http.ResponseWriter, cred Access, db string, t string, cols
 	checkY(err)
 }
 
-func checkErrorPage(w http.ResponseWriter, cred Access, db string, t string, query string, err error) {
+func checkErrorPage(w http.ResponseWriter, host string, db string, t string, query string, err error) {
 	if err != nil {
 		cols := []CContext{CContext{"1", "", "Query", "", "", "", "valid", query, ""},
 			CContext{"2", "", "Error", "", "", "", "valid", fmt.Sprint(err), ""}}
-		shipErrorPage(w, cred, db, t, cols)
+		shipErrorPage(w, host, db, t, cols)
 	}
 }
 
-func shipMessage(w http.ResponseWriter, cred Access, db string, msg string) {
+func shipMessage(w http.ResponseWriter, host string, db string, msg string) {
 	cols := []CContext{CContext{"1", "", "Message", "", "", "", "valid", msg, ""}}
-	shipErrorPage(w, cred, db, "", cols)
+	shipErrorPage(w, host, db, "", cols)
 }

@@ -36,41 +36,33 @@ type CContext struct {
 	Readonly  string
 }
 
-func getConnection(cred Access, db string) *sql.DB {
-	conn, err := sql.Open(cred.Dbms, dsn(cred.User, cred.Pass, cred.Host, cred.Port, db))
+// TODO remove host, db as conn is db specific
+func getRows(conn *sql.DB, host string, db string, stmt string) (*sql.Rows, error) {
+	err := conn.Ping()
 	checkY(err)
-	return conn
-}
-
-func getRows(cred Access, db string, stmt string) (*sql.Rows, error) {
-	conn := getConnection(cred, db)
-	defer conn.Close()
-
 	log.Println("[SQL]", stmt)
 	rows, err := conn.Query(stmt)
 	return rows, err
 }
 
-func getSingleValue(cred Access, db string, stmt string) (string, error) {
-	conn := getConnection(cred, db)
-	defer conn.Close()
+func getSingleValue(conn *sql.DB, host string, db string, stmt string) (string, error) {
 	log.Println("[SQL]", stmt)
+	err := conn.Ping()
+	checkY(err)
 	row := conn.QueryRow(stmt)
 
 	var value interface{}
 	var valuePtr interface{}
 	valuePtr = &value
-	err := row.Scan(valuePtr)
+	err = row.Scan(valuePtr)
 	return getNullString(value).String, err
 }
 
-func getCount(cred Access, db string, t string) string {
-
+func getCount(conn *sql.DB, host string, db string, t string) string {
 	countstmt := sqlCount(t)
-	conn := getConnection(cred, db)
-	defer conn.Close()
 	log.Println("[SQL]", countstmt)
-	// rows,err := conn.Query("select count(*) from ?", t) // does not work??
+	err := conn.Ping()
+	checkY(err)
 	row := conn.QueryRow(countstmt)
 
 	var field string
@@ -78,11 +70,11 @@ func getCount(cred Access, db string, t string) string {
 	return field
 }
 
-func getCols(cred Access, db string, t string) []string {
+func getCols(conn *sql.DB, host string, db string, t string) []string {
 
-	conn := getConnection(cred, db)
-	defer conn.Close()
 	log.Println("[SQL]", "get columns", db, t)
+	err := conn.Ping()
+	checkY(err)
 	rows, err := conn.Query(sqlStar(t) + " limit 0")
 	checkY(err)
 	defer rows.Close()
@@ -91,10 +83,9 @@ func getCols(cred Access, db string, t string) []string {
 	return cols
 }
 
-func getPrimary(cred Access, db string, t string) string {
-
-	conn := getConnection(cred, db)
-	defer conn.Close()
+func getPrimary(conn *sql.DB, host string, db string, t string) string {
+	err := conn.Ping()
+	checkY(err)
 	rows, err := conn.Query(sqlColumns(t) + " WHERE `Key` LIKE 'PRI'")
 	checkY(err)
 	defer rows.Close()
@@ -134,16 +125,15 @@ func getMainType(t string) string {
 	}
 }
 
-func getColumnMainType(cred Access, db string, t string, c string) string {
+func getColumnMainType(conn *sql.DB, host string, db string, t string, c string) string {
 	stmt := "select data_type from information_schema.columns where table_schema = '" + db + "'and table_name = '" + t + "' and column_name = '" + c+ "'"
-	return getMainType(getSingleValue(cred, db, stmt))
+	return getMainType(getSingleValue(conn, host, db, stmt))
 }
 */
 
-func getColumnInfo(cred Access, db string, t string) []CContext {
-
-	conn := getConnection(cred, db)
-	defer conn.Close()
+func getColumnInfo(conn *sql.DB, host string, db string, t string) []CContext {
+	err := conn.Ping()
+	checkY(err)
 	rows, err := conn.Query(sqlColumns(t))
 	checkY(err)
 	defer rows.Close()
@@ -184,10 +174,13 @@ func getColumnInfo(cred Access, db string, t string) []CContext {
 	return m
 }
 
-func getColumnInfoFilled(cred Access, db string, t string, primary string, rows *sql.Rows) []CContext {
+func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary string, rows *sql.Rows) []CContext {
+
+	err := conn.Ping()
+	checkY(err)
 
 	// TODO more efficient
-	cols := getColumnInfo(cred, db, t)
+	cols := getColumnInfo(conn, host, db, t)
 	vmap := getNullStringMap(rows)
 	
 	

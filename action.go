@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "github.com/go-sql-driver/mysql"
+	"database/sql"
 	"html"
 	"log"
 	"net/http"
@@ -27,8 +28,8 @@ type FContext struct {
 
 // ADD provides columns without values, EDIT/UPDATE provide a filled vmap
 
-func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
-	db string, t string, o string, d string,
+func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB, 
+	host string, db string, t string, o string, d string,
 	action string, button string, selector string, showncols []CContext, hiddencols []CContext) {
 
 	q := r.URL.Query()
@@ -47,7 +48,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 		Back:     linkback,
 		Columns:  showncols,
 		Hidden:   hiddencols,
-		Trail:    makeTrail(cred.Host, db, t, "", o, d, "", "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", o, d, "", "", url.Values{}),
 	}
 
 	if DEBUGFLAG {
@@ -59,16 +60,16 @@ func shipForm(w http.ResponseWriter, r *http.Request, cred Access,
 
 /* The next three functions generate empty forms for doing QUERY, QUERYDELETE, ADD */
 
-func actionQUERY(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "SELECT", "Select", "true", getColumnInfo(cred, db, t),[]CContext{})
+func actionQUERY(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
+	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", getColumnInfo(conn, host, db, t),[]CContext{})
 }
 
-func actionQUERYDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "DELETE", "Delete", "true", getColumnInfo(cred, db, t), []CContext{})
+func actionQUERYDELETE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
+	shipForm(w, r, conn, host, db, t, o, d, "DELETE", "Delete", "true", getColumnInfo(conn, host, db, t), []CContext{})
 }
 
-func actionADD(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	shipForm(w, r, cred, db, t, o, d, "INSERT", "Insert", "", getColumnInfo(cred, db, t), []CContext{})
+func actionADD(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
+	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", getColumnInfo(conn, host, db, t), []CContext{})
 }
 
 
@@ -163,42 +164,40 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 	return strings.Join(clauses, " AND ")
 }
 
-func actionSELECT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+func actionSELECT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 
 	var query string 
-	cols := getCols(cred, db, t)
+	cols := getCols(conn, host, db, t)
 	wclauses, _, whereQ := collectClauses(r, cols)
 	if len(wclauses) > 0 {
 		query = sqlStar(t) + sqlWhereClauses(wclauses)	
-		dumpWhere(w, cred, db, t, o, d, query, whereQ)
+		dumpWhere(w, conn, host, db, t, o, d, query, whereQ)
 	} else {
-		shipMessage(w, cred, db, "Where clauses not found")
+		shipMessage(w, host,  db, "Where clauses not found")
 	}
 }
 
 
-func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+func actionINSERT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
 	q.Add("o", o)
 	q.Add("d", d)
-	cols := getCols(cred, db, t)
+	cols := getCols(conn, host, db, t)
 	_, sclauses, _ := collectClauses(r, cols)
 	if len(sclauses) > 0 {
 		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
 		log.Println("[SQL]", stmt)
-		conn := getConnection(cred, db)
-		defer conn.Close()
 
 		preparedStmt, err := conn.Prepare(stmt)
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec()
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	} else {
-		shipMessage(w, cred, db, "Set clauses not found")
+		shipMessage(w, host,  db, "Set clauses not found")
 	}
 }
 
@@ -207,72 +206,68 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string
  * UPDATE and DELETE process the requeted actions
  * UPDATEFORM aks for changed values and is filled, if there is just one selected row */
  
-func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+func actionUPDATE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
 	q.Add("o", o)
 	q.Add("d", o)
-	cols := getCols(cred, db, t)
+	cols := getCols(conn, host, db, t)
 	wclauses, sclauses, _ := collectClauses(r, cols)
 	if len(sclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
 		log.Println("[SQL]", stmt)
-		conn := getConnection(cred, db)
-		defer conn.Close()
 
 		preparedStmt, err := conn.Prepare(stmt)
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec()
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	} else {
-		shipMessage(w, cred, db, "Set clauses not found")
+		shipMessage(w, host,  db, "Set clauses not found")
 	}
 }
 
 
-func actionDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
+func actionDELETE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
 	q.Add("o", o)
 	q.Add("d", d)
-	cols := getCols(cred, db, t)
+	cols := getCols(conn, host, db, t)
 	wclauses, _, _ := collectClauses(r, cols)
 	if len(wclauses) > 0 {
 		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
-		conn := getConnection(cred, db)
-		defer conn.Close()
 
 		log.Println("[SQL]", stmt)
 		preparedStmt, err := conn.Prepare(stmt)
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec()
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	} else {
-		shipMessage(w, cred, db, "Where clauses not found")
+		shipMessage(w, host,  db, "Where clauses not found")
 	}
 }
 
-func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
-	cols := getCols(cred, db, t)
+func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
+	cols := getCols(conn, host, db, t)
 	wclauses, _, whereQ := collectClauses(r, cols)
 	hiddencols := []CContext{}
 	for field, valueArray := range whereQ { //type Values map[string][]string
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
 	}
 
-	count, _ := getSingleValue(cred, db, sqlCount(t) + sqlWhereClauses(wclauses))
+	count, _ := getSingleValue(conn, host, db, sqlCount(t) + sqlWhereClauses(wclauses))
 	if count == "1" {
-		rows, err := getRows(cred, db, sqlStar(t) + sqlWhereClauses(wclauses))	
+		rows, err := getRows(conn, host, db, sqlStar(t) + sqlWhereClauses(wclauses))	
 		checkY(err)
 		defer rows.Close()
-		shipForm(w, r, cred, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(cred, db, t, "", rows), hiddencols)
+		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, "", rows), hiddencols)
 	} else {
-		shipForm(w, r, cred, db, t, o, d, "UPDATE", "Update", "", getColumnInfo(cred, db, t), hiddencols)
+		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfo(conn, host, db, t), hiddencols)
 	}
 }
 
@@ -282,13 +277,11 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, cred Access, db st
  * They use prepared statements.
  * However, these tempates only deal with values, not with identifiers. */
 
-func actionEDITFORM(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+func actionEDITFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	hiddencols := []CContext{
 		CContext{"", "k", "", "", "", "", "valid", k, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
 	stmt := sqlStar(t) + sqlWhere(k,"=","?")
-	conn := getConnection(cred, db)
-	defer conn.Close()
 
 	log.Println("[SQL]", stmt, " <= ", v)
 	preparedStmt, err := conn.Prepare(stmt)
@@ -296,45 +289,41 @@ func actionEDITFORM(w http.ResponseWriter, r *http.Request, cred Access, db stri
 	rows, err := preparedStmt.Query(v)
 	checkY(err)
 	defer rows.Close()
-	primary:=getPrimary(cred, db, t)
-	shipForm(w, r, cred, db, t, "", "", "UPDATEPRI", "Submit", "", getColumnInfoFilled(cred, db, t, primary, rows), hiddencols)
+	primary:=getPrimary(conn, host, db, t)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATEPRI", "Submit", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
 }
 
-func actionUPDATEPRI(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+func actionUPDATEPRI(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
-	cols := getCols(cred, db, t)
+	cols := getCols(conn, host, db, t)
 	_, sclauses, _ := collectClauses(r, cols)
 	if len(sclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere(k,"=","?")
-		conn := getConnection(cred, db)
-		defer conn.Close()
 
 		log.Println("[SQL]", stmt, " <= ", v)
 		preparedStmt, err := conn.Prepare(stmt)
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec(v)
-		checkErrorPage(w, cred, db, t, stmt, err)
+		checkErrorPage(w, host,  db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
 	} else {
-		shipMessage(w, cred, db, "Set clauses not found")
+		shipMessage(w, host,  db, "Set clauses not found")
 	}
 }
 
-func actionDELETEPRI(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, k string, v string) {
+func actionDELETEPRI(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
 	stmt := sqlDelete(t) + sqlWhere(k,"=","?")
-	conn := getConnection(cred, db)
-	defer conn.Close()
 
 	log.Println("[SQL]", stmt, " <= ", v)
 	preparedStmt, err := conn.Prepare(stmt)
-	checkErrorPage(w, cred, db, t, stmt, err)
+	checkErrorPage(w, host,  db, t, stmt, err)
 	_, err = preparedStmt.Exec(v)
-	checkErrorPage(w, cred, db, t, stmt, err)
+	checkErrorPage(w, host,  db, t, stmt, err)
 	http.Redirect(w, r, "?"+q.Encode(), 302)
 }
 
@@ -348,9 +337,9 @@ func actionDELETEPRI(w http.ResponseWriter, r *http.Request, cred Access, db str
 +-------+-------------+------+-----+---------+-------+
 */
 
-func actionINFO(w http.ResponseWriter, r *http.Request, cred Access, db string, t string) {
+func actionINFO(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string) {
 
-	rows, err := getRows(cred, db, sqlColumns(t))
+	rows, err := getRows(conn, host, db, sqlColumns(t))
 	checkY(err)
 	defer rows.Close()
 
@@ -385,5 +374,5 @@ func actionINFO(w http.ResponseWriter, r *http.Request, cred Access, db string, 
 		records = append(records, []Entry{escape(strconv.Itoa(i)), escape(f),escape(t),escape(n),escape(k),escape(string(d)),escape(e)})
 		i = i + 1
 	}
-	tableOutSimple(w, cred, db, t, head, records, menu)
+	tableOutSimple(w, conn, host, db, t, head, records, menu)
 }

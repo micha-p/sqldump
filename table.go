@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
 	"net/url"
 )
@@ -158,12 +159,12 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	return head
 }
 
-func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
+func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
 
 	c := Context{
-		User:     cred.User,
-		Host:     cred.Host,
-		Port:     cred.Port,
+		User:     "",
+		Host:     host,
+		Port:     "",
 		CSS:      CSS_FILE,
 		Database: db,
 		Table:    t,
@@ -171,11 +172,11 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 		Desc:     "",
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host, db, t, "", "", ""),
+		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  "",
 		Left:     Entry{},
 		Right:    Entry{},
-		Trail:    makeTrail(cred.Host, db, t, "", "", "", "", "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "", "", "", "", url.Values{}),
 		Menu:     menu,
 	}
 	if DEBUGFLAG {
@@ -185,15 +186,15 @@ func tableOutSimple(w http.ResponseWriter, cred Access, db string, t string, hea
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, primary string, o string, d string,
+func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
 	n string, linkleft Entry, linkright Entry,
 	head []Entry, records [][]Entry, menu []Entry, where string, whereQ url.Values) {
 
 	initTemplate()
 	c := Context{
-		User:     cred.User,
-		Host:     cred.Host,
-		Port:     cred.Port,
+		User:     "",
+		Host:     host,
+		Port:     "",
 		CSS:      CSS_FILE,
 		Database: db,
 		Table:    t,
@@ -201,11 +202,11 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, prima
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host, db, t, "", "", ""),
+		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host, db, t, primary, o, d, "", where, whereQ),
+		Trail:    makeTrail(host, db, t, primary, o, d, "", where, whereQ),
 		Menu:     menu,
 	}
 
@@ -213,16 +214,16 @@ func tableOutRows(w http.ResponseWriter, cred Access, db string, t string, prima
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, cred Access, 
+func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string, 
 	db string, t string, primary string ,o string, d string, k string, n string, 
 	linkleft Entry, linkright Entry, head []Entry, records [][]Entry, menu []Entry) {
 
 	initTemplate()
 
 	c := Context{
-		User:     cred.User,
-		Host:     cred.Host,
-		Port:     cred.Port,
+		User:     "",
+		Host:     host,
+		Port:     "",
 		CSS:      CSS_FILE,
 		Database: db,
 		Table:    t,
@@ -230,11 +231,11 @@ func tableOutFields(w http.ResponseWriter, cred Access,
 		Desc:     d,
 		Records:  records,
 		Head:     head,
-		Back:     makeBack(cred.Host, db, t, "", "", ""),
+		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  n,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(cred.Host, db, t, primary, o, d, k, "", url.Values{}),
+		Trail:    makeTrail(host, db, t, primary, o, d, k, "", url.Values{}),
 		Menu:     menu,
 	}
 
