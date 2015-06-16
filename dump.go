@@ -112,7 +112,12 @@ func dumpRows(w http.ResponseWriter, cred Access, db string, t string, o string,
 					q.Del("k")
 					q.Del("v")
 				} else {
-					row = append(row, escape(v, "")) // TODO add single where clause
+					w := url.Values{}
+					w.Add("db", db)
+					w.Add("t", t)
+					w.Add(columns[i]+"W",v)
+					w.Add(columns[i]+"O","=")
+					row = append(row, escape(v, w.Encode()))
 				}
 			} else {
 				row = append(row, escapeNull())
@@ -202,7 +207,12 @@ func dumpWhere(w http.ResponseWriter, cred Access, db string, t string, o string
 					q.Del("v")
 					row = append(row, escape(v, q.Encode()))
 				} else {
-					row = append(row, escape(v, "")) // TODO add single where clause
+					w := url.Values{}
+					w.Add("db", db)
+					w.Add("t", t)
+					w.Add(columns[i]+"W",v)
+					w.Add(columns[i]+"O","=")
+					row = append(row, escape(v, w.Encode()))
 				}
 			} else {
 				row = append(row, escapeNull())
