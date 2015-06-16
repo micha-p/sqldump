@@ -40,21 +40,22 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-func readRequest(r *http.Request) (string, string, string, string, string, string, string) {
+func readRequest(r *http.Request) (string, string, string, string, string, string, string, string) {
 	q := r.URL.Query()
 	db := q.Get("db")
 	t := q.Get("t")
 	o := q.Get("o")
 	d := q.Get("d")
-	k := q.Get("k")
 	n := q.Get("n")
+	g := q.Get("g")
+	k := q.Get("k")
 	v := q.Get("v")
-	return db, t, o, d, n, k, v
+	return db, t, o, d, n, g, k, v
 }
 
 func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
 
-	db, t, o, d, n, k, v := readRequest(r)
+	db, t, o, d, n, g, k, v := readRequest(r)
 
 	q := r.URL.Query()
 	action := q.Get("action")
@@ -86,13 +87,13 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 	} else if action == "DELETEPRI" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionDELETEPRI(w, r, conn, host, db, t, k, v)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
-		dumpIt(w, r, conn, host, db, t, o, d, n, k, v)
+		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "BACK" {
-		dumpIt(w, r, conn, host, db, "", "", "", "", "", "")
+		dumpIt(w, r, conn, host, db, "", "", "", "", "", "", "")
 	} else if action != "" {
 		shipMessage(w, host, db, "Unknown action: "+action)
 	} else {
-		dumpIt(w, r, conn, host, db, t, o, d, n, k, v)
+		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
 	}
 }
 
