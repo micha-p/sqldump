@@ -181,6 +181,8 @@ func actionSELECT(w http.ResponseWriter, r *http.Request, cred Access, db string
 	if len(wclauses) > 0 {
 		query = sqlStar(t) + sqlWhereClauses(wclauses)	
 		dumpWhere(w, cred, db, t, o, d, query, whereQ)
+	} else {
+		shipMessage(w, cred, db, "Where clauses not found")
 	}
 }
 
@@ -205,6 +207,8 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, cred Access, db string
 		_, err = preparedStmt.Exec()
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
+	} else {
+		shipMessage(w, cred, db, "Set clauses not found")
 	}
 }
 
@@ -233,6 +237,8 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, cred Access, db string
 		_, err = preparedStmt.Exec()
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
+	} else {
+		shipMessage(w, cred, db, "Set clauses not found")
 	}
 }
 
@@ -256,6 +262,8 @@ func actionDELETE(w http.ResponseWriter, r *http.Request, cred Access, db string
 		_, err = preparedStmt.Exec()
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
+	} else {
+		shipMessage(w, cred, db, "Where clauses not found")
 	}
 }
 
@@ -319,6 +327,8 @@ func actionUPDATEPRI(w http.ResponseWriter, r *http.Request, cred Access, db str
 		_, err = preparedStmt.Exec(v)
 		checkErrorPage(w, cred, db, t, stmt, err)
 		http.Redirect(w, r, "?"+q.Encode(), 302)
+	} else {
+		shipMessage(w, cred, db, "Set clauses not found")
 	}
 }
 
