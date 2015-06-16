@@ -62,7 +62,7 @@ func makeBack(host string, db string, t string, o string, d string, k string) st
 	}
 }
 
-func makeTrail(host string, db string, t string, primary string, o string, d string, k string, w string, wq url.Values) []Entry {
+func makeTrail(host string, db string, t string, w string, wq url.Values) []Entry {
 
 	q := url.Values{}
 
@@ -83,27 +83,6 @@ func makeTrail(host string, db string, t string, primary string, o string, d str
 	wq.Del("d")
 	if w != "" {
 		trail = append(trail, escape(w, wq.Encode()))
-	}
-	if o != "" {
-		wq.Add("o", o)
-		if o == primary {
-			if d != "" {
-				wq.Add("d", d)
-				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
-			} else {
-				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
-			}
-		} else {
-			if d != "" {
-				wq.Add("d", d)
-				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
-			} else {
-				trail = append(trail, escape(makeArrow(o, primary, d), wq.Encode()))
-			}
-		}
-	} else if k != "" {
-		q.Add("k", k)
-		trail = append(trail, escape(k, q.Encode()))
 	}
 	return trail
 }
@@ -178,7 +157,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Label:	  "",
 		Left:     Entry{},
 		Right:    Entry{},
-		Trail:    makeTrail(host, db, t, "", "", "", "", "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
 	}
 	if DEBUGFLAG {
@@ -209,7 +188,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Label:	  counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(host, db, t, primary, o, d, "", where, whereQ),
+		Trail:    makeTrail(host, db, t, where, whereQ),
 		Menu:     menu,
 	}
 
@@ -239,7 +218,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Label:	  counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(host, db, t, primary, o, d, k, "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
 	}
 

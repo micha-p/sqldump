@@ -27,7 +27,7 @@ func shipErrorPage(w http.ResponseWriter, host string, db string, t string, cols
 		Table:    t,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Columns:  cols,
-		Trail:    makeTrail(host, db, t, "", "", "", "", "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", url.Values{}),
 	}
 
 	if DEBUGFLAG {
