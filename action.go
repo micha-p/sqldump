@@ -167,10 +167,9 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 }
 
 func actionSELECT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-	var query string 
 	wclauses, _, whereQ := collectClauses(r, conn, t)
 	if len(wclauses) > 0 {
-		query = sqlStar(t) + sqlWhereClauses(wclauses)	
+		query := sqlStar(t) + sqlWhereClauses(wclauses)	
 		dumpWhere(w, conn, host, db, t, o, d, query, whereQ)
 	} else {
 		shipMessage(w, host,  db, "Where clauses not found")
@@ -189,8 +188,7 @@ func actionINSERT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	if len(sclauses) > 0 {
 		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
 		log.Println("[SQL]", stmt)
-
-		preparedStmt, err := conn.Prepare(stmt)
+		preparedStmt, err := sqlPrepare(conn,stmt)
 		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec()
 		checkErrorPage(w, host,  db, t, stmt, err)
@@ -216,8 +214,7 @@ func actionUPDATE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	if len(sclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
 		log.Println("[SQL]", stmt)
-
-		preparedStmt, err := conn.Prepare(stmt)
+		preparedStmt, err := sqlPrepare(conn, stmt)
 		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec()
 		checkErrorPage(w, host,  db, t, stmt, err)
@@ -237,9 +234,8 @@ func actionDELETE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	wclauses, _, _ := collectClauses(r, conn, t)
 	if len(wclauses) > 0 {
 		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
-
 		log.Println("[SQL]", stmt)
-		preparedStmt, err := conn.Prepare(stmt)
+		preparedStmt, err := sqlPrepare(conn, stmt)
 		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec()
 		checkErrorPage(w, host,  db, t, stmt, err)
@@ -281,8 +277,8 @@ func actionEDITFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host s
 	stmt := sqlStar(t) + sqlWhere(k,"=","?")
 
 	log.Println("[SQL]", stmt, " <= ", v)
-	preparedStmt, err := conn.Prepare(stmt)
-	checkY(err)
+	preparedStmt, err := sqlPrepare(conn, stmt)
+	checkErrorPage(w, host,  db, t, stmt, err)
 	rows, err := preparedStmt.Query(v)
 	checkY(err)
 	defer rows.Close()
@@ -299,7 +295,7 @@ func actionUPDATEPRI(w http.ResponseWriter, r *http.Request, conn *sql.DB, host 
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere(k,"=","?")
 
 		log.Println("[SQL]", stmt, " <= ", v)
-		preparedStmt, err := conn.Prepare(stmt)
+		preparedStmt, err := sqlPrepare(conn, stmt)
 		checkErrorPage(w, host,  db, t, stmt, err)
 		_, err = preparedStmt.Exec(v)
 		checkErrorPage(w, host,  db, t, stmt, err)
@@ -316,7 +312,7 @@ func actionDELETEPRI(w http.ResponseWriter, r *http.Request, conn *sql.DB, host 
 	stmt := sqlDelete(t) + sqlWhere(k,"=","?")
 
 	log.Println("[SQL]", stmt, " <= ", v)
-	preparedStmt, err := conn.Prepare(stmt)
+	preparedStmt, err := sqlPrepare(conn, stmt)
 	checkErrorPage(w, host,  db, t, stmt, err)
 	_, err = preparedStmt.Exec(v)
 	checkErrorPage(w, host,  db, t, stmt, err)
