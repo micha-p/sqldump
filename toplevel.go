@@ -15,8 +15,8 @@ func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, d
 	} else if t == "" {
 		dumpTables(w, db, conn, host)
 	} else if k != "" && v != "" && k == getPrimary(conn, t) {
-		dumpKeyValue(w, db, t, k, v, conn, host, sqlStar(t) + sqlWhere(k,"=",v))
-	} else{
+		dumpKeyValue(w, db, t, k, v, conn, host, sqlStar(t)+sqlWhere(k, "=", v))
+	} else {
 		dumpSelection(w, r, conn, host, db, t, o, d, n, k, v)
 	}
 }

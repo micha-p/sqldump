@@ -8,19 +8,17 @@ import (
 /* 	Any identifier with double quotes in its name has to be escaped.
  */
 
-func escape(name string, link ... string) Entry {
-	if len(link)>0 {
-		return Entry{Text: name, Link: "/?"+link[0], Null: ""}
+func escape(name string, link ...string) Entry {
+	if len(link) > 0 {
+		return Entry{Text: name, Link: "/?" + link[0], Null: ""}
 	} else {
 		return Entry{Text: name, Link: "", Null: ""}
 	}
 }
 
 func escapeNull() Entry {
-	return Entry{Text: "", Link: "" , Null: "NULL"}
+	return Entry{Text: "", Link: "", Null: "NULL"}
 }
-
-
 
 func troubleF(filename string) error {
 	_, err := os.Stat(filename)
@@ -39,7 +37,7 @@ func checkY(err error) {
 // https://github.com/go-sql-driver/mysql/#dsn-data-source-name
 func dsn(user string, pw string, host string, port string, db string) string {
 	if DEBUGFLAG {
-		log.Println("[DSN]", user + "@tcp(" + host + ":" + port + ")/" + db)
+		log.Println("[DSN]", user+"@tcp("+host+":"+port+")/"+db)
 	}
 	return user + ":" + pw + "@tcp(" + host + ":" + port + ")/" + db
 }

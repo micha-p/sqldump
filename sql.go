@@ -1,15 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"regexp"
-	"strings"
 	"strconv"
-	"database/sql"
+	"strings"
 )
 
 /* sql escaping using prepared statements in Go is restricted, as it does not work for identifiers */
-
 
 // special type to prevent mixture with normal strings
 type sqlstring string
@@ -21,6 +20,7 @@ func sql2string(s sqlstring) string {
 func string2sql(s string) sqlstring {
 	return sqlstring(s)
 }
+
 // Interface functions to underlying sql driver
 
 func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, error) {
@@ -28,7 +28,7 @@ func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, error) {
 	return stmt, err
 }
 
-func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows,error) {
+func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, error) {
 	stmtstr := string(s)
 	log.Println("[SQL]", stmtstr)
 	stmt, err := conn.Query(stmtstr)
@@ -39,74 +39,93 @@ func sqlQueryRow(conn *sql.DB, s sqlstring) *sql.Row {
 	return conn.QueryRow(sql2string(s))
 }
 
-
 // functions to prepare sql statements
 
-func sqlStar(t string) sqlstring{
-	return string2sql("SELECT * FROM `" + sqlProtectIdentifier(t) + "`")
+func sqlStar(t string) sqlstring {
+	return string2sql("SELECT * FROM ") + sqlProtectIdentifier(t)
 }
 
-func sqlSelect(c string, t string) sqlstring{
-	return string2sql("SELECT `" + sqlProtectIdentifier(c) + "` FROM `" + sqlProtectIdentifier(t) + "`")
+func sqlSelect(c string, t string) sqlstring {
+	return string2sql("SELECT ") + sqlProtectIdentifier(c) + string2sql(" FROM ") + sqlProtectIdentifier(t)
 }
 
-func sqlOrder(order string, desc string) sqlstring{
-	var query string
+func sqlOrder(order string, desc string) sqlstring {
+	var query sqlstring
 	if order != "" {
-		query = " ORDER BY `" + sqlProtectIdentifier(order) + "`"
+		query = string2sql(" ORDER BY ") + sqlProtectIdentifier(order)
 		if desc != "" {
-			query = query + " DESC"
+			query = query + string2sql(" DESC")
 		}
 	}
-	return string2sql(query)
+	return query
 }
 
 // records start with number 1. Every child knows
 
-func sqlLimit(limit int, offset int)sqlstring{
-	query := " LIMIT " + strconv.Itoa(maxI(limit,1))
+func sqlLimit(limit int, offset int) sqlstring {
+	query := string2sql(" LIMIT " + strconv.Itoa(maxI(limit, 1)))
 	if offset > 0 {
-		query = query + " OFFSET " + strconv.Itoa(offset - 1)
+		query = query + string2sql(" OFFSET "+strconv.Itoa(offset-1))
 	}
-	return string2sql(query)
+	return query
 }
 
-
-func sqlCount(t string)sqlstring{
-	return string2sql("SELECT COUNT(*) FROM `" + sqlProtectIdentifier(t) + "`")
+func sqlCount(t string) sqlstring {
+	return string2sql("SELECT COUNT(*) FROM ") + sqlProtectIdentifier(t)
 }
 
-func sqlColumns(t string)sqlstring{
-	return string2sql("SHOW COLUMNS FROM `" + sqlProtectIdentifier(t) + "`")
+func sqlColumns(t string) sqlstring {
+	return string2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
 }
 
-func sqlInsert(t string)sqlstring{
-	return string2sql("INSERT INTO `" + sqlProtectIdentifier(t) + "`")
+func sqlInsert(t string) sqlstring {
+	return string2sql("INSERT INTO ") + sqlProtectIdentifier(t)
 }
 
-func sqlUpdate(t string)sqlstring{
-	return string2sql("UPDATE `" + sqlProtectIdentifier(t) + "`")
+func sqlUpdate(t string) sqlstring {
+	return string2sql("UPDATE ") + sqlProtectIdentifier(t)
 }
 
-func sqlDelete(t string)sqlstring{
-	return string2sql("DELETE FROM `" + sqlProtectIdentifier(t) + "`")
+func sqlDelete(t string) sqlstring {
+	return string2sql("DELETE FROM ") + sqlProtectIdentifier(t)
 }
 
-func sqlWhere(k string, c string, v string)sqlstring{
-	return string2sql(" WHERE `" + sqlProtectIdentifier(k) + "`" + sqlFilterComparator(c) + "\"" + sqlProtectString(v) + "\"")
+func sqlWhere(k string, c string, v string) sqlstring {
+	return string2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + sqlProtectString(v)
 }
 
-func sqlWhereClauses(clauses []string)sqlstring{
-	return string2sql(" WHERE " + strings.Join(clauses, " && "))
+// from http://golang.org/src/strings/strings.go?h=Join#L382
+func sqlJoin(a []sqlstring, sep string) sqlstring {
+	if len(a) == 0 {
+		return string2sql("")
+	}
+	if len(a) == 1 {
+		return a[0]
+	}
+	n := len(sep) * (len(a) - 1)
+	for i := 0; i < len(a); i++ {
+		n += len(a[i])
+	}
+
+	b := make([]byte, n)
+	bp := copy(b, a[0])
+	for _, q := range a[1:] {
+		s := sql2string(q)
+		bp += copy(b[bp:], sep)
+		bp += copy(b[bp:], s)
+	}
+	return sqlstring(b)
 }
 
-func sqlSetClauses(clauses []string)sqlstring{
-	return string2sql(" SET " + strings.Join(clauses, " , "))
+func sqlWhereClauses(clauses []sqlstring) sqlstring {
+	return string2sql(" WHERE ") + sqlJoin(clauses, " && ")
 }
 
+func sqlSetClauses(clauses []sqlstring) sqlstring {
+	return string2sql(" SET ") + sqlJoin(clauses, " , ")
+}
 
 // Filter and Escapes
-
 
 /* 	https://dev.mysql.com/doc/refman/5.1/en/identifiers.html
 
@@ -126,15 +145,15 @@ func sqlSetClauses(clauses []string)sqlstring{
 	The identifier quote character is the backtick (“`”):
 */
 
-func sqlProtectIdentifier(s string) string {
+func sqlProtectIdentifier(s string) sqlstring {
 	if s != "" && strings.ContainsAny(s, "`") {
 		r := strings.Replace(s, "`", "``", -1)
 		if DEBUGFLAG {
 			log.Println("[SQLINJECTION?]", s+" -> "+r)
 		}
-		return r
+		return string2sql("`" + r + "`")
 	} else {
-		return s
+		return string2sql("`" + s + "`")
 	}
 }
 
@@ -150,15 +169,15 @@ func sqlProtectIdentifier(s string) string {
     In the same way, “"” inside a string quoted with “'” needs no special treatment.
 */
 
-func sqlProtectString(s string) string {
+func sqlProtectString(s string) sqlstring {
 	if s != "" && strings.ContainsAny(s, "\"") {
 		r := strings.Replace(s, "\"", "\"\"", -1)
 		if DEBUGFLAG {
 			log.Println("[SQLINJECTION?]", s+" -> "+r)
 		}
-		return r
+		return string2sql("\"" + r + "\"")
 	} else {
-		return s
+		return string2sql("\"" + s + "\"")
 	}
 }
 
@@ -175,12 +194,12 @@ func sqlFilterNumericComparison(t string) (string, string) {
 	}
 }
 
-func sqlFilterNumber(t string) string {
+func sqlFilterNumber(t string) sqlstring {
 	re := regexp.MustCompile("^ *(" + SQLNUM + ") *$")
-	return re.FindString(t)
+	return string2sql("'" + re.FindString(t) + "'")
 }
 
-func sqlFilterComparator(t string) string {
+func sqlFilterComparator(t string) sqlstring {
 	re := regexp.MustCompile("^ *(" + SQLCMP + ") *$")
-	return re.FindString(t)
+	return string2sql(re.FindString(t))
 }
