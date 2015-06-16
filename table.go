@@ -88,11 +88,11 @@ func makeTrail(host string, db string, t string, w string, wq url.Values) []Entr
 }
 
 func makeArrow(title string, primary string, d string) string {
-	if title == primary {
+	if primary !="" {
 		if d == "" {
-			return title + "⇑"
+			return primary + "↑" // "⇑"
 		} else {
-			return title + "⇓"
+			return primary + "↓" // "⇓"
 		}
 	} else {
 		if d == "" {
@@ -116,24 +116,28 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 			if primary == title {
 				if d == "" {
 					q.Set("d", "1")
-					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
+					head = append(head, escape(makeArrow("", primary + " (ID)", d), q.Encode()))
 				} else {
 					q.Del("d")
-					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
+					head = append(head, escape(makeArrow("", primary + " (ID)", d), q.Encode()))
 				}
 			} else {
 				if d == "" {
 					q.Set("d", "1")
-					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
+					head = append(head, escape(makeArrow(title, "", d), q.Encode()))
 				} else {
 					q.Del("d")
-					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
+					head = append(head, escape(makeArrow(title, "", d), q.Encode()))
 				}
 			}
 		} else {
 			q.Set("o", title)
 			q.Del("d")
-			head = append(head, escape(title, q.Encode()))
+			if primary == title {
+				head = append(head, escape(title + " (ID)", q.Encode()))
+			} else {
+				head = append(head, escape(title, q.Encode()))
+			}
 		}
 	}
 	return head

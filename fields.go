@@ -26,8 +26,13 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	checkY(err)
 	for i, f := range cols {
 		nv := getNullString(vals[i])
-		row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}
-		records = append(records, row)
+		if nv.Valid {
+			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}
+			records = append(records, row)
+		} else {
+			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escapeNull()}
+			records = append(records, row)
+		}
 	}
 
 	v.Add("db", db)
@@ -77,8 +82,13 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	cols, vals, err := getRowScan(rows)
 	for i, f := range cols {
 		nv := getNullString(vals[i])
-		row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}
-		records = append(records, row)
+		if nv.Valid {
+			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}
+			records = append(records, row)
+		} else {
+			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escapeNull()}
+			records = append(records, row)
+		}
 	}
 
 	q := url.Values{}
