@@ -8,7 +8,8 @@ import (
 	"strconv"
 )
 
-func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string, n string, k string, v string) {
+func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB, 
+	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
 	query := sqlStar(t)
 	wclauses, _, whereQ := collectClauses(r, conn, t)
@@ -19,7 +20,11 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB, host st
 	if o != "" {
 		query = query + sqlOrder(o, d)
 	}
-	if n != "" {
+
+	if g !="" && v !=""{
+		query = query + sqlWhere(g, "=", v)
+		dumpGroup(w, conn, host, db, t, o, d, g, v, query, whereQ)
+	} else if n != "" {
 		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 		limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
 
@@ -104,12 +109,12 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 					q.Del("k")
 					q.Del("v")
 				} else {
-					w := url.Values{}
-					w.Add("db", db)
-					w.Add("t", t)
-					w.Add(columns[i]+"W", v)
-					w.Add(columns[i]+"O", "=")
-					row = append(row, escape(v, w.Encode()))
+					g := url.Values{}
+					g.Add("db", db)
+					g.Add("t", t)
+					g.Add("g", columns[i])
+					g.Add("v", v)
+					row = append(row, escape(v, g.Encode()))
 				}
 			} else {
 				row = append(row, escapeNull())
@@ -143,6 +148,115 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	menu = append(menu, escape("-", linkdeleteF))
 	menu = append(menu, escape("i", linkinfo))
 	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, "", url.Values{})
+}
+
+func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, query sqlstring, q url.Values) {
+
+	q.Add("db", db)
+	q.Add("t", t)
+	q.Del("k")
+	q.Del("v")
+
+	rows, err := getRows(conn, query)
+	if err != nil {
+		checkErrorPage(w, host, db, t, query, err)
+		return
+	} else {
+		defer rows.Close()
+	}
+
+	primary := getPrimary(conn, t)
+	columns, err := rows.Columns()
+	checkY(err)
+	head := createHead(db, t, o, d, "", primary, columns, q)
+
+	count := len(columns)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
+	for i, _ := range columns {
+		valuePtrs[i] = &values[i]
+	}
+	records := [][]Entry{}
+	rownum := 1
+	for rows.Next() {
+
+		row := []Entry{}
+		q.Set("o", o)
+		q.Set("d", d)
+		q.Add("n", strconv.Itoa(rownum))
+		row = append(row, escape(strconv.Itoa(rownum), q.Encode()))
+		q.Del("n")
+
+		err = rows.Scan(valuePtrs...)
+		checkY(err)
+
+		for i, _ := range columns {
+			nv := getNullString(values[i])
+			if nv.Valid {
+				v := nv.String
+				if columns[i] == primary {
+					q.Del("o")
+					q.Del("d")
+					q.Del("n")
+					q.Set("k", primary)
+					q.Set("v", v)
+					q.Del("k")
+					q.Del("v")
+					row = append(row, escape(v, q.Encode()))
+				} else {
+					g := url.Values{}
+					g.Add("db", db)
+					g.Add("t", t)
+					g.Add("g", columns[i])
+					g.Add("v", v)
+					row = append(row, escape(v, g.Encode()))
+				}
+			} else {
+				row = append(row, escapeNull())
+			}
+		}
+
+		records = append(records, row)
+		rownum = rownum + 1
+	}
+
+	q.Set("action", "QUERY")
+	linkselect := q.Encode()
+	q.Set("action", "ADD")
+	linkinsert := q.Encode()
+/*	q.Set("action", "UPDATEFORM")
+	linkupdate := q.Encode()
+	q.Set("action", "DELETE") 
+	linkdelete := q.Encode() */
+	q.Set("action", "INFO")
+	linkinfo := q.Encode()
+	q.Del("action")
+
+	menu := []Entry{}
+	menu = append(menu, escape("?", linkselect))
+	menu = append(menu, escape("+", linkinsert))
+/*	menu = append(menu, escape("~", linkupdate))
+	menu = append(menu, escape("-", linkdelete)) */
+	menu = append(menu, escape("i", linkinfo))
+	wherestring := WhereSelect2Pretty(q, getColumnInfo(conn, t))
+	
+	q.Set("g", g)
+	next, err := getSingleValue(conn, host, db, sqlSelect(g, t)+sqlWhere(g, ">", v)+sqlOrder(g, "")+sqlLimit(1, 0))
+	if err == nil {
+		q.Set("v", next)
+	} else {
+		q.Set("v", v)
+	}
+	linkright := escape(">", q.Encode())
+	prev, err := getSingleValue(conn, host, db, sqlSelect(g, t)+sqlWhere(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
+	if err == nil {
+		q.Set("v", prev)
+	} else {
+		q.Set("v", v)
+	}
+	linkleft := escape("<", q.Encode())
+	
+	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, wherestring, q)
 }
 
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring, q url.Values) {
@@ -199,12 +313,12 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 					q.Del("v")
 					row = append(row, escape(v, q.Encode()))
 				} else {
-					w := url.Values{}
-					w.Add("db", db)
-					w.Add("t", t)
-					w.Add(columns[i]+"W", v)
-					w.Add(columns[i]+"O", "=")
-					row = append(row, escape(v, w.Encode()))
+					g := url.Values{}
+					g.Add("db", db)
+					g.Add("t", t)
+					g.Add("g", columns[i])
+					g.Add("v", v)
+					row = append(row, escape(v, g.Encode()))
 				}
 			} else {
 				row = append(row, escapeNull())
@@ -308,7 +422,12 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 					q.Set("v", v)
 					row = append(row, escape(v, q.Encode()))
 				} else {
-					row = append(row, escape(v, ""))
+					g := url.Values{}
+					g.Add("db", db)
+					g.Add("t", t)
+					g.Add("g", columns[i])
+					g.Add("v", v)
+					row = append(row, escape(v, g.Encode()))
 				}
 			} else {
 				row = append(row, escapeNull())

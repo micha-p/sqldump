@@ -7,7 +7,8 @@ import (
 	"strconv"
 )
 
-func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string, n string, k string, v string) {
+func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, 
+	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
 	if db == "" {
 		dumpHome(w, conn, host)
@@ -17,7 +18,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, d
 	} else if k != "" && v != "" && k == getPrimary(conn, t) {
 		dumpKeyValue(w, db, t, k, v, conn, host, sqlStar(t)+sqlWhere(k, "=", v))
 	} else {
-		dumpSelection(w, r, conn, host, db, t, o, d, n, k, v)
+		dumpSelection(w, r, conn, host, db, t, o, d, n, g, k, v)
 	}
 }
 
