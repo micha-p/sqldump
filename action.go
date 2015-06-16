@@ -27,6 +27,7 @@ type FContext struct {
 }
 
 // ADD and QUERY provide columns without values, EDIT/UPDATE provide a filled vmap
+// TODO: use DEFAULT and AUTOINCREMENT
 
 func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string,
