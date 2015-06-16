@@ -4,9 +4,11 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"strconv"
 )
 
-/* sql escaping using prepared statements in Go is restricted, as it does not work for identifiers */
+/* sql escaping using prepared statements in Go is restricted, as it does not work for identifiers 
+ * TODO: provide special type sqlstring */
 
 func sqlStar(t string) string{
 	return "SELECT * FROM `" + sqlProtectIdentifier(t) + "`"
@@ -16,16 +18,27 @@ func sqlSelect(c string, t string) string{
 	return "SELECT `" + sqlProtectIdentifier(c) + "` FROM `" + sqlProtectIdentifier(t) + "`"
 }
 
-func sqlOrder(o string, d string)string{
+func sqlOrder(order string, desc string)string{
 	var query string
-	if o != "" {
-		query = " ORDER BY `" + sqlProtectIdentifier(o) + "`"
-		if d != "" {
+	if order != "" {
+		query = " ORDER BY `" + sqlProtectIdentifier(order) + "`"
+		if desc != "" {
 			query = query + " DESC"
 		}
 	}
 	return query
 }
+
+// records start with number 1. Every child knows
+
+func sqlLimit(limit int, offset int)string{
+	query := " LIMIT " + strconv.Itoa(maxI(limit,1))
+	if offset > 0 {
+		query = query + " OFFSET " + strconv.Itoa(offset - 1)
+	}
+	return query
+}
+
 
 func sqlCount(t string)string{
 	return "SELECT COUNT(*) FROM `" + sqlProtectIdentifier(t) + "`"
