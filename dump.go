@@ -22,24 +22,19 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, cred Access, db strin
 		query = query + sqlOrder(o,d)
 	}
 	if n != "" {
-		maxint, err := strconv.Atoi(getCount(cred, db, t))
-		checkY(err)
 		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 		limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
 		
 		if singlenumber != "" {
-			nint, err := strconv.Atoi(singlenumber)
-			checkY(err)
-			nint = minI(nint, maxint)
-			query = query + sqlLimit(1,nint)
-			// maxint depends on query!
-			// TODO: 
-			// for maxint check if rows.next available!
-			dumpFields(w, cred, db, t, o, d, singlenumber, nint, maxint, query,whereQ)
+			nint, _ := strconv.Atoi(singlenumber)
+			query = query + sqlLimit(2,nint) // for finding next record
+			dumpFields(w, cred, db, t, o, d, singlenumber, nint, query, whereQ)
 		} else if len(limits) == 3 {
 			startint, err := strconv.Atoi(limits[1])
 			checkY(err)
 			endint, err := strconv.Atoi(limits[2])
+			checkY(err)
+			maxint, err := strconv.Atoi(getCount(cred, db, t))
 			checkY(err)
 			endint = minI(endint, maxint)
 			query = query + sqlLimit(1+endint-startint,startint)
