@@ -36,7 +36,6 @@ type CContext struct {
 	Readonly  string
 }
 
-// TODO remove host, db as conn is db specific
 func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error) {
 	err := conn.Ping()
 	checkY(err)
