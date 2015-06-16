@@ -60,7 +60,7 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	v.Set("n", right)
 	linkright := escape(">", v.Encode())
 
-	tableOutFields(w, conn, host, db, t, "", o, d, "", n, linkleft, linkright, head, records, menu)
+	tableOutFields(w, conn, host, db, t, "", o, d, "", n, "#", linkleft, linkright, head, records, menu)
 }
 
 func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, conn *sql.DB, host string, query sqlstring) {
@@ -116,5 +116,5 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		q.Set("v", v)
 	}
 	linkleft := escape("<", q.Encode())
-	tableOutFields(w, conn, host, db, t, primary, k, "", k, v, linkleft, linkright, head, records, menu)
+	tableOutFields(w, conn, host, db, t, primary, k, "", k, v, k + " (ID) =", linkleft, linkright, head, records, menu)
 }
