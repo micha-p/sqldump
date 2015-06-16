@@ -1,30 +1,31 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
 	"net/url"
 	"strconv"
 )
 
-func dumpIt(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string, n string, k string, v string) {
+func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string, n string, k string, v string) {
 
 	if db == "" {
-		dumpHome(w, cred)
+		dumpHome(w, conn, host)
 		return
 	} else if t == "" {
-		dumpTables(w, db, cred)
-	} else if k != "" && v != "" && k == getPrimary(cred, db, t) {
-		dumpKeyValue(w, db, t, k, v, cred, sqlStar(t) + sqlWhere(k,"=",v))
+		dumpTables(w, db, conn, host)
+	} else if k != "" && v != "" && k == getPrimary(conn, host, db, t) {
+		dumpKeyValue(w, db, t, k, v, conn, host, sqlStar(t) + sqlWhere(k,"=",v))
 	} else{
-		dumpSelection(w, r, cred, db, t, o, d, n, k, v)
+		dumpSelection(w, r, conn, host, db, t, o, d, n, k, v)
 	}
 }
 
 // Shows selection of databases at top level
-func dumpHome(w http.ResponseWriter, cred Access) {
+func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
-	rows, err := getRows(cred, "", "SHOW DATABASES")
+	rows, err := getRows(conn, host, "", "SHOW DATABASES")
 	checkY(err)
 	defer rows.Close()
 
@@ -42,15 +43,15 @@ func dumpHome(w http.ResponseWriter, cred Access) {
 			n = n + 1
 		}
 	}
-	tableOutSimple(w, cred, "", "", head, records, []Entry{})
+	tableOutSimple(w, conn, host, "", "", head, records, []Entry{})
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, db string, cred Access) {
+func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 
 	q := url.Values{}
 	q.Add("db", db)
-	rows, err := getRows(cred, db, "SHOW TABLES")
+	rows, err := getRows(conn, host, db, "SHOW TABLES")
 	checkY(err)
 	defer rows.Close()
 
@@ -62,7 +63,7 @@ func dumpTables(w http.ResponseWriter, db string, cred Access) {
 		var field string
 		var nrows string
 		rows.Scan(&field)
-		nrows = getCount(cred, db, field)
+		nrows = getCount(conn, host, db, field)
 
 		q.Set("t", field)
 		link := q.Encode()
@@ -70,5 +71,5 @@ func dumpTables(w http.ResponseWriter, db string, cred Access) {
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOutSimple(w, cred, db, "", head, records, []Entry{})
+	tableOutSimple(w, conn, host, db, "", head, records, []Entry{})
 }

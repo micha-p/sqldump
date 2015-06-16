@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
@@ -52,7 +53,7 @@ func readRequest(r *http.Request) (string, string, string, string, string, strin
 	return db, t, o, d, n, k, v
 }
 
-func workload(w http.ResponseWriter, r *http.Request, cred Access) {
+func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
 
 	db, t, o, d, n, k, v := readRequest(r)
 
@@ -62,39 +63,42 @@ func workload(w http.ResponseWriter, r *http.Request, cred Access) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if action == "QUERY" && db != "" && t != "" {
-		actionQUERY(w, r, cred, db, t, o, d)
+		actionQUERY(w, r, conn, host, db, t, o, d)
 	} else if action == "SELECT" && db != "" && t != "" {
-		actionSELECT(w, r, cred, db, t, o, d)
+		actionSELECT(w, r, conn, host, db, t, o, d)
 	} else if action == "INFO" && db != "" && t != "" {
-		actionINFO(w, r, cred, db, t)
+		actionINFO(w, r, conn, host, db, t)
 	} else if action == "ADD" && !READONLY && db != "" && t != "" {
-		actionADD(w, r, cred, db, t, o, d)
+		actionADD(w, r, conn, host, db, t, o, d)
 	} else if action == "INSERT" && !READONLY && db != "" && t != "" {
-		actionINSERT(w, r, cred, db, t, o, d)
+		actionINSERT(w, r, conn, host, db, t, o, d)
 	} else if action == "QUERYDELETE" && !READONLY && db != "" && t != "" { // Create subset for DELETE
-		actionQUERYDELETE(w, r, cred, db, t, o, d)
+		actionQUERYDELETE(w, r, conn, host, db, t, o, d)
 	} else if action == "DELETE" && !READONLY && db != "" && t != "" { 		// DELETE a selected subset
-		actionDELETE(w, r, cred, db, t, o, d)
+		actionDELETE(w, r, conn, host, db, t, o, d)
 	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { 		// UPDATE a selected subset
-		actionUPDATE(w, r, cred, db, t, o, d)
+		actionUPDATE(w, r, conn, host, db, t, o, d)
 	} else if action == "UPDATEFORM" && !READONLY && db != "" && t != "" {	// ask for changed values
-		actionUPDATEFORM(w, r, cred, db, t, o, d)
+		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "EDITFORM" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionEDITFORM(w, r, cred, db, t, k, v)
+		actionEDITFORM(w, r, conn, host, db, t, k, v)
 	} else if action == "UPDATEPRI" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionUPDATEPRI(w, r, cred, db, t, k, v)
+		actionUPDATEPRI(w, r, conn, host, db, t, k, v)
 	} else if action == "DELETEPRI" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionDELETEPRI(w, r, cred, db, t, k, v)
+		actionDELETEPRI(w, r, conn, host, db, t, k, v)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
-		dumpIt(w, r, cred, db, t, o, d, n, k, v)
+		dumpIt(w, r, conn, host, db, t, o, d, n, k, v)
 	} else if action == "BACK" {
-		dumpIt(w, r, cred, db, "", "", "", "", "", "")
+		dumpIt(w, r, conn, host, db, "", "", "", "", "", "")
 	} else if action != "" {
-		shipMessage(w, cred, db, "Unknown action: "+action)
+		shipMessage(w, host,  db, "Unknown action: "+action)
 	} else {
-		dumpIt(w, r, cred, db, t, o, d, n, k, v)
+		dumpIt(w, r, conn, host, db, t, o, d, n, k, v)
 	}
 }
+
+// TODO: remove conn, host, keep one connection per response
+// hostname has to be handled too (fo breadcrumb trail)
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -105,27 +109,28 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	host := q.Get("host")
 	port := q.Get("port")
 	dbms := q.Get("dbms")
+	db 	 := q.Get("db")
 
 	if user != "" && pass != "" {
+		if dbms == "" {
+			dbms = "mysql"
+		}
 		if host == "" {
 			host = "localhost"
 		}
 		if port == "" {
 			port = "3306"
 		}
-		if dbms == "" {
-			dbms = "mysql"
-		}
-		cred := Access{user, pass, host, port, dbms}
-		setCredentials(w, r, cred)
-		workload(w, r, cred)
-
+		setCredentials(w, r, dbms, host, port, user, pass)
+		conn, err := sql.Open(dbms, dsn(user, pass, host, port, db))
+		checkY(err)
+		workload(w, r, conn, host)
+	} else if dbms, host, port, user, pass, err := getCredentials(r); err == nil {
+		conn, err := sql.Open(dbms, dsn(user, pass, host, port, db))
+		checkY(err)
+		workload(w, r, conn, host)
 	} else {
-		if cred, err := getCredentials(r); err == nil {
-			workload(w, r, cred)
-		} else {
-			loginPageHandler(w, r)
-		}
+		loginPageHandler(w, r)
 	}
 }
 

@@ -13,7 +13,7 @@ import (
 	"net/http"
 )
 
-type Access struct {
+type Env struct {
 	User string
 	Pass string
 	Host string
@@ -25,35 +25,35 @@ var cookieHandler = securecookie.New(
 	securecookie.GenerateRandomKey(64),
 	securecookie.GenerateRandomKey(32))
 
-func getCredentials(r *http.Request) (Access, error) {
+func getCredentials(r *http.Request) (string,string,string,string,string,error) {
 
-	var user, pass, host, port, dbms string
+	var dbms, host, port, user, pass string
 
 	cookie, err := r.Cookie("Datasource")
 	if err == nil {
 		cookieValue := make(map[string]string)
 		err = cookieHandler.Decode("Datasource", cookie.Value, &cookieValue)
 		if err == nil {
-			user = cookieValue["user"]
-			pass = cookieValue["pass"]
+			dbms = cookieValue["dbms"]
 			host = cookieValue["host"]
 			port = cookieValue["port"]
-			dbms = cookieValue["dbms"]
+			user = cookieValue["user"]
+			pass = cookieValue["pass"]
 		} else { // cookieerror
-			log.Println("[Cookie error] ", host+":"+port+"("+dbms+")")
-			return Access{user, pass, host, port, dbms}, err
+			log.Println("[Cookie error] ", user + "@" + host+":"+port+"("+dbms+")")
+			return "","","","","",err
 		}
 	}
-	return Access{user, pass, host, port, dbms}, err
+	return dbms, host, port, user, pass, err
 }
 
-func setCredentials(w http.ResponseWriter, r *http.Request, cred Access) {
+func setCredentials(w http.ResponseWriter, r *http.Request, dbms string, host string, port string, user string, pass string) {
 	value := map[string]string{
-		"user": cred.User,
-		"pass": cred.Pass,
-		"host": cred.Host,
-		"port": cred.Port,
-		"dbms": cred.Dbms,
+		"dbms": dbms,
+		"host": host,
+		"port": port,
+		"user": user,
+		"pass": pass,
 	}
 	if encoded, err := cookieHandler.Encode("Datasource", value); err == nil {
 		c := &http.Cookie{
@@ -63,7 +63,7 @@ func setCredentials(w http.ResponseWriter, r *http.Request, cred Access) {
 		}
 		http.SetCookie(w, c)
 		if DEBUGFLAG {
-			log.Println("[Cookie] " + cred.User + "@" + cred.Host + ":" + cred.Port + "(" + cred.Dbms + ")")
+			log.Println("[Cookie] " + user + "@" + host + ":" + port + "(" + dbms + ")")
 		}
 	}
 }
@@ -85,7 +85,7 @@ func loginHandler(w http.ResponseWriter, request *http.Request) {
 	port := request.FormValue("port")
 	dbms := request.FormValue("dbms")
 	if user != "" && pass != "" {
-		setCredentials(w, request, Access{user, pass, host, port, dbms})
+		setCredentials(w, request, dbms, host, port, user, pass)
 	}
 	http.Redirect(w, request, request.URL.Host, 302)
 }
