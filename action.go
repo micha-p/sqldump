@@ -126,7 +126,7 @@ func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sql
 			setclauses = append(setclauses, colname+"=NULL")
 		} else if set != "" {
 			v.Add(colhtml+"S", set)
-			setclauses = append(setclauses, colname+"="+"\""+sqlProtectString(set)+"\"")
+			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
 		} else {
 			setclauses = append(setclauses, colname+"="+"\"\"")
 		}

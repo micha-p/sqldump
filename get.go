@@ -7,6 +7,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"errors"
 )
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -177,50 +178,53 @@ func getColumnInfo(conn *sql.DB, t string) []CContext {
 	return m
 }
 
+func getRowScan(rows *sql.Rows) ([]string, []interface{}, error) {
+	
+	// get cols from row
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, nil, err
+	}
+	
+	// init array of pointers
+	count := len(cols)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
+	for i, _ := range cols {
+		valuePtrs[i] = &values[i]
+	}
+	
+	// fill array with scanned row
+	err = rows.Scan(valuePtrs...)
+	return cols, values, err
+}
+
 func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary string, rows *sql.Rows) []CContext {
 
 	err := conn.Ping()
 	checkY(err)
 
-	// TODO more efficient
-	cols := getColumnInfo(conn, t)
-	vmap := getNullStringMap(rows)
-
+	colinfos := getColumnInfo(conn, t)
+	cols, vals, err := getRowScan(rows)
+	checkY(err)
 	newcols := []CContext{}
-	for _, col := range cols {
-		name := html.EscapeString(col.Name)
-		readonly := ""
-		value := html.EscapeString(vmap[col.Name].String)
-		valid := ""
-		if len(vmap) == 0 || vmap[col.Name].Valid {
-			valid = "valid"
+
+	for i, c := range cols {
+		col := colinfos[i]
+		if c != col.Name {
+			checkY(errors.New("Mismatch in column names"))
 		}
+		name := html.EscapeString(col.Name)
+		nv := getNullString(vals[i])
+		value := html.EscapeString(nv.String)
+		var readonly, valid string
 		if name == primary {
 			readonly = "1"
+		}
+		if nv.Valid{
+			valid = "1"
 		}
 		newcols = append(newcols, CContext{col.Number, name, name, col.IsNumeric, col.IsString, col.Nullable, valid, value, readonly})
 	}
 	return newcols
-}
-
-func getNullStringMap(rows *sql.Rows) map[string]sql.NullString {
-
-	vmap := make(map[string]sql.NullString)
-	columns, err := rows.Columns()
-	checkY(err)
-	count := len(columns)
-	values := make([]interface{}, count)
-	valuePtrs := make([]interface{}, count)
-	for i, _ := range columns {
-		valuePtrs[i] = &values[i]
-	}
-
-	rows.Next() // just one row
-	err = rows.Scan(valuePtrs...)
-	checkY(err)
-
-	for i, _ := range columns {
-		vmap[columns[i]] = getNullString(values[i])
-	}
-	return vmap
 }
