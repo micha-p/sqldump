@@ -32,9 +32,11 @@ td {
 	background: #fff;
 	color: #715524;        							/* my brown */
 }
+td.cell {    padding: 0px 8px; }
 
 input.cell
     {
+    padding: 0px 8px;
     border: 0px none;
     color: #715524;        							/* my brown */
     }

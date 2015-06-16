@@ -83,9 +83,9 @@
 		{{range .Hidden}}{{template "hidden" .}}
 		{{end}}<table>
 			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> </tr>
-			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "selector" .}}</td> <td>{{template "field" .}}</td> </tr>
+			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td class="cell">{{template "selector" .}}</td> <td class="cell">{{template "field" .}}</td> </tr>
 			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Null</th> <th>Data</th> </tr>
-			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td>{{template "null" .}}</td> <td>{{template "set" .}}</td> </tr>
+			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td class="cell">{{template "null" .}}</td> <td class="cell">{{template "set" .}}</td> </tr>
 			{{end}}{{end}}
 		</table>
 		<br>
