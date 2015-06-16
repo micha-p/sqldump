@@ -15,20 +15,21 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	defer rows.Close()
 	checkY(err)
 	vmap := getNullStringMap(rows)
-
+	
 	home := url.Values{}
 	home.Add("db", db)
 	home.Add("t", t)
 	head := []Entry{escape("#", home.Encode()), escape("Column"), escape("Data")}
 	records := [][]Entry{}
 
-	i := 1
-	for f, nv := range vmap { // TODO should be range cols
-		v := nv.String
+	cols,err := rows.Columns()
+	checkY(err)
+	for i,f := range cols {
+		nullorvalue := vmap[f]
+		v := nullorvalue.String
 		var row []Entry
-		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
+		row = []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(v, "")}
 		records = append(records, row)
-		i = i + 1
 	}
 
 	v.Add("db", db)
@@ -68,18 +69,20 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 
 	rows, err := getRows(conn, query)
 	checkY(err)
+	
 	vmap := getNullStringMap(rows)
 	primary := getPrimary(conn, t)
 	head := []Entry{escape("#"), escape("Column"), escape("Data")}
 	records := [][]Entry{}
 
-	i := 1
-	for f, nv := range vmap { // TODO should be range cols
-		v := nv.String
+	cols, err := rows.Columns()
+	checkY(err)
+	for i,f := range cols {
+		nullorvalue := vmap[f]
+		v := nullorvalue.String
 		var row []Entry
-		row = []Entry{escape(strconv.Itoa(i), ""), escape(f, ""), escape(v, "")}
+		row = []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(v, "")}
 		records = append(records, row)
-		i = i + 1
 	}
 
 	q := url.Values{}
