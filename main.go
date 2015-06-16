@@ -96,9 +96,6 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 	}
 }
 
-// TODO: remove conn, host, keep one connection per response
-// hostname has to be handled too (fo breadcrumb trail)
-
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()

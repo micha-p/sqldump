@@ -26,7 +26,7 @@ type FContext struct {
 	Trail    []Entry
 }
 
-// ADD provides columns without values, EDIT/UPDATE provide a filled vmap
+// ADD and QUERY provide columns without values, EDIT/UPDATE provide a filled vmap
 
 func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string,
