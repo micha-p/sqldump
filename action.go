@@ -140,7 +140,6 @@ func collectClauses(r *http.Request, cols []string) ([]string, []string, url.Val
 }
 
 func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
-
 	var clauses []string
 	for _, col := range ccols {
 		colname := col.Label
@@ -171,7 +170,7 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 			}
 		}
 	}
-	return html.EscapeString(strings.Join(clauses, " AND "))
+	return strings.Join(clauses, " AND ")
 }
 
 func actionSELECT(w http.ResponseWriter, r *http.Request, cred Access, db string, t string, o string, d string) {
@@ -181,7 +180,7 @@ func actionSELECT(w http.ResponseWriter, r *http.Request, cred Access, db string
 	wclauses, _, whereQ := collectClauses(r, cols)
 	if len(wclauses) > 0 {
 		query = sqlStar(t) + sqlWhereClauses(wclauses)	
-		dumpRows(w, db, t, o, d, cred, query, whereQ)
+		dumpWhere(w, cred, db, t, o, d, query, whereQ)
 	}
 }
 
