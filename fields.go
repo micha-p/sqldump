@@ -12,8 +12,12 @@ func dumpFields(w http.ResponseWriter, cred Access, db string, t string, o strin
 
 	rows, err := getRows(cred, db, query)
 	checkY(err)
-	vmap := getNullStringMap(rows)
-	head := []Entry{escape("#"), escape("Column"), escape("Data")}
+	vmap := getNullStringMap(rows)	
+	
+	home := url.Values{}
+	home.Add("db", db)
+	home.Add("t", t)
+	head := []Entry{escape("#",home.Encode()), escape("Column"), escape("Data")}
 	records := [][]Entry{}
 
 	i := 1
