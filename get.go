@@ -37,7 +37,7 @@ type CContext struct {
 }
 
 // TODO remove host, db as conn is db specific
-func getRows(conn *sql.DB, host string, db string, stmt string) (*sql.Rows, error) {
+func getRows(conn *sql.DB, stmt string) (*sql.Rows, error) {
 	err := conn.Ping()
 	checkY(err)
 	log.Println("[SQL]", stmt)
@@ -58,7 +58,7 @@ func getSingleValue(conn *sql.DB, host string, db string, stmt string) (string, 
 	return getNullString(value).String, err
 }
 
-func getCount(conn *sql.DB, host string, db string, t string) string {
+func getCount(conn *sql.DB, t string) string {
 	countstmt := sqlCount(t)
 	log.Println("[SQL]", countstmt)
 	err := conn.Ping()
@@ -70,9 +70,14 @@ func getCount(conn *sql.DB, host string, db string, t string) string {
 	return field
 }
 
-func getCols(conn *sql.DB, host string, db string, t string) []string {
 
-	log.Println("[SQL]", "get columns", db, t)
+// retrieves column names from empty set
+// only needed for collecting clauses
+// TODO change parameters for clauses
+
+func getCols(conn *sql.DB, t string) []string {
+
+	log.Println("[SQL]", "get columns", t)
 	err := conn.Ping()
 	checkY(err)
 	rows, err := conn.Query(sqlStar(t) + " limit 0")
@@ -83,7 +88,7 @@ func getCols(conn *sql.DB, host string, db string, t string) []string {
 	return cols
 }
 
-func getPrimary(conn *sql.DB, host string, db string, t string) string {
+func getPrimary(conn *sql.DB, t string) string {
 	err := conn.Ping()
 	checkY(err)
 	rows, err := conn.Query(sqlColumns(t) + " WHERE `Key` LIKE 'PRI'")
@@ -131,7 +136,7 @@ func getColumnMainType(conn *sql.DB, host string, db string, t string, c string)
 }
 */
 
-func getColumnInfo(conn *sql.DB, host string, db string, t string) []CContext {
+func getColumnInfo(conn *sql.DB, t string) []CContext {
 	err := conn.Ping()
 	checkY(err)
 	rows, err := conn.Query(sqlColumns(t))
@@ -180,7 +185,7 @@ func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary
 	checkY(err)
 
 	// TODO more efficient
-	cols := getColumnInfo(conn, host, db, t)
+	cols := getColumnInfo(conn, t)
 	vmap := getNullStringMap(rows)
 	
 	
