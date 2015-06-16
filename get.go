@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"html"
 	"log"
 	"regexp"
-	"html"
 	"strconv"
 )
 
@@ -40,7 +40,7 @@ type CContext struct {
 func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error) {
 	err := conn.Ping()
 	checkY(err)
-	log.Println("[SQL]")
+	log.Println("[SQL]", sql2string(stmt))
 	rows, err := sqlQuery(conn, stmt)
 	return rows, err
 }
@@ -70,17 +70,16 @@ func getCount(conn *sql.DB, t string) string {
 	return field
 }
 
-
 // retrieves column names from empty set
 // only needed for collecting clauses
 // TODO change parameters for clauses
 
 func getCols(conn *sql.DB, t string) []string {
 
-	log.Println("[SQL]", "get columns", t)
+	log.Println("[SQL]", "get columns quickly: ", t)
 	err := conn.Ping()
 	checkY(err)
-	rows, err := sqlQuery(conn, sqlStar(t) + sqlLimit(0,0))
+	rows, err := sqlQuery(conn, sqlStar(t)+sqlLimit(0, 0))
 	checkY(err)
 	defer rows.Close()
 
@@ -91,7 +90,7 @@ func getCols(conn *sql.DB, t string) []string {
 func getPrimary(conn *sql.DB, t string) string {
 	err := conn.Ping()
 	checkY(err)
-	rows, err := sqlQuery(conn, sqlColumns(t) + sqlWhere("Key","=","PRI"))
+	rows, err := sqlQuery(conn, sqlColumns(t)+sqlWhere("Key", "=", "PRI"))
 	checkY(err)
 	defer rows.Close()
 
@@ -187,8 +186,7 @@ func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary
 	// TODO more efficient
 	cols := getColumnInfo(conn, t)
 	vmap := getNullStringMap(rows)
-	
-	
+
 	newcols := []CContext{}
 	for _, col := range cols {
 		name := html.EscapeString(col.Name)
@@ -205,9 +203,6 @@ func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary
 	}
 	return newcols
 }
-
-
-
 
 func getNullStringMap(rows *sql.Rows) map[string]sql.NullString {
 

@@ -107,7 +107,7 @@ func makeTrail(host string, db string, t string, primary string, o string, d str
 	return trail
 }
 
-func makeArrow(title string, primary string, d string) string{
+func makeArrow(title string, primary string, d string) string {
 	if title == primary {
 		if d == "" {
 			return title + "⇑"
@@ -128,7 +128,7 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	home := url.Values{}
 	home.Add("db", db)
 	home.Add("t", t)
-	head = append(head, escape("#",home.Encode()))
+	head = append(head, escape("#", home.Encode()))
 
 	for _, title := range columns {
 		if o == title {
@@ -136,18 +136,18 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 			if primary == title {
 				if d == "" {
 					q.Set("d", "1")
-					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
 				} else {
 					q.Del("d")
-					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
 				}
 			} else {
 				if d == "" {
 					q.Set("d", "1")
-					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
 				} else {
 					q.Del("d")
-					head = append(head, escape(makeArrow(title, primary, d),q.Encode()))
+					head = append(head, escape(makeArrow(title, primary, d), q.Encode()))
 				}
 			}
 		} else {
@@ -214,8 +214,8 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string, 
-	db string, t string, primary string ,o string, d string, k string, n string, 
+func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
+	db string, t string, primary string, o string, d string, k string, n string,
 	linkleft Entry, linkright Entry, head []Entry, records [][]Entry, menu []Entry) {
 
 	initTemplate()

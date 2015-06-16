@@ -25,7 +25,7 @@ var cookieHandler = securecookie.New(
 	securecookie.GenerateRandomKey(64),
 	securecookie.GenerateRandomKey(32))
 
-func getCredentials(r *http.Request) (string,string,string,string,string,error) {
+func getCredentials(r *http.Request) (string, string, string, string, string, error) {
 
 	var dbms, host, port, user, pass string
 
@@ -40,8 +40,8 @@ func getCredentials(r *http.Request) (string,string,string,string,string,error) 
 			user = cookieValue["user"]
 			pass = cookieValue["pass"]
 		} else { // cookieerror
-			log.Println("[Cookie error] ", user + "@" + host+":"+port+"("+dbms+")")
-			return "","","","","",err
+			log.Println("[Cookie error] ", user+"@"+host+":"+port+"("+dbms+")")
+			return "", "", "", "", "", err
 		}
 	}
 	return dbms, host, port, user, pass, err

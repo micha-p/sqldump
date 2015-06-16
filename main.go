@@ -1,10 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
@@ -34,7 +34,6 @@ func cssHandler(w http.ResponseWriter, r *http.Request) {
 		http.StatusText(404)
 	}
 }
-
 
 func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -74,11 +73,11 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 		actionINSERT(w, r, conn, host, db, t, o, d)
 	} else if action == "QUERYDELETE" && !READONLY && db != "" && t != "" { // Create subset for DELETE
 		actionQUERYDELETE(w, r, conn, host, db, t, o, d)
-	} else if action == "DELETE" && !READONLY && db != "" && t != "" { 		// DELETE a selected subset
+	} else if action == "DELETE" && !READONLY && db != "" && t != "" { // DELETE a selected subset
 		actionDELETE(w, r, conn, host, db, t, o, d)
-	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { 		// UPDATE a selected subset
+	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { // UPDATE a selected subset
 		actionUPDATE(w, r, conn, host, db, t, o, d)
-	} else if action == "UPDATEFORM" && !READONLY && db != "" && t != "" {	// ask for changed values
+	} else if action == "UPDATEFORM" && !READONLY && db != "" && t != "" { // ask for changed values
 		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "EDITFORM" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionEDITFORM(w, r, conn, host, db, t, k, v)
@@ -91,7 +90,7 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 	} else if action == "BACK" {
 		dumpIt(w, r, conn, host, db, "", "", "", "", "", "")
 	} else if action != "" {
-		shipMessage(w, host,  db, "Unknown action: "+action)
+		shipMessage(w, host, db, "Unknown action: "+action)
 	} else {
 		dumpIt(w, r, conn, host, db, t, o, d, n, k, v)
 	}
@@ -109,7 +108,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	host := q.Get("host")
 	port := q.Get("port")
 	dbms := q.Get("dbms")
-	db 	 := q.Get("db")
+	db := q.Get("db")
 
 	if user != "" && pass != "" {
 		if dbms == "" {
@@ -166,7 +165,6 @@ func main() {
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/test", testHandler)
 	http.HandleFunc("/", indexHandler)
-
 
 	if DEBUGFLAG {
 		fmt.Println("dynamically loading  templates and css (DEBUG)")
