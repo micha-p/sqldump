@@ -8,11 +8,13 @@ import (
 
 // Dump all fields of a record, one column per line
 
-func dumpFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, nint int, nmax int, query string, v url.Values) {
+func dumpFields(w http.ResponseWriter, cred Access, db string, t string, o string, d string, n string, nint int, query string, v url.Values) {
 
 	rows, err := getRows(cred, db, query)
+	defer rows.Close()
 	checkY(err)
 	vmap := getNullStringMap(rows)	
+	
 	
 	home := url.Values{}
 	home.Add("db", db)
@@ -42,8 +44,12 @@ func dumpFields(w http.ResponseWriter, cred Access, db string, t string, o strin
 	menu = append(menu, escape("i",linkinfo))
 
 	left := strconv.Itoa(maxI(nint-1, 1))
-	right := strconv.Itoa(minI(nint+1, nmax))
-
+	var right string
+	if rows.Next() {
+		right = strconv.Itoa(nint+1)
+	} else {
+		right = n
+	}
 	if o != "" {
 		v.Set("o", o)
 	}
