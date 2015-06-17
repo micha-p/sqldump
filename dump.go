@@ -407,7 +407,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	records := [][]Entry{}
 	rowrange := end - start
-	rownum := start
+	rownum := start -1
 	for rows.Next() && rownum <= end {
 		rownum = rownum + 1
 		if o != "" {
