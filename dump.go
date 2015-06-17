@@ -61,7 +61,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	q.Add("db", db)
 	q.Add("t", t)
 
-	rows, err := getRows(conn, query)
+	rows, err, sec := getRows(conn, query)
 	if err != nil {
 		checkErrorPage(w, host, db, t, query, err)
 		return
@@ -151,7 +151,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	if QUIETFLAG {
 		msg = ""
 	}
-	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, msg, rownum, "", url.Values{})
+	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, msg, rownum, -1, sec,"", url.Values{})
 }
 
 func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, query sqlstring, q url.Values) {
@@ -161,7 +161,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	q.Del("k")
 	q.Del("v")
 
-	rows, err := getRows(conn, query)
+	rows, err, sec := getRows(conn, query)
 	if err != nil {
 		checkErrorPage(w, host, db, t, query, err)
 		return
@@ -263,7 +263,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	if QUIETFLAG {
 		msg = ""
 	}
-	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, msg, rownum, wherestring, q)
+	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, msg, rownum, -1, sec,wherestring, q)
 }
 
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring, q url.Values) {
@@ -273,7 +273,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	q.Del("k")
 	q.Del("v")
 
-	rows, err := getRows(conn, query)
+	rows, err, sec := getRows(conn, query)
 	if err != nil {
 		checkErrorPage(w, host, db, t, query, err)
 		return
@@ -358,7 +358,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	if QUIETFLAG {
 		msg = ""
 	}
-	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, msg, rownum, wherestring, q)
+	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, msg, rownum, -1,sec,wherestring, q)
 }
 
 func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int, end int, max int, query sqlstring) {
@@ -382,7 +382,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	limitstring := strconv.Itoa(start) + "-" + strconv.Itoa(end)
 	q.Add("n", limitstring)
 
-	rows, err := getRows(conn, query)
+	rows, err, sec := getRows(conn, query)
 	if err != nil {
 		checkErrorPage(w, host, db, t, query, err)
 		return
@@ -460,5 +460,5 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	if QUIETFLAG {
 		msg = ""
 	}
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, msg, rownum, "", url.Values{})
+	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, msg, rownum, -1,sec,"", url.Values{})
 }

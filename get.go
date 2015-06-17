@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"errors"
+	"time"
 )
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -37,12 +38,14 @@ type CContext struct {
 	Readonly  string
 }
 
-func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error) {
+func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error, float64) {
 	err := conn.Ping()
 	checkY(err)
 	log.Println("[SQL]", sql2string(stmt))
+	t0 := time.Now()
 	rows, err := sqlQuery(conn, stmt)
-	return rows, err
+	t1 := time.Now()
+	return rows, err, t1.Sub(t0).Seconds()
 }
 
 func getSingleValue(conn *sql.DB, host string, db string, stmt sqlstring) (string, error) {
@@ -179,13 +182,13 @@ func getColumnInfo(conn *sql.DB, t string) []CContext {
 }
 
 func getRowScan(rows *sql.Rows) ([]string, []interface{}, error) {
-	
+
 	// get cols from row
 	cols, err := rows.Columns()
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	// init array of pointers
 	count := len(cols)
 	values := make([]interface{}, count)
@@ -193,7 +196,7 @@ func getRowScan(rows *sql.Rows) ([]string, []interface{}, error) {
 	for i, _ := range cols {
 		valuePtrs[i] = &values[i]
 	}
-	
+
 	// fill array with scanned row
 	err = rows.Scan(valuePtrs...)
 	return cols, values, err

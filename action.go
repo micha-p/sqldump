@@ -258,7 +258,7 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 
 	count, _ := getSingleValue(conn, host, db, sqlCount(t)+sqlWhereClauses(wclauses))
 	if count == "1" {
-		rows, err := getRows(conn, sqlStar(t)+sqlWhereClauses(wclauses))
+		rows, err, _ := getRows(conn, sqlStar(t)+sqlWhereClauses(wclauses))
 		checkY(err)
 		defer rows.Close()
 		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, "", rows), hiddencols)
@@ -333,7 +333,7 @@ func actionDELETEPRI(w http.ResponseWriter, r *http.Request, conn *sql.DB, host 
 func actionINFO(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string) {
 
 	stmt := sqlColumns(t)
-	rows, err := getRows(conn, stmt)
+	rows, err, _:= getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 

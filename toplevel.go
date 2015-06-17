@@ -27,7 +27,7 @@ func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
 	stmt := string2sql("SHOW DATABASES")
-	rows, err := getRows(conn, stmt)
+	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 
@@ -55,7 +55,7 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 	q := url.Values{}
 	q.Add("db", db)
 	stmt := string2sql("SHOW TABLES")
-	rows, err := getRows(conn, stmt)
+	rows, err, sec := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 
@@ -74,5 +74,5 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 		row := []Entry{escape(strconv.Itoa(rownum), link), escape(field, link), escape(nrows, "")}
 		records = append(records, row)
 	}
-	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, sql2string(stmt), rownum, "", url.Values{})
+	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, sql2string(stmt), rownum, -1, sec,"", url.Values{})
 }

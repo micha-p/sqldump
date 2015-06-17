@@ -11,7 +11,7 @@ import (
 
 func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int, query sqlstring, v url.Values) {
 
-	rows, err := getRows(conn, query)
+	rows, err, _ := getRows(conn, query)
 	defer rows.Close()
 	checkY(err)
 
@@ -70,7 +70,7 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 
 func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, conn *sql.DB, host string, query sqlstring) {
 
-	rows, err := getRows(conn, query)
+	rows, err, _ := getRows(conn, query)
 	checkY(err)
 	defer rows.Close()
 

@@ -181,7 +181,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 
 func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
 	n string, counterLabel string, linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry, msg string, rows int, where string, whereQ url.Values) {
+	head []Entry, records [][]Entry, menu []Entry, msg string, rows int, affected int, seconds float64, where string, whereQ url.Values) {
 
 	initTemplate()
 	c := Context{
@@ -204,8 +204,8 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Menu:     menu,
 		Message:  msg,
 		Rows:	  rows,
-		Affected: -1,
-		Seconds:  0,
+		Affected: affected,
+		Seconds:  seconds,
 	}
 
 	err := templateTable.Execute(w, c)
