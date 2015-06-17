@@ -81,13 +81,15 @@ func clearCredentials(w http.ResponseWriter) {
 func loginHandler(w http.ResponseWriter, request *http.Request) {
 	user := request.FormValue("user")
 	pass := request.FormValue("pass")
+	db   := request.FormValue("db")
 	host := request.FormValue("host")
 	port := request.FormValue("port")
 	dbms := request.FormValue("dbms")
 	if user != "" && pass != "" {
+		log.Println("[LOGIN]",dbms,user,host, port,db)
 		setCredentials(w, request, dbms, host, port, user, pass)
 	}
-	http.Redirect(w, request, request.URL.Host, 302)
+	http.Redirect(w, request, request.URL.Host + "/?db=" + db, 302)
 }
 
 func logoutHandler(w http.ResponseWriter, request *http.Request) {

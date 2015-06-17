@@ -94,14 +94,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
 	log.Println("[GET]", r.URL)
-	user := q.Get("user")
+	user := q.Get("user") // Login via bookmark
 	pass := q.Get("pass")
 	host := q.Get("host")
 	port := q.Get("port")
 	dbms := q.Get("dbms")
-	db := q.Get("db")
-
+	db :=   q.Get("db")
 	if user != "" && pass != "" {
+        log.Println("[LOGIN]",dbms,user,host, port,db)
 		if dbms == "" {
 			dbms = "mysql"
 		}

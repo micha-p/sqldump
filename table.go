@@ -145,7 +145,7 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	return head
 }
 
-func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, head []Entry, records [][]Entry, menu []Entry, msg string) {
+func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
 
 	c := Context{
 		User:     "",
@@ -165,7 +165,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Right:    Entry{},
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
-		Message:  msg,
+		Message:  "",
 		Rows:	  "",
 	}
 	if DEBUGFLAG {

@@ -45,7 +45,8 @@ func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 			n = n + 1
 		}
 	}
-	tableOutSimple(w, conn, host, "", "", head, records, []Entry{}, sql2string(stmt))
+	// message suppressed, as it is not really useful and database should be chosen at login or bookmarked
+	tableOutSimple(w, conn, host, "", "", head, records, []Entry{})
 }
 
 //  Dump all tables of a database
@@ -61,8 +62,9 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 	records := [][]Entry{}
 	head := []Entry{{"#", "", ""}, {"Table", "", ""}, {"Rows", "", ""}}
 
-	var n int = 1
+	var rownum int = 0
 	for rows.Next() {
+		rownum = rownum + 1
 		var field string
 		var nrows string
 		rows.Scan(&field)
@@ -70,9 +72,10 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 
 		q.Set("t", field)
 		link := q.Encode()
-		row := []Entry{escape(strconv.Itoa(n), link), escape(field, link), escape(nrows, "")}
+		row := []Entry{escape(strconv.Itoa(rownum), link), escape(field, link), escape(nrows, "")}
 		records = append(records, row)
-		n = n + 1
 	}
-	tableOutSimple(w, conn, host, db, "", head, records, []Entry{}, sql2string(stmt))
+	nr := strconv.Itoa(rownum)
+	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, sql2string(stmt), nr, "", url.Values{})
+
 }
