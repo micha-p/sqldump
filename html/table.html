@@ -36,15 +36,17 @@
 </div>
 {{end}}
 
+{{define "sec"}}({{printf "%.2f" .}} sec){{end}}
+{{define "rows"}}{{if eq .Rows 0}}Empty set {{template "sec" .Seconds}}{{else if eq .Rows 1}}1 row in set {{template "sec" .Seconds}}{{else}}{{.Rows}} rows in set {{template "sec" .Seconds}}{{end}}{{end}}
+{{define "affected"}}Query OK, {{if eq .Affected 1}}1 row affected {{template "sec" .Seconds}}{{else}}{{.Affected}} rows affected {{template "sec" .Seconds}}{{end}}{{end}}
+
 {{if .Message}}
 <div class="message">
    {{.Message}};
    {{if ge .Rows 0}}<br>
-   {{if eq .Rows 0}}Empty set (0.00 sec){{else if eq .Rows 1}}1 row in set (0.00 sec){{else}}{{.Rows}} rows in set (0.01 sec){{end}}
-   {{end}}
+   {{template "rows" .}}{{end}}
    {{if ge .Affected 0}}<br>
-   Query OK, {{if eq .Affected 1}}1 row affected (0.00 sec){{else}}{{.Affected}} rows affected (0.01 sec){{end}}
-   {{end}}
+   {{template "affected" .}}{{end}}
 </div>
 {{end}}
 

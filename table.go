@@ -42,6 +42,7 @@ type Context struct {
 	Message  string
 	Rows     int
 	Affected int
+	Seconds  float64
 }
 
 func makeBack(host string, db string, t string, o string, d string, k string) string {
@@ -169,6 +170,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Message:  "",
 		Rows:	  -1,
 		Affected: -1,
+		Seconds: -1,
 	}
 	if DEBUGFLAG {
 		initTemplate()
@@ -203,6 +205,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Message:  msg,
 		Rows:	  rows,
 		Affected: -1,
+		Seconds:  0,
 	}
 
 	err := templateTable.Execute(w, c)
@@ -236,6 +239,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Message:  "",
 		Rows:	  -1,
 		Affected: -1,
+		Seconds:  -1,
 	}
 
 	err := templateTable.Execute(w, c)
