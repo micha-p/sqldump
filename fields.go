@@ -14,7 +14,7 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	rows, err := getRows(conn, query)
 	defer rows.Close()
 	checkY(err)
-	
+
 	home := url.Values{}
 	home.Add("db", db)
 	home.Add("t", t)
@@ -22,12 +22,12 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	records := [][]Entry{}
 
 	rows.Next()
-	cols, vals, err := getRowScan(rows)	
+	cols, vals, err := getRowScan(rows)
 	checkY(err)
 	for i, f := range cols {
 		nv := getNullString(vals[i])
 		if nv.Valid {
-			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}
+			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}  // TODO enable quick search
 			records = append(records, row)
 		} else {
 			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escapeNull()}
@@ -73,7 +73,7 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	rows, err := getRows(conn, query)
 	checkY(err)
 	defer rows.Close()
-	
+
 	primary := getPrimary(conn, t)
 	head := []Entry{escape("#"), escape("Column"), escape("Data")}
 	records := [][]Entry{}
@@ -83,7 +83,7 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	for i, f := range cols {
 		nv := getNullString(vals[i])
 		if nv.Valid {
-			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}
+			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")} // TODO enable quick search
 			records = append(records, row)
 		} else {
 			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escapeNull()}

@@ -38,15 +38,19 @@
 
 {{if .Message}}
 <div class="message">
-	{{.Message}};{{if .Rows}}<br>
-	{{if eq .Rows "0"}}Empty set (0.00 sec){{else if eq .Rows "1"}}1 row in set (0.00 sec){{else}}{{.Rows}} rows in set (0.01 sec){{end}}{{end}}{{/* else if .Affected}}<br>
-	{{if eq .Rows "1"}}1 row affected (0.00 sec){{else}}{{.Rows}} rows in set (0.01 sec){{end */}}
+   {{.Message}};
+   {{if ge .Rows 0}}<br>
+   {{if eq .Rows 0}}Empty set (0.00 sec){{else if eq .Rows 1}}1 row in set (0.00 sec){{else}}{{.Rows}} rows in set (0.01 sec){{end}}
+   {{end}}
+   {{if ge .Affected 0}}<br>
+   Query OK, {{if eq .Affected 1}}1 row affected (0.00 sec){{else}}{{.Affected}} rows affected (0.01 sec){{end}}
+   {{end}}
 </div>
 {{end}}
 
 
 {{define "entry"}}{{if .Null}}<font color="red"><em>{{.Null}}</em></font>{{else}}{{if .Link}}<a href="{{.Link}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}{{end}}
-{{if eq .Rows "0"}}{{else}}
+{{if ne .Rows 0}}
 <div class="main">
    <table>
    <tr>{{range .Head}} <th>{{template "entry" .}}</th> {{end}}{{if .Trail}}{{else}}<th>{{template "entry" .Back}}</th> {{end}}</tr>{{range .Records}}

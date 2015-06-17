@@ -40,7 +40,8 @@ type Context struct {
 	Trail    []Entry
 	Menu     []Entry
 	Message  string
-	Rows     string
+	Rows     int
+	Affected int
 }
 
 func makeBack(host string, db string, t string, o string, d string, k string) string {
@@ -166,7 +167,8 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
 		Message:  "",
-		Rows:	  "",
+		Rows:	  -1,
+		Affected: -1,
 	}
 	if DEBUGFLAG {
 		initTemplate()
@@ -177,7 +179,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 
 func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
 	n string, counterLabel string, linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry, msg string, rows string, where string, whereQ url.Values) {
+	head []Entry, records [][]Entry, menu []Entry, msg string, rows int, where string, whereQ url.Values) {
 
 	initTemplate()
 	c := Context{
@@ -200,6 +202,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Menu:     menu,
 		Message:  msg,
 		Rows:	  rows,
+		Affected: -1,
 	}
 
 	err := templateTable.Execute(w, c)
@@ -231,7 +234,8 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
 		Message:  "",
-		Rows:	  "",
+		Rows:	  -1,
+		Affected: -1,
 	}
 
 	err := templateTable.Execute(w, c)

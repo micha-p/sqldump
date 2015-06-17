@@ -60,22 +60,19 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 	defer rows.Close()
 
 	records := [][]Entry{}
-	head := []Entry{{"#", "", ""}, {"Table", "", ""}, {"Rows", "", ""}}
+	head := []Entry{{"#", "", ""}, {"Table", "", ""}, {"Rows", "", ""}} // TODO create head with order
 
-	var rownum int = 0
+	rownum := 0
 	for rows.Next() {
 		rownum = rownum + 1
 		var field string
-		var nrows string
 		rows.Scan(&field)
-		nrows = getCount(conn, field)
+		nrows := getCount(conn, field)
 
 		q.Set("t", field)
 		link := q.Encode()
 		row := []Entry{escape(strconv.Itoa(rownum), link), escape(field, link), escape(nrows, "")}
 		records = append(records, row)
 	}
-	nr := strconv.Itoa(rownum)
-	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, sql2string(stmt), nr, "", url.Values{})
-
+	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, sql2string(stmt), rownum, "", url.Values{})
 }
