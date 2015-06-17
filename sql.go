@@ -118,7 +118,7 @@ func sqlJoin(a []sqlstring, sep string) sqlstring {
 }
 
 func sqlWhereClauses(clauses []sqlstring) sqlstring {
-	return string2sql(" WHERE ") + sqlJoin(clauses, " && ")
+	return string2sql(" WHERE ") + sqlJoin(clauses, " AND ")
 }
 
 func sqlSetClauses(clauses []sqlstring) sqlstring {

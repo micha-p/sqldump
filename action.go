@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+// TODO: show results page like rows page with rows_affected
+
 type FContext struct {
 	CSS      string
 	Action   string
@@ -135,7 +137,7 @@ func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sql
 	return whereclauses, setclauses, v
 }
 
-func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
+func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
 	var clauses []string
 	for _, col := range ccols {
 		colname := col.Label
@@ -166,7 +168,7 @@ func WhereSelect2Pretty(q url.Values, ccols []CContext) string {
 			}
 		}
 	}
-	return strings.Join(clauses, " AND ")
+	return strings.Join(clauses, " & ")
 }
 
 func actionSELECT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
@@ -330,7 +332,8 @@ func actionDELETEPRI(w http.ResponseWriter, r *http.Request, conn *sql.DB, host 
 
 func actionINFO(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string) {
 
-	rows, err := getRows(conn, sqlColumns(t))
+	stmt := sqlColumns(t)
+	rows, err := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 
@@ -365,5 +368,5 @@ func actionINFO(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 		records = append(records, []Entry{escape(strconv.Itoa(i)), escape(f), escape(t), escape(n), escape(k), escape(string(d)), escape(e)})
 		i = i + 1
 	}
-	tableOutSimple(w, conn, host, db, t, head, records, menu)
+	tableOutSimple(w, conn, host, db, t, head, records, menu, sql2string(stmt))
 }

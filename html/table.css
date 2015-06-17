@@ -1,7 +1,31 @@
-html { 
+html {
 	font-size:1rem;									/* line 1 px border radius 5 px padding 1 rem */
 	font-family: sans-serif;
 }
+
+.top {
+    width: 100%;
+    display: flex;
+    margin: 0;
+}
+
+.message {
+	margin: 1em 0 1em 0;
+    text-decoration: none;
+    font-size: 0.8rem;
+	color: #715524;        							/* my brown */
+}
+
+.main {
+	margin: 1.5em 0 0 0;
+}
+
+table {
+	text-align: left;
+    text-decoration: none;
+    font-size: 1em;
+}
+
 
 a {text-decoration: none}
 a:link {color: #715524;}							/* my brown */
@@ -9,11 +33,6 @@ a:visited {color: #715524;} 						/* my brown */
 a:hover {color: orange;text-decoration: underline}
 a:active {color: red;}
 
-table {
-	text-align: left;
-    text-decoration: none;
-    font-size: 1em;
-}
 th {
 	padding: 4px 8px;
     border-right: 1px solid #715524;
@@ -53,9 +72,9 @@ input.range {
 	padding: 0px 4px;
 	background: #74AD6E;							/* my green */
 	position: relative;
-	border: none;  
+	border: none;
 	margin: 0px;
-}   
+}
 
 option.select-hr { border-bottom: 1px dotted #000; font-size: 0px; margin: 3px 0px 3px 0px; }
 input[type=select] {padding: 0; margin: 0; width=100%}
@@ -63,10 +82,10 @@ input[type=text]:hover {background:#F0F0F0;color: #715524;        							/* my b
 input[type=text]:active {background:#74AD6E;color: #715524;        							/* my brown */}		/* my green */
 
 button {
-	color: white; 
+	color: white;
 	background: #715524;							/* my brown */
     border: none;
-	border-radius: 5px; 
+	border-radius: 5px;
     height: 32px;
 }
 button:hover { color: orange;}
@@ -99,8 +118,8 @@ a.count:active, .counter a.count:hover {text-decoration: none; background: #7155
 a.count:active {text-decoration: none; color:orange;}
 
 
-.right {	
-    margin-left: auto;	
+.right {
+    margin-left: auto;
 
 }
 
@@ -123,11 +142,6 @@ a.count:active {text-decoration: none; color:orange;}
 .right a.count:active {color:orange;}
 
 
-.top {
-    width: 100%;
-    height: 3rem;
-    display: flex;
-}
 
 
 
@@ -171,16 +185,16 @@ a.count:active {text-decoration: none; color:orange;}
 .breadcrumb a.trail:after {
 	content: '';
 	position: absolute;
-	top: 0; 
+	top: 0;
 	right: -1rem; /*half of square's length*/
 	/*same dimension as the line-height of .breadcrumb a */
-	width: 2rem; 
+	width: 2rem;
 	height: 1.9rem;
 	transform: scale(0.707) rotate(45deg);
 	z-index: 1;
 	background: #74AD6E;
-	box-shadow: 
-		2px -2px 0 2px rgba(0, 0, 0, 0.4), 
+	box-shadow:
+		2px -2px 0 2px rgba(0, 0, 0, 0.4),
 		3px -3px 0 2px rgba(255, 255, 255, 0.1);
 	border-radius: 0 5px 0 5px;
 }

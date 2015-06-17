@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB, 
+func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
 	if db == "" {
@@ -26,7 +26,8 @@ func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
-	rows, err := getRows(conn, "SHOW DATABASES")
+	stmt := string2sql("SHOW DATABASES")
+	rows, err := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 
@@ -44,7 +45,7 @@ func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 			n = n + 1
 		}
 	}
-	tableOutSimple(w, conn, host, "", "", head, records, []Entry{})
+	tableOutSimple(w, conn, host, "", "", head, records, []Entry{}, sql2string(stmt))
 }
 
 //  Dump all tables of a database
@@ -52,7 +53,8 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 
 	q := url.Values{}
 	q.Add("db", db)
-	rows, err := getRows(conn, "SHOW TABLES")
+	stmt := string2sql("SHOW TABLES")
+	rows, err := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 
@@ -72,5 +74,5 @@ func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
 		records = append(records, row)
 		n = n + 1
 	}
-	tableOutSimple(w, conn, host, db, "", head, records, []Entry{})
+	tableOutSimple(w, conn, host, db, "", head, records, []Entry{}, sql2string(stmt))
 }

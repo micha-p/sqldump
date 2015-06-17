@@ -8,21 +8,22 @@ import (
 	"strconv"
 )
 
-func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB, 
+// TODO: better dispatching
+func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
 	query := sqlStar(t)
 	wclauses, _, whereQ := collectClauses(r, conn, t)
 
 	if len(wclauses) > 0 {
-		query = "select t.* from (" + query + sqlWhereClauses(wclauses) + ") t "
+		query = "SELECT TEMP.* FROM (" + query + sqlWhereClauses(wclauses) + ") TEMP "
 	}
 	if o != "" {
 		query = query + sqlOrder(o, d)
 	}
 
 	if g !="" && v !=""{
-		query = query + sqlWhere(g, "=", v)
+		query = sqlStar(t) + sqlWhere(g, "=", v) + sqlOrder(o, d)
 		dumpGroup(w, conn, host, db, t, o, d, g, v, query, whereQ)
 	} else if n != "" {
 		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
@@ -79,10 +80,11 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	for i, _ := range columns {
 		valuePtrs[i] = &values[i]
 	}
-	records := [][]Entry{}
-	rownum := 1
-	for rows.Next() {
 
+	records := [][]Entry{}
+	rownum := 0
+	for rows.Next() {
+		rownum = rownum + 1
 		row := []Entry{}
 		q.Set("o", o)
 		q.Set("d", d)
@@ -120,9 +122,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 				row = append(row, escapeNull())
 			}
 		}
-
 		records = append(records, row)
-		rownum = rownum + 1
 	}
 
 	q.Set("action", "QUERY")
@@ -138,7 +138,6 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	q.Del("action")
 
 	q.Del("n")
-	limitstring := "1-" + strconv.Itoa(rownum-1)
 	linkleft := escape("<", q.Encode())
 	linkright := escape(">", q.Encode())
 	menu := []Entry{}
@@ -147,7 +146,13 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	menu = append(menu, escape("~", linkupdate))
 	menu = append(menu, escape("-", linkdeleteF))
 	menu = append(menu, escape("i", linkinfo))
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, "", url.Values{})
+
+	var msg, nrows string
+	if VERBOSEFLAG {
+		msg = sql2string(query)
+		nrows = strconv.Itoa(rownum)
+	}
+	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, msg, nrows, "", url.Values{})
 }
 
 func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, query sqlstring, q url.Values) {
@@ -177,9 +182,9 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		valuePtrs[i] = &values[i]
 	}
 	records := [][]Entry{}
-	rownum := 1
+	rownum := 0
 	for rows.Next() {
-
+		rownum = rownum + 1
 		row := []Entry{}
 		q.Set("o", o)
 		q.Set("d", d)
@@ -217,7 +222,6 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		}
 
 		records = append(records, row)
-		rownum = rownum + 1
 	}
 
 	q.Set("action", "QUERY")
@@ -226,7 +230,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	linkinsert := q.Encode()
 /*	q.Set("action", "UPDATEFORM")
 	linkupdate := q.Encode()
-	q.Set("action", "DELETE") 
+	q.Set("action", "DELETE")
 	linkdelete := q.Encode() */
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
@@ -238,8 +242,8 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 /*	menu = append(menu, escape("~", linkupdate))
 	menu = append(menu, escape("-", linkdelete)) */
 	menu = append(menu, escape("i", linkinfo))
-	wherestring := WhereSelect2Pretty(q, getColumnInfo(conn, t))
-	
+	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
+
 	q.Set("g", g)
 	next, err := getSingleValue(conn, host, db, sqlSelect(g, t)+sqlWhere(g, ">", v)+sqlOrder(g, "")+sqlLimit(1, 0))
 	if err == nil {
@@ -255,8 +259,13 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		q.Set("v", v)
 	}
 	linkleft := escape("<", q.Encode())
-	
-	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, wherestring, q)
+
+	var msg, nrows string
+	if VERBOSEFLAG {
+		msg = sql2string(query)
+		nrows = strconv.Itoa(rownum)
+	}
+	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, msg, nrows, wherestring, q)
 }
 
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring, q url.Values) {
@@ -286,9 +295,9 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		valuePtrs[i] = &values[i]
 	}
 	records := [][]Entry{}
-	rownum := 1
+	rownum := 0
 	for rows.Next() {
-
+		rownum = rownum + 1
 		row := []Entry{}
 		q.Set("o", o)
 		q.Set("d", d)
@@ -326,7 +335,6 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		}
 
 		records = append(records, row)
-		rownum = rownum + 1
 	}
 
 	q.Set("action", "QUERY")
@@ -347,8 +355,13 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	menu = append(menu, escape("~", linkupdate))
 	menu = append(menu, escape("-", linkdelete))
 	menu = append(menu, escape("i", linkinfo))
-	wherestring := WhereSelect2Pretty(q, getColumnInfo(conn, t))
-	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, wherestring, q)
+	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
+	var msg, nrows string
+	if VERBOSEFLAG {
+		msg = sql2string(query)
+		nrows = strconv.Itoa(rownum)
+	}
+	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, msg, nrows, wherestring, q)
 }
 
 func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int, end int, max int, query sqlstring) {
@@ -393,10 +406,10 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, limitstring, "", columns, q)
 
 	records := [][]Entry{}
-	rowrange := 1 + end - start
+	rowrange := end - start
 	rownum := start
 	for rows.Next() && rownum <= end {
-
+		rownum = rownum + 1
 		if o != "" {
 			q.Set("o", o)
 		}
@@ -433,9 +446,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 				row = append(row, escapeNull())
 			}
 		}
-
 		records = append(records, row)
-		rownum = rownum + 1
 	}
 
 	q.Del("o")
@@ -448,5 +459,10 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	linkleft := escape("<", q.Encode())
 	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
 	linkright := escape(">", q.Encode())
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, "", url.Values{})
+	var msg, nrows string
+	if VERBOSEFLAG {
+		msg = sql2string(query)
+		nrows = strconv.Itoa(rownum)
+	}
+	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, msg, nrows, "", url.Values{})
 }

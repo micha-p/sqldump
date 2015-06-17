@@ -39,6 +39,8 @@ type Context struct {
 	Right    Entry
 	Trail    []Entry
 	Menu     []Entry
+	Message  string
+	Rows     string
 }
 
 func makeBack(host string, db string, t string, o string, d string, k string) string {
@@ -143,7 +145,7 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	return head
 }
 
-func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
+func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, head []Entry, records [][]Entry, menu []Entry, msg string) {
 
 	c := Context{
 		User:     "",
@@ -163,6 +165,8 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Right:    Entry{},
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
+		Message:  msg,
+		Rows:	  "",
 	}
 	if DEBUGFLAG {
 		initTemplate()
@@ -173,7 +177,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 
 func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
 	n string, counterLabel string, linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry, where string, whereQ url.Values) {
+	head []Entry, records [][]Entry, menu []Entry, msg string, rows string, where string, whereQ url.Values) {
 
 	initTemplate()
 	c := Context{
@@ -194,6 +198,8 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, where, whereQ),
 		Menu:     menu,
+		Message:  msg,
+		Rows:	  rows,
 	}
 
 	err := templateTable.Execute(w, c)
@@ -224,6 +230,8 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
+		Message:  "",
+		Rows:	  "",
 	}
 
 	err := templateTable.Execute(w, c)

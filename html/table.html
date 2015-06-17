@@ -10,20 +10,20 @@
 	    <a href="logout" class="trail">&times;</a>{{range .Trail}}
 	    <a href="{{.Link}}" class="trail">{{.Text}}</a>{{end}}
 	</div>
-	
+
 	{{if .Counter}}
 	<div class="counter">
 		<form action="/">{{if .Left}}
-			<a href="{{.Left.Link}}" class="count"> {{.Left.Text}} </a>{{end}}			
+			<a href="{{.Left.Link}}" class="count"> {{.Left.Text}} </a>{{end}}
 			{{if .Left}}<label class="count">{{.Label}}</label>
 			{{end}}<input type="hidden" name="action" value="GOTO">
 			<input type="hidden" name="db"     value="{{.Database}}">
 			<input type="hidden" name="t"      value="{{.Table}}">{{if .Order}}
 			<input type="hidden" name="o"      value="{{.Order}}">{{end}}{{if .Desc}}
 			<input type="hidden" name="d"      value="{{.Desc}}">{{end}}
-			<input type="text"   name="n"      value="{{.Counter}}" class="range" size=2 >	
+			<input type="text"   name="n"      value="{{.Counter}}" class="range" size=2 tabindex="1">
 			<button type="submit" hidden='hidden'>go</button>{{if .Right}}
-			<a href="{{.Right.Link}}" class="count" > {{.Right.Text}} </a>{{end}}		
+			<a href="{{.Right.Link}}" class="count" > {{.Right.Text}} </a>{{end}}
 		</form>
     </div>
 	{{end}}
@@ -36,13 +36,23 @@
 </div>
 {{end}}
 
+{{if .Message}}
+<div class="message">
+	{{.Message}}{{if .Rows}}<br>
+	({{if eq .Rows "0"}}empty set{{else if eq .Rows "1"}}1 row in set{{else}}{{.Rows}} rows in set{{end}}){{end}}
+</div>
+{{end}}
+
+
 {{define "entry"}}{{if .Null}}<font color="red"><em>{{.Null}}</em></font>{{else}}{{if .Link}}<a href="{{.Link}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}{{end}}
+{{if eq .Rows "0"}}{{else}}
 <div class="main">
    <table>
    <tr>{{range .Head}} <th>{{template "entry" .}}</th> {{end}}{{if .Trail}}{{else}}<th>{{template "entry" .Back}}</th> {{end}}</tr>{{range .Records}}
    <tr>{{range .}} <td>{{template "entry" .}}</td>{{end}} </tr>{{end}}
    </table>
 </div>
+{{end}}
 
 </body>
 </html>
