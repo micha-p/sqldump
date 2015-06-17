@@ -7,16 +7,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
+	"strings"
 	"strconv"
 )
-
-var database = "information_schema"
-var EXPERTFLAG bool
-var INFOFLAG bool
-var DEBUGFLAG bool
-var MODIFYFLAG bool
-var READONLY bool
-var CSS_FILE string
 
 // restrict GET to reserved files
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -131,9 +124,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var EXPERTFLAG bool
+var INFOFLAG bool
+var DEBUGFLAG bool
+var MODIFYFLAG bool
+var READONLY bool
+var CSS_FILE string
+var TLS_PATH string
+
+
 func main() {
 
-	var SECURE = flag.Bool("s", false, "https Connection TLS")
+	var SECURE = flag.String("s", "", "https Connection TLS")
 	var HOST = flag.String("h", "localhost", "server name")
 	var PORT = flag.Int("p", 8080, "server port")
 	var INFO = flag.Bool("i", false, "include INFORMATION_SCHEMA in overview")
@@ -150,6 +152,7 @@ func main() {
 	EXPERTFLAG = *EXPERT
 	MODIFYFLAG = *MODIFY
 	CSS_FILE = *CSS
+	TLS_PATH = *SECURE
 	initTemplate()
 
 	portstring := ":" + strconv.Itoa(*PORT)
@@ -167,28 +170,28 @@ func main() {
 	if DEBUGFLAG {
 		fmt.Println("dynamically loading  templates and css (DEBUG)")
 	}
+	if CSS_FILE != "" {
+		fmt.Println("using style in " + CSS_FILE)
+	}
 
 	if MODIFYFLAG {
 		fmt.Println("modification of database schema enabled (TODO)")
 	}
 
-	if *SECURE {
-		if troubleF("cert.pem") == nil && troubleF("key.pem") == nil {
-			fmt.Println("cert.pem and key.pem found")
-		} else {
-			fmt.Println("generating cert.pem and key.pem ...")
-			generate_cert(*HOST, 2048, false)
+	if TLS_PATH != "" {
+		if !strings.HasSuffix(TLS_PATH,"/") {
+			TLS_PATH = TLS_PATH + "/"
 		}
-		fmt.Println("listening at https://" + *HOST + portstring)
-		if CSS_FILE != "" {
-			fmt.Println("using style in " + CSS_FILE)
+		certfile := TLS_PATH+"cert.pem"
+		keyfile := TLS_PATH+"key.pem"
+		if troubleF(certfile) != nil || troubleF(keyfile) != nil {
+			fmt.Println("generating " + certfile + " and " + keyfile + " ...")
+			generate_cert(*HOST, 2048, false, TLS_PATH)
 		}
-		err = http.ListenAndServeTLS(portstring, "cert.pem", "key.pem", nil)
+		fmt.Println("listening at https://" + *HOST + portstring + " using " + certfile + " and " + keyfile)
+		err = http.ListenAndServeTLS(portstring, certfile, keyfile, nil)
 	} else {
 		fmt.Println("listening at http://" + *HOST + portstring)
-		if CSS_FILE != "" {
-			fmt.Println("using style in " + CSS_FILE)
-		}
 		err = http.ListenAndServe(portstring, nil)
 	}
 	if err != nil {

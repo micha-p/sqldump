@@ -1,6 +1,6 @@
 # sqlgopher
 
-A small web-based tool for database administration. 
+A small web-based tool for database administration.
 
 - simple user-interface (links are below values!)
 - free of any language, just using well-known symbols, handlers and links
@@ -22,7 +22,7 @@ A small web-based tool for database administration.
 ### Usage
 
 	cd $GOPATH/src/sqlgopher; $GOPATH/bin/sqlgopher -d -c="html/table.css"
-    
+
 	-c  supply customized style in CSS file
 	-d  DEBUG: dynamically load html templates and css
 	-h  server name
@@ -36,12 +36,12 @@ A small web-based tool for database administration.
 
 
    [http://localhost:8080](http://localhost:8080)
-   
+
    [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/user=galagopher&pass=mypassword&host=localhost&port=3306)
 
     w3m 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
-    curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text 
+    curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text
 
 ### Interface
 
@@ -58,6 +58,7 @@ i 		|	Info
 
 ### Security
 
+- access based on mysql grants
 - no encrypted connection to mysql server
 - use only in trusted environments
 - passwords might be supplied or bookmarked via URL
@@ -71,11 +72,11 @@ The provided html-templates do not use javascript at all. However, when toggling
 
 ##### SQL-injection via Request values
 
-To prevent SQL-injection, all supplied identifiers are backqoted and to prevent escaping, all backquotes are escaped by doubling them. 
+To prevent SQL-injection, all supplied identifiers are backqoted and to prevent escaping, all backquotes are escaped by doubling them.
 All values are doublequoted, supplied double quotes are escaped the same way.
-Where-clauses are especially difficult to check, as this would require full parsing of SQL-expressions. 
+Where-clauses are especially difficult to check, as this would require full parsing of SQL-expressions.
 Therefore they are avoided, and identifiers and values are transmitted in separate query fields and quoted after importing.
-Numbers in limits are not quoted and therefore filtered by a strict regular expression. 
+Numbers in limits are not quoted and therefore filtered by a strict regular expression.
 
 ##### SQL-injection via Names of input fields
 
@@ -84,14 +85,14 @@ Query keys as taken from input forms might be altered as well, but as these valu
 
 ##### Javascript-Injection via Identifiers and Values
 
-If identifiers for tables or fields contain quotes or doublequotes, control might escape from these strings. 
+If identifiers for tables or fields contain quotes or doublequotes, control might escape from these strings.
 Therefore they are protected by escaping html in templates and manually.
 
- 
+
 ##### Login-attack via credentials
 
-Establishing connections to databases is done by the standard library-functions. 
-Credentials taken from a simple html-form are directly submitted to the library without any further processing. 
+Establishing connections to databases is done by the standard library-functions.
+Credentials taken from a simple html-form are directly submitted to the library without any further processing.
 
 
 

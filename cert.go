@@ -39,7 +39,7 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 	}
 }
 
-func generate_cert(host string, rsaBits int, isCA bool) {
+func generate_cert(host string, rsaBits int, isCA bool, path string) {
 
 	var priv interface{}
 	var err error
@@ -83,20 +83,20 @@ func generate_cert(host string, rsaBits int, isCA bool) {
 		log.Fatalf("Failed to create certificate: %s", err)
 	}
 
-	certOut, err := os.Create("cert.pem")
+	certOut, err := os.Create(path + "cert.pem")
 	if err != nil {
-		log.Fatalf("failed to open cert.pem for writing: %s", err)
+		log.Fatalf("failed to open "+path+"cert.pem for writing: %s", err)
 	}
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
-	log.Print("written cert.pem\n")
+	log.Print("written " + path + "cert.pem\n")
 
-	keyOut, err := os.OpenFile("key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	keyOut, err := os.OpenFile(path + "key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		log.Print("failed to open key.pem for writing:", err)
+		log.Print("failed to open "+ path + "key.pem for writing:", err)
 		return
 	}
 	pem.Encode(keyOut, pemBlockForKey(priv))
 	keyOut.Close()
-	log.Print("written key.pem\n")
+	log.Print("written "+path+"key.pem\n")
 }
