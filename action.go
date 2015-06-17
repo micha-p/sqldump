@@ -368,5 +368,6 @@ func actionINFO(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 		records = append(records, []Entry{escape(strconv.Itoa(i)), escape(f), escape(t), escape(n), escape(k), escape(string(d)), escape(e)})
 		i = i + 1
 	}
-	tableOutSimple(w, conn, host, db, t, head, records, menu, sql2string(stmt))
+	// message not shown as it is not important and disturbs alignment of info, query and field.
+	tableOutSimple(w, conn, host, db, t, head, records, menu, "")
 }

@@ -125,7 +125,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var EXPERTFLAG bool
-var VERBOSEFLAG bool  // TODO: better located in session
+var QUIETFLAG bool  // TODO: better located in session
 var INFOFLAG bool
 var DEBUGFLAG bool
 var MODIFYFLAG bool
@@ -142,7 +142,7 @@ func main() {
 	var INFO = flag.Bool("i", false, "include INFORMATION_SCHEMA in overview")
 	var MODIFY = flag.Bool("m", false, "modify database schema: create, alter, drop tables (TODO)")
 	var EXPERT = flag.Bool("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
-	var VERBOSE = flag.Bool("v", false, "show sql statements, row numbers of results")
+	var QUIET = flag.Bool("q", false, "suppress messages (sql statements, row numbers of results)")
 	var CSS = flag.String("c", "", "supply customized style in CSS file")
 	var DEBUG = flag.Bool("d", false, "dynamically load  templates and css (DEBUG)")
 	var READONLYFLAG = flag.Bool("r", false, "read-only access")
@@ -152,7 +152,7 @@ func main() {
 	INFOFLAG = *INFO
 	DEBUGFLAG = *DEBUG
 	EXPERTFLAG = *EXPERT
-	VERBOSEFLAG = *VERBOSE
+	QUIETFLAG = *QUIET
 	MODIFYFLAG = *MODIFY
 	CSS_FILE = *CSS
 	TLS_PATH = *SECURE
@@ -177,7 +177,7 @@ func main() {
 		fmt.Println("using style in " + CSS_FILE)
 	}
 
-	if VERBOSEFLAG {
+	if !QUIETFLAG {
 		fmt.Println("expert mode: showing sql statements")
 	}
 

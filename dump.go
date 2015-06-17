@@ -148,7 +148,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	menu = append(menu, escape("i", linkinfo))
 
 	var msg, nrows string
-	if VERBOSEFLAG {
+	if !QUIETFLAG {
 		msg = sql2string(query)
 		nrows = strconv.Itoa(rownum)
 	}
@@ -261,7 +261,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	linkleft := escape("<", q.Encode())
 
 	var msg, nrows string
-	if VERBOSEFLAG {
+	if !QUIETFLAG {
 		msg = sql2string(query)
 		nrows = strconv.Itoa(rownum)
 	}
@@ -357,7 +357,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	menu = append(menu, escape("i", linkinfo))
 	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 	var msg, nrows string
-	if VERBOSEFLAG {
+	if !QUIETFLAG {
 		msg = sql2string(query)
 		nrows = strconv.Itoa(rownum)
 	}
@@ -460,7 +460,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	q.Set("n", strconv.Itoa(1+right-rowrange)+"-"+strconv.Itoa(right))
 	linkright := escape(">", q.Encode())
 	var msg, nrows string
-	if VERBOSEFLAG {
+	if !QUIETFLAG {
 		msg = sql2string(query)
 		nrows = strconv.Itoa(rownum)
 	}

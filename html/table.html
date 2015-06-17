@@ -38,8 +38,9 @@
 
 {{if .Message}}
 <div class="message">
-	{{.Message}}{{if .Rows}}<br>
-	({{if eq .Rows "0"}}empty set{{else if eq .Rows "1"}}1 row in set{{else}}{{.Rows}} rows in set{{end}}){{end}}
+	{{.Message}};{{if .Rows}}<br>
+	{{if eq .Rows "0"}}Empty set (0.00 sec){{else if eq .Rows "1"}}1 row in set (0.00 sec){{else}}{{.Rows}} rows in set (0.01 sec){{end}}{{end}}{{/* else if .Affected}}<br>
+	{{if eq .Rows "1"}}1 row affected (0.00 sec){{else}}{{.Rows}} rows in set (0.01 sec){{end */}}
 </div>
 {{end}}
 

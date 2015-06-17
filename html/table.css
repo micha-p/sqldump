@@ -10,14 +10,14 @@ html {
 }
 
 .message {
-	margin: 1em 0 1em 0;
+	margin: 24px 0 0 0;
     text-decoration: none;
     font-size: 0.8rem;
 	color: #715524;        							/* my brown */
 }
 
 .main {
-	margin: 1.5em 0 0 0;
+	margin: 24px 0 0 0;
 }
 
 table {
