@@ -7,19 +7,6 @@ import (
 	"regexp"
 )
 
-// rows are not adressable:
-// dumpRows  -> SELECTFORM, INSERTFORM, INFO
-// dumpRange -> SELECTFORM, INSERTFORM, INFO
-// dumpField -> SELECTFORM, INSERTFORM, INFO
-
-// rows are selected by where-clause
-// dumpWhere 		-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
-
-// rows are selected by key or group
-// dumpKeyValue 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
-// dumpGroup	 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
-
-
 func makeEntry(nv sql.NullString, db string, t string, c string, primary string) Entry {
 	if nv.Valid {
 		v := nv.String

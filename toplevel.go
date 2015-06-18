@@ -6,6 +6,21 @@ import (
 	"net/url"
 )
 
+// rows are not adressable:
+// dumpRows  -> SELECTFORM, INSERTFORM, INFO
+// dumpRange -> SELECTFORM, INSERTFORM, INFO
+// dumpField -> SELECTFORM, INSERTFORM, INFO
+
+// rows are selected by where-clause
+// dumpWhere 		-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+
+// rows are selected by key or group
+// dumpKeyValue 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+// dumpGroup	 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+
+
+
+
 func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
@@ -26,6 +41,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
+    // "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
 	stmt := string2sql("SHOW DATABASES")
 	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
@@ -54,7 +70,6 @@ func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 
 	q := url.Values{}
 	q.Add("db", db)
-    // "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
 	query := string2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 
 	query = query + " FROM information_schema.TABLES"
