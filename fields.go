@@ -24,15 +24,12 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	rows.Next()
 	cols, vals, err := getRowScan(rows)
 	checkY(err)
-	for i, f := range cols {
+	for i, c := range cols {
 		nv := getNullString(vals[i])
-		if nv.Valid {
-			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")}  // TODO enable quick search
-			records = append(records, row)
-		} else {
-			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escapeNull()}
-			records = append(records, row)
-		}
+		row := []Entry{	escape(strconv.Itoa(i+1), ""),
+						escape(c, ""),
+						makeEntry(nv, db, t, c, "")}
+		records = append(records, row)
 	}
 
 	v.Add("db", db)
@@ -80,15 +77,12 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 
 	rows.Next()
 	cols, vals, err := getRowScan(rows)
-	for i, f := range cols {
+	for i, c := range cols {
 		nv := getNullString(vals[i])
-		if nv.Valid {
-			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escape(nv.String, "")} // TODO enable quick search
-			records = append(records, row)
-		} else {
-			row := []Entry{escape(strconv.Itoa(i+1), ""), escape(f, ""), escapeNull()}
-			records = append(records, row)
-		}
+		row := []Entry{	escape(strconv.Itoa(i+1), ""),
+						escape(c, ""),
+						makeEntry(nv, db, t, c, "")}
+		records = append(records, row)
 	}
 
 	q := url.Values{}

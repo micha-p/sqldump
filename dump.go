@@ -8,6 +8,27 @@ import (
 	"strconv"
 )
 
+func makeEntry(nv sql.NullString, db string, t string, c string, primary string) Entry {
+	if nv.Valid {
+		v := nv.String
+		g := url.Values{}
+		g.Add("db", db)
+		g.Add("t", t)
+		if c == primary {
+			g.Add("k", primary)
+			g.Add("v", v)
+			return escape(v, g.Encode())
+		} else {
+			g.Add("g", c)
+			g.Add("v", v)
+			return escape(v, g.Encode())
+		}
+	} else {
+		return escapeNull()
+	}
+}
+
+
 // TODO: better dispatching
 func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
@@ -98,28 +119,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			if nv.Valid {
-				v := nv.String
-				if c == primary {
-					q.Del("o")
-					q.Del("d")
-					q.Del("n")
-					q.Set("k", primary)
-					q.Set("v", v)
-					row = append(row, escape(v, q.Encode()))
-					q.Del("k")
-					q.Del("v")
-				} else {
-					g := url.Values{}
-					g.Add("db", db)
-					g.Add("t", t)
-					g.Add("g", c)
-					g.Add("v", v)
-					row = append(row, escape(v, g.Encode()))
-				}
-			} else {
-				row = append(row, escapeNull())
-			}
+			row = append(row, makeEntry(nv, db, t, c, primary))
 		}
 		records = append(records, row)
 	}
@@ -195,30 +195,8 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			if nv.Valid {
-				v := nv.String
-				if c == primary {
-					q.Del("o")
-					q.Del("d")
-					q.Del("n")
-					q.Set("k", primary)
-					q.Set("v", v)
-					q.Del("k")
-					q.Del("v")
-					row = append(row, escape(v, q.Encode()))
-				} else {
-					g := url.Values{}
-					g.Add("db", db)
-					g.Add("t", t)
-					g.Add("g", c)
-					g.Add("v", v)
-					row = append(row, escape(v, g.Encode()))
-				}
-			} else {
-				row = append(row, escapeNull())
-			}
+			row = append(row, makeEntry(nv, db, t, c, primary))
 		}
-
 		records = append(records, row)
 	}
 
@@ -307,28 +285,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			if nv.Valid {
-				v := nv.String
-				if c == primary {
-					q.Del("o")
-					q.Del("d")
-					q.Del("n")
-					q.Set("k", primary)
-					q.Set("v", v)
-					q.Del("k")
-					q.Del("v")
-					row = append(row, escape(v, q.Encode()))
-				} else {
-					g := url.Values{}
-					g.Add("db", db)
-					g.Add("t", t)
-					g.Add("g", c)
-					g.Add("v", v)
-					row = append(row, escape(v, g.Encode()))
-				}
-			} else {
-				row = append(row, escapeNull())
-			}
+			row = append(row, makeEntry(nv, db, t, c, primary))
 		}
 
 		records = append(records, row)
@@ -421,26 +378,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			if nv.Valid {
-				v := nv.String
-				if c == primary {
-					q.Del("o")
-					q.Del("d")
-					q.Del("n")
-					q.Set("k", primary)
-					q.Set("v", v)
-					row = append(row, escape(v, q.Encode()))
-				} else {
-					g := url.Values{}
-					g.Add("db", db)
-					g.Add("t", t)
-					g.Add("g", c)
-					g.Add("v", v)
-					row = append(row, escape(v, g.Encode()))
-				}
-			} else {
-				row = append(row, escapeNull())
-			}
+			row = append(row, makeEntry(nv, db, t, c, primary))
 		}
 		records = append(records, row)
 	}

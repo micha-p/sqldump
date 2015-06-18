@@ -90,28 +90,17 @@ func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		row = append(row, escape(strconv.Itoa(rownum), g.Encode()))
 		for i, c := range columns {
 			nv := getNullString(values[i])
+			if c == "Rows" && (db == "INFORMATION_SCHEMA" || db =="information_schema") && (INFOFLAG || EXPERTFLAG) {
+				nv = sql.NullString{Valid: true, String: getCount(conn,row[1].Text)}
+			}
 			if c == "Table" || c == "Comment" {
 				v := nv.String
 				g := url.Values{}
 				g.Add("db", db)
 				g.Add("t", v)
 				row = append(row, escape(v, g.Encode()))
-			} else if c == "Rows" && (db == "INFORMATION_SCHEMA" || db =="information_schema") && (INFOFLAG || EXPERTFLAG) {
-				v := getCount(conn,row[1].Text)
-				g := url.Values{}
-				g.Add("db", db)
-				g.Add("g", c)
-				g.Add("v", v)
-				row = append(row, escape(v, g.Encode()))
-			} else if nv.Valid {
-				v := nv.String
-				g := url.Values{}
-				g.Add("db", db)
-				g.Add("g", c)
-				g.Add("v", v)
-				row = append(row, escape(v, g.Encode()))
 			} else {
-				row = append(row, escapeNull())
+				row = append(row, makeEntry(nv, db, "", c, ""))
 			}
 		}
 		records = append(records, row)
