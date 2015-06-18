@@ -21,6 +21,14 @@ type Entry struct {
 	Null string
 }
 
+type Message struct {
+	Msg string
+	Rows int64
+	Affected int64
+	Seconds float64
+}
+
+
 type Context struct {
 	User     string
 	Host     string
@@ -39,7 +47,7 @@ type Context struct {
 	Right    Entry
 	Trail    []Entry
 	Menu     []Entry
-	Message  string
+	Messages []Message
 	Rows     int
 	Affected int
 	Seconds  float64
@@ -167,10 +175,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Right:    Entry{},
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
-		Message:  "",
-		Rows:	  -1,
-		Affected: -1,
-		Seconds: -1,
+		Messages: []Message{},
 	}
 	if DEBUGFLAG {
 		initTemplate()
@@ -181,9 +186,8 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 
 func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
 	n string, counterLabel string, linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry, msg string, rows int, affected int, seconds float64, where string, whereQ url.Values) {
+	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, where string, whereQ url.Values) {
 
-	initTemplate()
 	c := Context{
 		User:     "",
 		Host:     host,
@@ -202,12 +206,12 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, where, whereQ),
 		Menu:     menu,
-		Message:  msg,
-		Rows:	  rows,
-		Affected: affected,
-		Seconds:  seconds,
+		Messages: messageStack,
 	}
 
+	if DEBUGFLAG {
+		initTemplate()
+	}
 	err := templateTable.Execute(w, c)
 	checkY(err)
 }
@@ -236,10 +240,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
 		Menu:     menu,
-		Message:  "",
-		Rows:	  -1,
-		Affected: -1,
-		Seconds:  -1,
+		Messages: []Message{},
 	}
 
 	err := templateTable.Execute(w, c)

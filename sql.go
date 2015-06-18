@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"log"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -35,6 +34,14 @@ func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, error) {
 	return stmt, err
 }
 
+func sqlExec(conn *sql.DB, s sqlstring) (*sql.Rows, error) {
+	stmtstr := string(s)
+	log.Println("[SQL]", stmtstr)
+	stmt, err := conn.Query(stmtstr)
+	return stmt, err
+}
+
+
 func sqlQueryRow(conn *sql.DB, s sqlstring) *sql.Row {
 	return conn.QueryRow(sql2string(s))
 }
@@ -62,10 +69,10 @@ func sqlOrder(order string, desc string) sqlstring {
 
 // records start with number 1. Every child knows
 
-func sqlLimit(limit int, offset int) sqlstring {
-	query := string2sql(" LIMIT " + strconv.Itoa(maxI(limit, 1)))
+func sqlLimit(limit int64, offset int64) sqlstring {
+	query := string2sql(" LIMIT " + Int64toa(maxInt64(limit, 1)))
 	if offset > 0 {
-		query = query + string2sql(" OFFSET "+strconv.Itoa(offset-1))
+		query = query + string2sql(" OFFSET "+Int64toa(offset-1))
 	}
 	return query
 }

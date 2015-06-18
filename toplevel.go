@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
-	"strconv"
 )
 
 func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
@@ -33,16 +32,16 @@ func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	records := [][]Entry{}
 	head := []Entry{{"#", "", ""}, {"Database", "", ""}}
-	var n int = 1
+	var n int64
 	for rows.Next() {
+		n = n + 1
 		var field string
 		rows.Scan(&field)
 		if EXPERTFLAG || INFOFLAG || field != "information_schema" {
 			q.Set("db", field)
 			link := q.Encode()
-			row := []Entry{escape(strconv.Itoa(n), link), escape(field, link)}
+			row := []Entry{escape(Int64toa(n), link), escape(field, link)}
 			records = append(records, row)
-			n = n + 1
 		}
 	}
 	// message suppressed, as it is not really useful and database should be chosen at login or bookmarked
@@ -55,11 +54,11 @@ func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	q := url.Values{}
 	q.Add("db", db)
     // "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
-	stmt := string2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
+	query := string2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 
-	stmt = stmt + " FROM information_schema.TABLES"
-	stmt = stmt + sqlWhere("TABLE_SCHEMA","=",db) + sqlHaving(g, "=", v) + sqlOrder(o,d)
-	rows, err, sec := getRows(conn, stmt)
+	query = query + " FROM information_schema.TABLES"
+	query = query + sqlWhere("TABLE_SCHEMA","=",db) + sqlHaving(g, "=", v) + sqlOrder(o,d)
+	rows, err, sec := getRows(conn, query)
 	checkY(err)
 	defer rows.Close()
 
@@ -78,7 +77,7 @@ func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		valuePtrs[i] = &values[i]
 	}
 	records := [][]Entry{}
-	rownum := 0
+	var rownum int64
 	for rows.Next() {
 		rownum = rownum + 1
 		row := []Entry{}
@@ -87,7 +86,7 @@ func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		g := url.Values{}
 		g.Add("db", db)
 		g.Add("t", getNullString(values[0]).String)
-		row = append(row, escape(strconv.Itoa(rownum), g.Encode()))
+		row = append(row, escape(Int64toa(rownum), g.Encode()))
 		for i, c := range columns {
 			nv := getNullString(values[i])
 			if c == "Rows" && (db == "INFORMATION_SCHEMA" || db =="information_schema") && (INFOFLAG || EXPERTFLAG) {
@@ -107,6 +106,12 @@ func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	}
 
 	// Shortened statement
-	stmt = "SHOW TABLES" + sqlHaving(g, "=", v) + sqlOrder(o,d)
-	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, sql2string(stmt), rownum, -1, sec,"", url.Values{})
+	query = "SHOW TABLES" + sqlHaving(g, "=", v) + sqlOrder(o,d)
+	var msg Message
+	if QUIETFLAG {
+		msg = Message{}
+	} else {
+		msg = Message{Msg:sql2string(query),Rows:rownum,Affected:-1,Seconds:sec }
+	}
+	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, "", url.Values{})
 }

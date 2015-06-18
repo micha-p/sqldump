@@ -31,8 +31,7 @@
 	{{if .Menu}}
 	<div class="right">{{range .Menu}}
 		<a href="{{.Link}}" class="count" >[{{.Text}}]</a>{{end}}
-	</div>
-	{{end}}
+	</div>{{end}}
 </div>
 {{end}}
 
@@ -40,19 +39,16 @@
 {{define "rows"}}{{if eq .Rows 0}}Empty set {{template "sec" .Seconds}}{{else if eq .Rows 1}}1 row in set {{template "sec" .Seconds}}{{else}}{{.Rows}} rows in set {{template "sec" .Seconds}}{{end}}{{end}}
 {{define "affected"}}Query OK, {{if eq .Affected 1}}1 row affected {{template "sec" .Seconds}}{{else}}{{.Affected}} rows affected {{template "sec" .Seconds}}{{end}}{{end}}
 
-{{if .Message}}
+{{range .Messages}}
 <div class="message">
-   {{.Message}};
-   {{if ge .Rows 0}}<br>
-   {{template "rows" .}}{{end}}
-   {{if ge .Affected 0}}<br>
+   {{.Msg}};{{if ge .Rows 0}}<br>
+   {{template "rows" .}}{{end}}{{if ge .Affected 0}}<br>
    {{template "affected" .}}{{end}}
 </div>
 {{end}}
 
-
 {{define "entry"}}{{if .Null}}<font color="red"><em>{{.Null}}</em></font>{{else}}{{if .Link}}<a href="{{.Link}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}{{end}}
-{{if ne .Rows 0}}
+{{if ne 0 (len .Records) }}
 <div class="main">
    <table>
    <tr>{{range .Head}} <th>{{template "entry" .}}</th> {{end}}{{if .Trail}}{{else}}<th>{{template "entry" .Back}}</th> {{end}}</tr>{{range .Records}}

@@ -6,7 +6,6 @@ import (
 	"html"
 	"log"
 	"regexp"
-	"strconv"
 	"errors"
 	"time"
 )
@@ -148,8 +147,9 @@ func getColumnInfo(conn *sql.DB, t string) []CContext {
 	defer rows.Close()
 
 	m := []CContext{}
-	i := 1
+	var i int64
 	for rows.Next() {
+		i = i + 1
 		var f, t, n, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
 		err := rows.Scan(&f, &t, &n, &k, &d, &e)
@@ -172,13 +172,12 @@ func getColumnInfo(conn *sql.DB, t string) []CContext {
 		tType, _ := regexp.MatchString("text", t)
 
 		if iType || fType || rType || dType || lType || nType {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "numeric", "", nullable, "", "", ""})
+			m = append(m, CContext{Int64toa(i), f, f, "numeric", "", nullable, "", "", ""})
 		} else if cType || yType || bType || tType {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "", "string", nullable, "", "", ""})
+			m = append(m, CContext{Int64toa(i), f, f, "", "string", nullable, "", "", ""})
 		} else {
-			m = append(m, CContext{strconv.Itoa(i), f, f, "", "", nullable, "", "", ""})
+			m = append(m, CContext{Int64toa(i), f, f, "", "", nullable, "", "", ""})
 		}
-		i = i + 1
 	}
 	return m
 }

@@ -9,7 +9,7 @@ import (
 
 // Dump all fields of a record, one column per line
 
-func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int, query sqlstring, v url.Values) {
+func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, query sqlstring, v url.Values) {
 
 	rows, err, _ := getRows(conn, query)
 	defer rows.Close()
@@ -44,10 +44,10 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	menu = append(menu, escape("+", linkinsert))
 	menu = append(menu, escape("i", linkinfo))
 
-	left := strconv.Itoa(maxI(nint-1, 1))
+	left := Int64toa(maxInt64(nint-1, 1))
 	var right string
 	if rows.Next() {
-		right = strconv.Itoa(nint + 1)
+		right = Int64toa(nint + 1)
 	} else {
 		right = n
 	}

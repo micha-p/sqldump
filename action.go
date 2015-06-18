@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 )
 
@@ -359,13 +358,13 @@ func actionINFO(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 	records := [][]Entry{}
 	head := []Entry{escape("#"), escape("Field"), escape("Type"), escape("Null"), escape("Key"), escape("Default"), escape("Extra")}
 
-	var i int = 1
+	var i int64 = 1
 	for rows.Next() {
 		var f, t, n, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
 		err := rows.Scan(&f, &t, &n, &k, &d, &e)
 		checkY(err)
-		records = append(records, []Entry{escape(strconv.Itoa(i)), escape(f), escape(t), escape(n), escape(k), escape(string(d)), escape(e)})
+		records = append(records, []Entry{escape(Int64toa(i)), escape(f), escape(t), escape(n), escape(k), escape(string(d)), escape(e)})
 		i = i + 1
 	}
 	// message not shown as it disturbs equal alignment of info, query and field.

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 )
 
 /* 	Any identifier with double quotes in its name has to be escaped.
@@ -42,7 +43,16 @@ func dsn(user string, pw string, host string, port string, db string) string {
 	return user + ":" + pw + "@tcp(" + host + ":" + port + ")/" + db
 }
 
-func maxI(a int, b int) int {
+func Atoi64(s string) (int64, error) {
+	n,err :=  strconv.ParseInt(s,10,64)
+	return n, err
+}
+
+func Int64toa(i int64) string{
+	return strconv.FormatInt(i,10)
+}
+
+func maxInt(a int, b int) int {
 	if a >= b {
 		return a
 	} else {
@@ -50,7 +60,23 @@ func maxI(a int, b int) int {
 	}
 }
 
-func minI(a int, b int) int {
+func minInt(a int, b int) int {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func maxInt64(a int64, b int64) int64 {
+	if a >= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func minInt64(a int64, b int64) int64 {
 	if a < b {
 		return a
 	} else {
