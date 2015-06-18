@@ -23,7 +23,7 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	}
 
 	if g !="" && v !=""{
-		query = sqlStar(t) + sqlWhere(g, "=", v) + sqlOrder(o, d)
+		query = sqlStar(t) + sqlWhereClauses(wclauses) + sqlHaving(g, "=", v) + sqlOrder(o, d)
 		dumpGroup(w, conn, host, db, t, o, d, g, v, query, whereQ)
 	} else if n != "" {
 		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)

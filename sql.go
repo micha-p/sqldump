@@ -131,11 +131,19 @@ func sqlJoin(a []sqlstring, sep string) sqlstring {
 }
 
 func sqlWhereClauses(clauses []sqlstring) sqlstring {
-	return string2sql(" WHERE ") + sqlJoin(clauses, " AND ")
+	if len(clauses) ==0 {
+		return ""
+	} else {
+		return string2sql(" WHERE ") + sqlJoin(clauses, " AND ")
+	}
 }
 
 func sqlSetClauses(clauses []sqlstring) sqlstring {
-	return string2sql(" SET ") + sqlJoin(clauses, " , ")
+	if len(clauses) ==0 {
+		return ""
+	} else {
+		return string2sql(" SET ") + sqlJoin(clauses, " , ")
+	}
 }
 
 // Filter and Escapes
