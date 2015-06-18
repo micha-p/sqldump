@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
+	"log"
 )
 
 /*
@@ -115,13 +116,21 @@ func makeArrow(title string, primary string, d string) string {
 	}
 }
 
-func createHead(db string, t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
+func createHead(db string, t string, o string, d string, n string, primary string, columns []string, original url.Values) []Entry {
 	head := []Entry{}
 	home := url.Values{}
-	home.Add("db", db)
-	home.Add("t", t)
+	home.Set("db", db)
+	home.Set("t", t)
 	head = append(head, escape("#", home.Encode()))
 
+
+	q, err := url.ParseQuery(original.Encode()) // brute force to preserve original
+	checkY(err)
+	log.Println(original.Encode())
+	log.Println(q.Encode())
+
+	q.Set("db", db)
+	q.Set("t", t)
 	for _, title := range columns {
 		if o == title {
 			q.Set("o", title)
@@ -188,6 +197,9 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	n string, counterLabel string, linkleft Entry, linkright Entry,
 	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, where string, whereQ url.Values) {
 
+	var msgs []Message
+	if !QUIETFLAG { msgs = messageStack }
+
 	c := Context{
 		User:     "",
 		Host:     host,
@@ -206,7 +218,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, where, whereQ),
 		Menu:     menu,
-		Messages: messageStack,
+		Messages: msgs,
 	}
 
 	if DEBUGFLAG {

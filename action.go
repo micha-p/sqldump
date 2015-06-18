@@ -22,6 +22,67 @@ type FContext struct {
 	Trail    []Entry
 }
 
+func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
+
+	db, t, o, d, n, g, k, v := readRequest(r)
+
+	q := r.URL.Query()
+	action := q.Get("action")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	wclauses, sclauses, whereQ := collectClauses(r, conn, t)
+	// TODO change *FORM to form="*"
+	if action == "INFO" {
+		stmt := string2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
+		dumpInfo(w, conn, host, db, t, stmt)
+	} else if action == "GOTO" && n != "" {
+		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
+	} else if action == "BACK" {
+		dumpIt(w, r, conn, host, db, "", "", "", "", "", "", "")
+	} else if action == "SELECTFORM" {
+		actionSELECTFORM(w, r, conn, host, db, t, o, d)
+	} else if action == "INSERTFORM" && !READONLY {
+		actionINSERTFORM(w, r, conn, host, db, t, o, d)
+	} else if action == "DELETEFORM" && !READONLY { // Create subset for DELETE
+		actionDELETEFORM(w, r, conn, host, db, t, o, d)
+	} else if action == "UPDATEFORM" && !READONLY { // ask for changed values
+		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
+	} else if action == "KV_UPDATEFORM" && !READONLY && k != "" && v != "" {
+		actionKV_UPDATEFORM(w, r, conn, host, db, t, k, v)
+	} else if action == "GV_UPDATEFORM" && !READONLY && g != "" && v != "" {
+		actionGV_UPDATEFORM(w, r, conn, host, db, t, g, v)
+	} else if action == "SELECT"  && len(wclauses)> 0 {
+		stmt := sqlStar(t) + sqlWhereClauses(wclauses)
+		// actionEXEC(w, conn, host, db, t, o, d, stmt)
+		dumpWhere(w, conn, host, db, t, o, d, stmt, whereQ)
+	} else if action == "INSERT" && !READONLY  && len(sclauses)> 0 {
+		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
+		actionEXEC(w, conn, host, db, t, o, d, stmt)
+	} else if action == "DELETE" && !READONLY  && len(wclauses)> 0 {
+		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
+		actionEXEC(w, conn, host, db, t, o, d, stmt)
+	} else if action == "UPDATE" && !READONLY  && len(sclauses)> 0  && len(wclauses)> 0 {
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
+		actionEXEC(w, conn, host, db, t, o, d, stmt)
+
+	} else if action == "KV_UPDATE" && !READONLY && k != "" && v != ""  && len(sclauses)> 0 {
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
+		actionEXEC1(w, conn, host, db, t, stmt, v)
+	} else if action == "KV_DELETE" && !READONLY && k != "" && v != "" {
+		stmt := sqlDelete(t) + sqlWhere1(k, "=")
+		actionEXEC1(w, conn, host, db, t, stmt, v)
+	} else if action == "GV_UPDATE" && !READONLY && g != "" && v != ""  && len(sclauses)> 0{
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
+		actionEXEC1(w, conn, host, db, t, stmt, v)
+	} else if action == "GV_DELETE" && !READONLY && g != "" && v != "" {
+		stmt := sqlDelete(t) + sqlWhere1(g, "=")
+		actionEXEC1(w, conn, host, db, t, stmt, v)
+	} else {
+		shipMessage(w, host, db, "Action unknown or insufficient parameters: "+action)
+	}
+}
+
+
 // INSERTFORM and SELECTFORM provide columns without values, EDIT/UPDATE provide a filled vmap
 // TODO: use DEFAULT and AUTOINCREMENT
 

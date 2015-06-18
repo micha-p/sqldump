@@ -32,17 +32,8 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		records = append(records, row)
 	}
 
-	v.Add("db", db)
-	v.Add("t", t)
-	v.Add("action", "INSERTFORM")
-	linkinsert := v.Encode()
-	v.Set("action", "INFO")
-	linkinfo := v.Encode()
-	v.Del("action")
-
-	menu := []Entry{}
-	menu = append(menu, escape("+", linkinsert))
-	menu = append(menu, escape("i", linkinfo))
+	v.Set("db", db)
+	v.Set("t", t)
 
 	left := Int64toa(maxInt64(nint-1, 1))
 	var right string
@@ -61,6 +52,14 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	linkleft := escape("<", v.Encode())
 	v.Set("n", right)
 	linkright := escape(">", v.Encode())
+	v.Set("n", n)
+
+	var menu []Entry
+	m := makeFreshQuery(db,t,o,d)
+	m.Set("n",n)
+	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
+	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
+	menu = append(menu,makeMenu(m, "action", "INFO","?"))
 
 	tableOutFields(w, conn, host, db, t, "", o, d, "", n, "#", linkleft, linkright, head, records, menu)
 }
@@ -85,27 +84,8 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		records = append(records, row)
 	}
 
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	q.Add("action", "INSERTFORM")
-	linkinsert := q.Encode()
-	q.Set("action", "INFO")
-	linkinfo := q.Encode()
-	q.Add("k", k)
-	q.Add("v", v)
-	q.Set("action", "KV_UPDATEFORM")
-	linkupdate := q.Encode()
-	q.Set("action", "KV_DELETE")
-	linkdelete := q.Encode()
-	q.Del("action")
-
-	menu := []Entry{}
-	menu = append(menu, escape("+", linkinsert))
-	menu = append(menu, escape("~", linkupdate))
-	menu = append(menu, escape("-", linkdelete))
-	menu = append(menu, escape("i", linkinfo))
-
+	q := makeFreshQuery(db,t,"","")
+	q.Set("k",k)
 	next, err := getSingleValue(conn, host, db, sqlSelect(k, t)+sqlWhere(k, ">", v)+sqlOrder(k, "")+sqlLimit(1, 0))
 	if err == nil {
 		q.Set("v", next)
@@ -120,6 +100,17 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 		q.Set("v", v)
 	}
 	linkleft := escape("<", q.Encode())
+
+	m := makeFreshQuery(db,t,"","")
+	m.Set("k",k)
+	m.Set("v",v)
+	var menu []Entry
+	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
+	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
+	menu = append(menu,makeMenu(m, "action", "KV_UPDATEFORM","~"))
+	menu = append(menu,makeMenu(m, "action", "KV_DELETE","-"))
+	menu = append(menu,makeMenu(m, "action", "INFO","?"))
+
 	tableOutFields(w, conn, host, db, t, primary, k, "", k, v, k + " (ID) =", linkleft, linkright, head, records, menu)
 }
 

@@ -7,8 +7,6 @@ import (
 	"regexp"
 )
 
-
-
 func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
@@ -69,7 +67,7 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 
 	if g !="" && v !=""{
 		stmt = sqlStar(t) + sqlWhereClauses(wclauses) + sqlHaving(g, "=", v) + sqlOrder(o, d)
-		dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, whereQ)
+		dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, r.URL.Query())
 	} else if n != "" {
 		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 		limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
@@ -77,7 +75,7 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 		if singlenumber != "" {
 			nint, _ := Atoi64(singlenumber)
 			stmt = stmt + sqlLimit(2, nint) // for finding next record
-			dumpFields(w, conn, host, db, t, o, d, singlenumber, nint, stmt, whereQ)
+			dumpFields(w, conn, host, db, t, o, d, singlenumber, nint, stmt, r.URL.Query())
 		} else if len(limits) == 3 {
 			startint, err := Atoi64(limits[1])
 			checkY(err)
