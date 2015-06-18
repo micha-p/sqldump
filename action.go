@@ -9,8 +9,6 @@ import (
 	"strings"
 )
 
-// TODO: show results page like rows page with rows_affected
-
 type FContext struct {
 	CSS      string
 	Action   string
@@ -90,6 +88,36 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 	} else {
 		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfo(conn, t), hiddencols)
 	}
+}
+
+func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
+	hiddencols := []CContext{
+		CContext{"", "k", "", "", "", "", "valid", k, ""},
+		CContext{"", "v", "", "", "", "", "valid", v, ""}}
+	stmt := sqlStar(t) + sqlWhere1(k, "=")
+	preparedStmt, _, err := sqlPrepare(conn, stmt)
+	defer preparedStmt.Close()
+	checkErrorPage(w, host, db, t, stmt, err)
+	rows, _,err := sqlQuery1(preparedStmt,v)
+	checkY(err)
+	defer rows.Close()
+	primary := getPrimary(conn, t)
+	shipForm(w, r, conn, host, db, t, "", "", "KV_UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
+}
+
+func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
+	hiddencols := []CContext{
+		CContext{"", "g", "", "", "", "", "valid", g, ""},
+		CContext{"", "v", "", "", "", "", "valid", v, ""}}
+	stmt := sqlStar(t) + sqlWhere1(g, "=")
+	preparedStmt, _, err := sqlPrepare(conn, stmt)
+	defer preparedStmt.Close()
+	checkErrorPage(w, host, db, t, stmt, err)
+	rows, _,err := sqlQuery1(preparedStmt,v)
+	checkY(err)
+	defer rows.Close()
+	primary := getPrimary(conn, t)
+	shipForm(w, r, conn, host, db, t, "", "", "GV_UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
 }
 
 
@@ -199,209 +227,46 @@ func actionSELECT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	}
 }
 
-// the next three functions deal with tables where a primary key is not existant or not in use
+// Excutes a statement on a selection by where-clauses
+// Used, when rows are not adressable by a primary key or in table having a group
+func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring) {
 
-func actionINSERT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	q.Add("o", o)
-	q.Add("d", d)
-	_, sclauses, _ := collectClauses(r, conn, t)
-	if len(sclauses) > 0 {
-		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
-		preparedStmt, err := sqlPrepare(conn, stmt)
-		defer preparedStmt.Close()
-		checkErrorPage(w, host, db, t, stmt, err)
-		result, sec, err := sqlExec(preparedStmt)
-		checkErrorPage(w, host, db, t, stmt, err)
-		affected, err := result.RowsAffected()
-		checkErrorPage(w, host, db, t, stmt, err)
-		nextstmt := sqlStar(t)
-		dumpQuery(w, conn, host, db, t, o, d, []Message{Message{Msg:sql2string(stmt), Rows: -1, Affected:affected, Seconds: sec}}, nextstmt)
-	} else {
-		shipMessage(w, host, db, "Set clauses not found")
-	}
-}
-
-func actionUPDATE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	q.Add("o", o)
-	q.Add("d", o)
-	wclauses, sclauses, _ := collectClauses(r, conn, t)
-	if len(sclauses) > 0 {
-		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
-		preparedStmt, err := sqlPrepare(conn, stmt)
-		defer preparedStmt.Close()
-		checkErrorPage(w, host, db, t, stmt, err)
-		result, sec, err := sqlExec(preparedStmt)
-		checkErrorPage(w, host, db, t, stmt, err)
-		affected, err := result.RowsAffected()
-		checkErrorPage(w, host, db, t, stmt, err)
-		nextstmt := sqlStar(t)
-		dumpQuery(w, conn, host, db, t, o, d, []Message{Message{Msg:sql2string(stmt), Rows: -1, Affected:affected, Seconds: sec}}, nextstmt)
-	} else {
-		shipMessage(w, host, db, "Set clauses not found")
-	}
-}
-
-func actionDELETE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	q.Add("o", o)
-	q.Add("d", d)
-	wclauses, _, _ := collectClauses(r, conn, t)
-	if len(wclauses) > 0 {
-		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
-		preparedStmt, err := sqlPrepare(conn, stmt)
-		defer preparedStmt.Close()
-		checkErrorPage(w, host, db, t, stmt, err)
-		result, sec, err := sqlExec(preparedStmt)
-		checkErrorPage(w, host, db, t, stmt, err)
-		affected, err := result.RowsAffected()
-		checkErrorPage(w, host, db, t, stmt, err)
-		nextstmt := sqlStar(t)
-		dumpQuery(w, conn, host, db, t, o, d, []Message{Message{Msg:sql2string(stmt), Rows: -1, Affected:affected, Seconds: sec}}, nextstmt)
-	} else {
-		shipMessage(w, host, db, "Where clauses not found")
-	}
-}
-
-
-/* The next functions deal with modifications in tables with primary key or having a group
- * They use prepared statements.
- * However, these tempates only deal with values, not with identifiers. */
-
-func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
-	hiddencols := []CContext{
-		CContext{"", "k", "", "", "", "", "valid", k, ""},
-		CContext{"", "v", "", "", "", "", "valid", v, ""}}
-	stmt := sqlStar(t) + sqlWhere1(k, "=")
-	preparedStmt, err := sqlPrepare(conn, stmt)
+	messageStack := []Message{}
+	preparedStmt, sec, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	rows, _,err := sqlQuery1(preparedStmt,v)
-	checkY(err)
-	defer rows.Close()
-	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "KV_UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
+	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,sec})
+
+	result, sec, err := sqlExec(preparedStmt)
+	checkErrorPage(w, host, db, t, stmt, err)
+	affected, err := result.RowsAffected()
+	checkErrorPage(w, host, db, t, stmt, err)
+
+	messageStack = append(messageStack, Message{"EXECUTE stmt", -1,affected,sec})
+	nextstmt := sqlStar(t) + sqlOrder(o,d)
+	dumpQuery(w, conn, host, db, t, o, d, messageStack, nextstmt)
 }
 
-func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
-	hiddencols := []CContext{
-		CContext{"", "g", "", "", "", "", "valid", g, ""},
-		CContext{"", "v", "", "", "", "", "valid", v, ""}}
-	stmt := sqlStar(t) + sqlWhere1(g, "=")
-	preparedStmt, err := sqlPrepare(conn, stmt)
+
+/* Executes prepared statements about modifications in tables with primary key or having a group
+ * Uses one argument as value for where clause
+ * However, prepared statements only work with values, not in identifier position */
+func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring, arg string) {
+
+	messageStack := []Message{}
+	preparedStmt, sec, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	rows, _,err := sqlQuery1(preparedStmt,v)
-	checkY(err)
-	defer rows.Close()
-	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "GV_UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
-}
+	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,sec})
 
-func actionKV_UPDATE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	_, sclauses, _ := collectClauses(r, conn, t)
-	if len(sclauses) > 0 {
-		ms := []Message{}
-		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
-		preparedStmt, err := sqlPrepare(conn, stmt)
-		ms = append(ms, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,0})
-		defer preparedStmt.Close()
-		checkErrorPage(w, host, db, t, stmt, err)
-		result, sec, err := sqlExec1(preparedStmt,v)
-		checkErrorPage(w, host, db, t, stmt, err)
-		affected, err := result.RowsAffected()
-		checkErrorPage(w, host, db, t, stmt, err)
-		ms = append(ms, Message{"EXECUTE stmt USING \"" + v + "\"", -1,affected,sec})
-		nextstmt := sqlStar(t)
-		dumpQuery(w, conn, host, db, t, "", "", ms, nextstmt)
-	} else {
-		shipMessage(w, host, db, "Set clauses not found")
-	}
-}
+	result, sec, err := sqlExec1(preparedStmt,arg)
+	checkErrorPage(w, host, db, t, stmt, err)
+	affected, err := result.RowsAffected()
+	checkErrorPage(w, host, db, t, stmt, err)
 
-func actionGV_UPDATE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	_, sclauses, _ := collectClauses(r, conn, t)
-	if len(sclauses) > 0 {
-		ms := []Message{}
-		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
-		preparedStmt, err := sqlPrepare(conn, stmt)
-		ms = append(ms, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,0})
-		defer preparedStmt.Close()
-		checkErrorPage(w, host, db, t, stmt, err)
-		result, sec, err := sqlExec1(preparedStmt,v)
-		checkErrorPage(w, host, db, t, stmt, err)
-		affected, err := result.RowsAffected()
-		checkErrorPage(w, host, db, t, stmt, err)
-		ms = append(ms, Message{"EXECUTE stmt USING \"" + v + "\"", -1,affected,sec})
-		nextstmt := sqlStar(t)
-		dumpQuery(w, conn, host, db, t, "", "", ms, nextstmt)
-	} else {
-		shipMessage(w, host, db, "Set clauses not found")
-	}
-}
-
-
-func actionKV_DELETE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	if k != "" && v != "" {
-		ms := []Message{}
-		stmt := sqlDelete(t) + sqlWhere1(k, "=")
-		preparedStmt, err := sqlPrepare(conn, stmt)
-		ms = append(ms, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,0})
-		defer preparedStmt.Close()
-		checkErrorPage(w, host, db, t, stmt, err)
-		result, sec, err := sqlExec1(preparedStmt,v)
-		checkErrorPage(w, host, db, t, stmt, err)
-		affected, err := result.RowsAffected()
-		checkErrorPage(w, host, db, t, stmt, err)
-		ms = append(ms, Message{"EXECUTE stmt USING \"" + v + "\"", -1,affected,sec})
-		nextstmt := sqlStar(t)
-		dumpQuery(w, conn, host, db, t, "", "", ms, nextstmt)
-	} else {
-		shipMessage(w, host, db, "Where clause not found")
-	}
-
-}
-
-func actionGV_DELETE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	if g != "" && v != "" {
-		ms := []Message{}
-		stmt := sqlDelete(t) + sqlWhere1(g, "=")
-		preparedStmt, err := sqlPrepare(conn, stmt)
-		ms = append(ms, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,0})
-		defer preparedStmt.Close()
-		checkErrorPage(w, host, db, t, stmt, err)
-		result, sec, err := sqlExec1(preparedStmt,v)
-		checkErrorPage(w, host, db, t, stmt, err)
-		affected, err := result.RowsAffected()
-		checkErrorPage(w, host, db, t, stmt, err)
-		ms = append(ms, Message{"EXECUTE stmt USING \"" + v + "\"", -1,affected,sec})
-		nextstmt := sqlStar(t)
-		dumpQuery(w, conn, host, db, t, "", "", ms, nextstmt)
-	} else {
-		shipMessage(w, host, db, "Where clause not found")
-	}
-
+	messageStack = append(messageStack, Message{"EXECUTE stmt USING \"" + arg + "\"", -1,affected,sec})
+	nextstmt := sqlStar(t)
+	dumpQuery(w, conn, host, db, t, "", "", messageStack, nextstmt)
 }
 
 
@@ -414,7 +279,6 @@ func actionGV_DELETE(w http.ResponseWriter, r *http.Request, conn *sql.DB, host 
 | start | date        | YES  |     | NULL    |       |
 +-------+-------------+------+-----+---------+-------+
 */
-
 func actionINFO(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string) {
 
 	stmt := sqlColumns(t)

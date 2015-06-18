@@ -23,11 +23,13 @@ func string2sql(s string) sqlstring {
 
 // Interface functions to underlying sql driver
 
-func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, error) {
+func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, float64, error) {
+	t0 := time.Now()
 	stmtstr := sql2string(s)
 	log.Println("[SQL]", stmtstr)
-	stmt, err := conn.Prepare(stmtstr)
-	return stmt, err
+	r, err := conn.Prepare(stmtstr)
+	t1 := time.Now()
+	return r, t1.Sub(t0).Seconds(), err
 }
 
 func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {

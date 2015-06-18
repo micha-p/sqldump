@@ -131,7 +131,7 @@ func dumpQuery(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	linkselect := q.Encode()
 	q.Set("action", "INSERTFORM")
 	linkinsert := q.Encode()
-	q.Set("action", "SELECTFORUPDATEFORM")
+	q.Set("action", "SELECTFORM")
 	linkupdate := q.Encode()
 	q.Set("action", "DELETEFORM")
 	linkdelete := q.Encode()

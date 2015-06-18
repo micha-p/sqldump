@@ -52,46 +52,59 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 
 	q := r.URL.Query()
 	action := q.Get("action")
-
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	// TODO change *FORM to form="*"
-	if action == "SELECTFORM" && db != "" && t != "" {
-		actionSELECTFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "SELECT" && db != "" && t != "" {
-		actionSELECT(w, r, conn, host, db, t, o, d)
-	} else if action == "INFO" && db != "" && t != "" {
-		actionINFO(w, r, conn, host, db, t)
-	} else if action == "INSERTFORM" && !READONLY && db != "" && t != "" {
-		actionINSERTFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "INSERT" && !READONLY && db != "" && t != "" {
-		actionINSERT(w, r, conn, host, db, t, o, d)
-	} else if action == "DELETEFORM" && !READONLY && db != "" && t != "" { // Create subset for DELETE
-		actionDELETEFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "DELETE" && !READONLY && db != "" && t != "" { // DELETE a selected subset
-		actionDELETE(w, r, conn, host, db, t, o, d)
-	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { // UPDATE a selected subset
-		actionUPDATE(w, r, conn, host, db, t, o, d)
-	} else if action == "UPDATEFORM" && !READONLY && db != "" && t != "" { // ask for changed values
-		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "KV_UPDATEFORM" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionKV_UPDATEFORM(w, r, conn, host, db, t, k, v)
-	} else if action == "KV_UPDATE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionKV_UPDATE(w, r, conn, host, db, t, k, v)
-	} else if action == "KV_DELETE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionGV_DELETE(w, r, conn, host, db, t, k, v)
-	} else if action == "GV_UPDATEFORM" && !READONLY && db != "" && t != "" && g != "" && v != "" {
-		actionGV_UPDATEFORM(w, r, conn, host, db, t, g, v)
-	} else if action == "GV_UPDATE" && !READONLY && db != "" && t != "" && g != "" && v != "" {
-		actionGV_UPDATE(w, r, conn, host, db, t, g, v)
-	} else if action == "GV_DELETE" && !READONLY && db != "" && t != "" && g != "" && v != "" {
-		actionGV_DELETE(w, r, conn, host, db, t, g, v)
-	} else if action == "GOTO" && db != "" && t != "" && n != "" {
-		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
-	} else if action == "BACK" {
-		dumpIt(w, r, conn, host, db, "", "", "", "", "", "", "")
-	} else if action != "" {
-		shipMessage(w, host, db, "Unknown action: "+action)
+	if action !=""  && db != "" && t != "" {
+		wclauses, sclauses, _ := collectClauses(r, conn, t)
+		// TODO change *FORM to form="*"
+		if action == "INFO" {
+			actionINFO(w, r, conn, host, db, t)
+		} else if action == "SELECTFORM" {
+			actionSELECTFORM(w, r, conn, host, db, t, o, d)
+		} else if action == "INSERTFORM" && !READONLY {
+			actionINSERTFORM(w, r, conn, host, db, t, o, d)
+		} else if action == "DELETEFORM" && !READONLY { // Create subset for DELETE
+			actionDELETEFORM(w, r, conn, host, db, t, o, d)
+		} else if action == "UPDATEFORM" && !READONLY { // ask for changed values
+			actionUPDATEFORM(w, r, conn, host, db, t, o, d)
+		} else if action == "KV_UPDATEFORM" && !READONLY && k != "" && v != "" {
+			actionKV_UPDATEFORM(w, r, conn, host, db, t, k, v)
+		} else if action == "GV_UPDATEFORM" && !READONLY && g != "" && v != "" {
+			actionGV_UPDATEFORM(w, r, conn, host, db, t, g, v)
+
+		} else if action == "SELECT" {				// SELECT a subset
+			stmt := sqlStar(t) + sqlWhereClauses(wclauses)
+			actionEXEC(w, conn, host, db, t, o, d, stmt)
+		} else if action == "INSERT" && !READONLY {
+			stmt := sqlInsert(t) + sqlSetClauses(sclauses)
+			actionEXEC(w, conn, host, db, t, o, d, stmt)
+		} else if action == "DELETE" && !READONLY { // DELETE a selected subset
+			stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
+			actionEXEC(w, conn, host, db, t, o, d, stmt)
+		} else if action == "UPDATE" && !READONLY { // UPDATE a selected subset
+			stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
+			actionEXEC(w, conn, host, db, t, o, d, stmt)
+
+		} else if action == "KV_UPDATE" && !READONLY && k != "" && v != "" {
+			stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
+			actionEXEC1(w, conn, host, db, t, stmt, v)
+		} else if action == "KV_DELETE" && !READONLY && k != "" && v != "" {
+			stmt := sqlDelete(t) + sqlWhere1(k, "=")
+			actionEXEC1(w, conn, host, db, t, stmt, v)
+		} else if action == "GV_UPDATE" && !READONLY && g != "" && v != "" {
+			stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
+			actionEXEC1(w, conn, host, db, t, stmt, v)
+		} else if action == "GV_DELETE" && !READONLY && g != "" && v != "" {
+			stmt := sqlDelete(t) + sqlWhere1(g, "=")
+			actionEXEC1(w, conn, host, db, t, stmt, v)
+
+		} else if action == "GOTO" && n != "" {
+			dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
+		} else if action == "BACK" {
+			dumpIt(w, r, conn, host, db, "", "", "", "", "", "", "")
+		} else {
+			shipMessage(w, host, db, "Action unknown or insufficient parameters: "+action)
+		}
 	} else {
 		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
 	}
