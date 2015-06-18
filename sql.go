@@ -39,6 +39,13 @@ func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {
 	return stmt, t1.Sub(t0).Seconds(), err
 }
 
+func sqlQuery1(prepared *sql.Stmt, arg string) (*sql.Rows,float64, error) {
+	t0 := time.Now()
+	r, err := prepared.Query(arg)
+	t1 := time.Now()
+	return r, t1.Sub(t0).Seconds(), err
+}
+
 func sqlExec(prepared *sql.Stmt) (sql.Result, float64, error) {
 	t0 := time.Now()
 	r, err := prepared.Exec()
@@ -114,6 +121,14 @@ func sqlWhere(k string, c string, v string) sqlstring {
 		return ""
 	} else {
 		return string2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + sqlProtectString(v)
+	}
+}
+
+func sqlWhere1(k string, c string) sqlstring {
+	if k =="" {
+		return ""
+	} else {
+		return string2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + "?"
 	}
 }
 

@@ -168,8 +168,9 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	q.Add("db", db)
 	q.Add("t", t)
+	q.Add("g", g)
+	q.Add("v", v)
 	q.Del("k")
-	q.Del("v")
 
 	rows, err, sec := getRows(conn, query)
 	if err != nil {
@@ -211,13 +212,14 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		records = append(records, row)
 	}
 
+	q.Add("g", g)
 	q.Set("action", "SELECTFORM")
 	linkselect := q.Encode()
 	q.Set("action", "INSERTFORM")
 	linkinsert := q.Encode()
-	q.Set("action", "UPDATEFORM")
+	q.Set("action", "GV_UPDATEFORM")
 	linkupdate := q.Encode()
-	q.Set("action", "GV_DELETEG")
+	q.Set("action", "GV_DELETE")
 	linkdelete := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
@@ -231,7 +233,6 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	menu = append(menu, escape("i", linkinfo))
 	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 
-	q.Set("g", g)
 	next, err := getSingleValue(conn, host, db, sqlSelect(g, t)+sqlWhere(g, ">", v)+sqlOrder(g, "")+sqlLimit(1, 0))
 	if err == nil {
 		q.Set("v", next)

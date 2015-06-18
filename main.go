@@ -79,7 +79,13 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 	} else if action == "KV_UPDATE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
 		actionKV_UPDATE(w, r, conn, host, db, t, k, v)
 	} else if action == "KV_DELETE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionKV_DELETE(w, r, conn, host, db, t, k, v)
+		actionGV_DELETE(w, r, conn, host, db, t, k, v)
+	} else if action == "GV_UPDATEFORM" && !READONLY && db != "" && t != "" && g != "" && v != "" {
+		actionGV_UPDATEFORM(w, r, conn, host, db, t, g, v)
+	} else if action == "GV_UPDATE" && !READONLY && db != "" && t != "" && g != "" && v != "" {
+		actionGV_UPDATE(w, r, conn, host, db, t, g, v)
+	} else if action == "GV_DELETE" && !READONLY && db != "" && t != "" && g != "" && v != "" {
+		actionGV_DELETE(w, r, conn, host, db, t, g, v)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "BACK" {
