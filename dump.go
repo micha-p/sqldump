@@ -4,76 +4,19 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
-	"regexp"
 )
 
-func makeEntry(nv sql.NullString, db string, t string, c string, primary string) Entry {
-	if nv.Valid {
-		v := nv.String
-		g := url.Values{}
-		g.Add("db", db)
-		g.Add("t", t)
-		if c == primary {
-			g.Add("k", primary)
-			g.Add("v", v)
-			return escape(v, g.Encode())
-		} else {
-			g.Add("g", c)
-			g.Add("v", v)
-			return escape(v, g.Encode())
-		}
-	} else {
-		return escapeNull()
-	}
-}
-
-
-func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
-	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
-
-	query := sqlStar(t)
-	wclauses, _, whereQ := collectClauses(r, conn, t)
-
-	if len(wclauses) > 0 {
-		query = "SELECT TEMP.* FROM (" + query + sqlWhereClauses(wclauses) + ") TEMP "
-	}
-	if o != "" {
-		query = query + sqlOrder(o, d)
-	}
-
-	if g !="" && v !=""{
-		query = sqlStar(t) + sqlWhereClauses(wclauses) + sqlHaving(g, "=", v) + sqlOrder(o, d)
-		dumpGroup(w, conn, host, db, t, o, d, g, v, query, whereQ)
-	} else if n != "" {
-		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
-		limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
-
-		if singlenumber != "" {
-			nint, _ := Atoi64(singlenumber)
-			query = query + sqlLimit(2, nint) // for finding next record
-			dumpFields(w, conn, host, db, t, o, d, singlenumber, nint, query, whereQ)
-		} else if len(limits) == 3 {
-			startint, err := Atoi64(limits[1])
-			checkY(err)
-			endint, err := Atoi64(limits[2])
-			checkY(err)
-			maxint, err := Atoi64(getCount(conn, t))
-			checkY(err)
-			endint = minInt64(endint, maxint)
-			query = query + sqlLimit(1+endint-startint, startint)
-			dumpRange(w, conn, host, db, t, o, d, startint, endint, maxint, query)
-		} else {
-			shipMessage(w, host, db, "Can't convert to number or range: "+n)
-		}
-	} else {
-		if len(wclauses) > 0 {
-			dumpWhere(w, conn, host, db, t, o, d, query, whereQ)
-		} else {
-			dumpRows(w, conn, host, db, t, o, d, []Message{}, query)
-		}
-	}
-}
-
+/* Outline of these routines:
+ *
+ * get pointer to rows
+ * get further data
+ * create head
+ * init values and valuePtrs
+ * build records
+ * create menu
+ * push message
+ * table out
+ */
 
 func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, messageStack []Message, query sqlstring) {
 

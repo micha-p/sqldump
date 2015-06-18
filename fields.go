@@ -122,3 +122,4 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	linkleft := escape("<", q.Encode())
 	tableOutFields(w, conn, host, db, t, primary, k, "", k, v, k + " (ID) =", linkleft, linkright, head, records, menu)
 }
+

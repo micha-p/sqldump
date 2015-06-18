@@ -4,20 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
+	"regexp"
 )
-
-// rows are not adressable:
-// dumpRows  -> SELECTFORM, INSERTFORM, INFO
-// dumpRange -> SELECTFORM, INSERTFORM, INFO
-// dumpField -> SELECTFORM, INSERTFORM, INFO
-
-// rows are selected by where-clause
-// dumpWhere 		-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
-
-// rows are selected by key or group
-// dumpKeyValue 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
-// dumpGroup	 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
-
 
 
 
@@ -63,6 +51,53 @@ func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 	}
 	// message suppressed, as it is not really useful and database should be chosen at login or bookmarked
 	tableOutSimple(w, conn, host, "", "", head, records, []Entry{})
+}
+
+
+func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
+	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
+
+	stmt := sqlStar(t)
+	wclauses, _, whereQ := collectClauses(r, conn, t)
+
+	if len(wclauses) > 0 {
+		stmt = "SELECT TEMP.* FROM (" + stmt + sqlWhereClauses(wclauses) + ") TEMP "
+	}
+	if o != "" {
+		stmt = stmt + sqlOrder(o, d)
+	}
+
+	if g !="" && v !=""{
+		stmt = sqlStar(t) + sqlWhereClauses(wclauses) + sqlHaving(g, "=", v) + sqlOrder(o, d)
+		dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, whereQ)
+	} else if n != "" {
+		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
+		limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
+
+		if singlenumber != "" {
+			nint, _ := Atoi64(singlenumber)
+			stmt = stmt + sqlLimit(2, nint) // for finding next record
+			dumpFields(w, conn, host, db, t, o, d, singlenumber, nint, stmt, whereQ)
+		} else if len(limits) == 3 {
+			startint, err := Atoi64(limits[1])
+			checkY(err)
+			endint, err := Atoi64(limits[2])
+			checkY(err)
+			maxint, err := Atoi64(getCount(conn, t))
+			checkY(err)
+			endint = minInt64(endint, maxint)
+			stmt = stmt + sqlLimit(1+endint-startint, startint)
+			dumpRange(w, conn, host, db, t, o, d, startint, endint, maxint, stmt)
+		} else {
+			shipMessage(w, host, db, "Can't convert to number or range: "+n)
+		}
+	} else {
+		if len(wclauses) > 0 {
+			dumpWhere(w, conn, host, db, t, o, d, stmt, whereQ)
+		} else {
+			dumpRows(w, conn, host, db, t, o, d, []Message{}, stmt)
+		}
+	}
 }
 
 //  Dump all tables of a database
@@ -130,4 +165,76 @@ func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		msg = Message{Msg:sql2string(query),Rows:rownum,Affected:-1,Seconds:sec }
 	}
 	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, "", url.Values{})
+}
+
+
+/*
+ show columns from posts;
++-------+-------------+------+-----+---------+-------+
+| Field | Type        | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| title | varchar(64) | YES  |     | NULL    |       |
+| start | date        | YES  |     | NULL    |       |
++-------+-------------+------+-----+---------+-------+
+*/
+func dumpInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring) {
+
+	rows, err, _:= getRows(conn, stmt)
+	checkY(err)
+	defer rows.Close()
+
+	q := url.Values{}
+	q.Add("db", db)
+	q.Add("t", t)
+	q.Set("action", "SELECTFORM")
+	linkselect := q.Encode()
+	q.Set("action", "INSERTFORM")
+	linkinsert := q.Encode()
+	q.Set("action", "DELETEFORM")
+	linkdeleteF := q.Encode()
+	q.Set("action", "INFO")
+	linkinfo := q.Encode()
+	q.Del("action")
+
+	menu := []Entry{}
+	menu = append(menu, escape("?", linkselect))
+	menu = append(menu, escape("+", linkinsert))
+	menu = append(menu, escape("-", linkdeleteF))
+	menu = append(menu, escape("i", linkinfo))
+
+	records := [][]Entry{}
+	head := []Entry{escape("#"), escape("Field"), escape("Type"), escape("Null"), escape("Key"), escape("Default"), escape("Extra")}
+
+	var i int64 = 1
+	for rows.Next() {
+		var f, t, n, k, e string
+		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
+		err := rows.Scan(&f, &t, &n, &k, &d, &e)
+		checkY(err)
+		records = append(records, []Entry{escape(Int64toa(i)), escape(f), escape(t), escape(n), escape(k), escape(string(d)), escape(e)})
+		i = i + 1
+	}
+	// message not shown as it disturbs equal alignment of info, query and field.
+	tableOutSimple(w, conn, host, db, t, head, records, menu)
+}
+
+// do not export
+func makeEntry(nv sql.NullString, db string, t string, c string, primary string) Entry {
+	if nv.Valid {
+		v := nv.String
+		g := url.Values{}
+		g.Add("db", db)
+		g.Add("t", t)
+		if c == primary {
+			g.Add("k", primary)
+			g.Add("v", v)
+			return escape(v, g.Encode())
+		} else {
+			g.Add("g", c)
+			g.Add("v", v)
+			return escape(v, g.Encode())
+		}
+	} else {
+		return escapeNull()
+	}
 }

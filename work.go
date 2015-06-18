@@ -9,19 +9,35 @@ import (
 	"strings"
 )
 
+// Output:
+// rows 			dump.go -> dumpRows, dumpRange, dumpWhere, dumpGroup, dumpWhereGrup
+// fields 			fields.go -> dumpFields dumpKeyValue
+// simple table		toplevel.go -> dumpHome dumpTables dumpInfo
+
 
 // rows are not adressable:
-// dumpRows  -> SELECTFORM, INSERTFORM, INFO
-// dumpRange -> SELECTFORM, INSERTFORM, INFO
-// dumpField -> SELECTFORM, INSERTFORM, INFO
-
-// rows are selected by where-clause
+// dumpRows  -> SELECTFORM, INSERTFORM, PLEASESELECT, PLEASESELECT, INFO
+// dumpRange -> SELECTFORM, INSERTFORM, PLEASESELECT, PLEASESELECT, INFO
+// dumpField -> SELECTFORM, INSERTFORM, PLEASESELECT, PLEASESELECT, INFO
+//
+// rows are selected by where-clause:
 // dumpWhere 		-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
-
-// rows are selected by key or group
+//
+// rows are selected by key or group:
 // dumpKeyValue 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
 // dumpGroup	 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+//
+// rows are selected by where and further identified by having group value
+// dumpWhereGrouped	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+//
+// toplevel
+// dumpHome			-> depreciated (ACTION USEFORM)
+// dumpTables		-> INSERTFORM, ALTERFORM, DROP, INFODB
 
+
+/* showing always the same five menu entries introduces lesser changes in user interface.
+ * Two subsequent forms might be confusing as well, on the other hand, insisting on select step might feel pedantic.
+ */
 
 func readRequest(r *http.Request) (string, string, string, string, string, string, string, string) {
 	q := r.URL.Query()
@@ -48,7 +64,11 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 		wclauses, sclauses, whereQ := collectClauses(r, conn, t)
 		// TODO change *FORM to form="*"
 		if action == "INFO" {
-			actionINFO(w, r, conn, host, db, t)
+			stmt := string2sql("SHOW TABLES")
+			dumpInfo(w, conn, host, db, t, stmt)
+		} else if action == "BACK" {
+			dumpIt(w, r, conn, host, db, "", "", "", "", "", "", "")
+
 		} else if action == "SELECTFORM" {
 			actionSELECTFORM(w, r, conn, host, db, t, o, d)
 		} else if action == "INSERTFORM" && !READONLY {
@@ -89,10 +109,6 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 			stmt := sqlDelete(t) + sqlWhere1(g, "=")
 			actionEXEC1(w, conn, host, db, t, stmt, v)
 
-		} else if action == "GOTO" && n != "" {
-			dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
-		} else if action == "BACK" {
-			dumpIt(w, r, conn, host, db, "", "", "", "", "", "", "")
 		} else {
 			shipMessage(w, host, db, "Action unknown or insufficient parameters: "+action)
 		}
@@ -102,6 +118,8 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 }
 
 // TODO: to allow for submitting multiple clauses for a field, they should be numbered W1, O1 ...
+
+// do not export
 func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sqlstring, url.Values) {
 
 	v := url.Values{}
@@ -196,3 +214,5 @@ func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
 	}
 	return strings.Join(clauses, " & ")
 }
+
+
