@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 /* sql escaping using prepared statements in Go is restricted, as it does not work for identifiers */
@@ -23,24 +24,35 @@ func string2sql(s string) sqlstring {
 // Interface functions to underlying sql driver
 
 func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, error) {
-	stmt, err := conn.Prepare(sql2string(s))
+	stmtstr := sql2string(s)
+	log.Println("[SQL]", stmtstr)
+	stmt, err := conn.Prepare(stmtstr)
 	return stmt, err
 }
 
-func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, error) {
+func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {
 	stmtstr := string(s)
 	log.Println("[SQL]", stmtstr)
+	t0 := time.Now()
 	stmt, err := conn.Query(stmtstr)
-	return stmt, err
+	t1 := time.Now()
+	return stmt, t1.Sub(t0).Seconds(), err
 }
 
-func sqlExec(conn *sql.DB, s sqlstring) (*sql.Rows, error) {
-	stmtstr := string(s)
-	log.Println("[SQL]", stmtstr)
-	stmt, err := conn.Query(stmtstr)
-	return stmt, err
+func sqlExec(prepared *sql.Stmt) (sql.Result, float64, error) {
+	t0 := time.Now()
+	r, err := prepared.Exec()
+	t1 := time.Now()
+	return r, t1.Sub(t0).Seconds(), err
 }
 
+func sqlExec1(prepared *sql.Stmt, arg string) (sql.Result, float64, error) {
+	log.Println("[SQL]", arg)
+	t0 := time.Now()
+	r, err := prepared.Exec(arg)
+	t1 := time.Now()
+	return r, t1.Sub(t0).Seconds(), err
+}
 
 func sqlQueryRow(conn *sql.DB, s sqlstring) *sql.Row {
 	return conn.QueryRow(sql2string(s))

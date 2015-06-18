@@ -34,7 +34,7 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 
 	v.Add("db", db)
 	v.Add("t", t)
-	v.Add("action", "ADD")
+	v.Add("action", "INSERTFORM")
 	linkinsert := v.Encode()
 	v.Set("action", "INFO")
 	linkinfo := v.Encode()
@@ -88,22 +88,22 @@ func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
-	q.Add("action", "ADD")
+	q.Add("action", "INSERTFORM")
 	linkinsert := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
 	q.Add("k", k)
 	q.Add("v", v)
-	q.Set("action", "DELETEPRI")
-	linkDELETEPRI := q.Encode()
-	q.Set("action", "EDITFORM")
-	linkedit := q.Encode()
+	q.Set("action", "KV_UPDATEFORM")
+	linkupdate := q.Encode()
+	q.Set("action", "KV_DELETE")
+	linkdelete := q.Encode()
 	q.Del("action")
 
 	menu := []Entry{}
 	menu = append(menu, escape("+", linkinsert))
-	menu = append(menu, escape("~", linkedit))
-	menu = append(menu, escape("-", linkDELETEPRI))
+	menu = append(menu, escape("~", linkupdate))
+	menu = append(menu, escape("-", linkdelete))
 	menu = append(menu, escape("i", linkinfo))
 
 	next, err := getSingleValue(conn, host, db, sqlSelect(k, t)+sqlWhere(k, ">", v)+sqlOrder(k, "")+sqlLimit(1, 0))

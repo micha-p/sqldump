@@ -7,7 +7,6 @@ import (
 	"log"
 	"regexp"
 	"errors"
-	"time"
 )
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -40,11 +39,8 @@ type CContext struct {
 func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error, float64) {
 	err := conn.Ping()
 	checkY(err)
-	log.Println("[SQL]", sql2string(stmt))
-	t0 := time.Now()
-	rows, err := sqlQuery(conn, stmt)
-	t1 := time.Now()
-	return rows, err, t1.Sub(t0).Seconds()
+	rows, sec, err := sqlQuery(conn, stmt)
+	return rows, err, sec
 }
 
 func getSingleValue(conn *sql.DB, host string, db string, stmt sqlstring) (string, error) {
@@ -83,7 +79,7 @@ func getCols(conn *sql.DB, t string) []string {
 	log.Println("[SQL]", "get columns quickly: ", t)
 	err := conn.Ping()
 	checkY(err)
-	rows, err := sqlQuery(conn, sqlStar(t)+sqlLimit(0, 0))
+	rows, _, err := sqlQuery(conn, sqlStar(t)+sqlLimit(0, 0))
 	checkY(err)
 	defer rows.Close()
 
@@ -94,7 +90,7 @@ func getCols(conn *sql.DB, t string) []string {
 func getPrimary(conn *sql.DB, t string) string {
 	err := conn.Ping()
 	checkY(err)
-	rows, err := sqlQuery(conn, sqlColumns(t)+sqlWhere("Key", "=", "PRI"))
+	rows, _, err := sqlQuery(conn, sqlColumns(t)+sqlWhere("Key", "=", "PRI"))
 	checkY(err)
 	defer rows.Close()
 
@@ -142,7 +138,7 @@ func getColumnMainType(conn *sql.DB, host string, db string, t string, c string)
 func getColumnInfo(conn *sql.DB, t string) []CContext {
 	err := conn.Ping()
 	checkY(err)
-	rows, err := sqlQuery(conn, sqlColumns(t))
+	rows, _, err := sqlQuery(conn, sqlColumns(t))
 	checkY(err)
 	defer rows.Close()
 
@@ -209,6 +205,7 @@ func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary
 	checkY(err)
 
 	colinfos := getColumnInfo(conn, t)
+	rows.Next()
 	cols, vals, err := getRowScan(rows)
 	checkY(err)
 	newcols := []CContext{}

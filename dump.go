@@ -76,6 +76,10 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 }
 
 func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring) {
+	dumpQuery(w, conn, host, db, t, o, d, []Message{}, query)
+}
+
+func dumpQuery(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, messageStack []Message, query sqlstring) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -123,14 +127,14 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 		records = append(records, row)
 	}
 
-	q.Set("action", "QUERY")
+	q.Set("action", "SELECTFORM")
 	linkselect := q.Encode()
-	q.Set("action", "ADD")
+	q.Set("action", "INSERTFORM")
 	linkinsert := q.Encode()
-	q.Set("action", "UPDATEFORM")
+	q.Set("action", "SELECTFORUPDATEFORM")
 	linkupdate := q.Encode()
-	q.Set("action", "QUERYDELETE")
-	linkdeleteF := q.Encode()
+	q.Set("action", "DELETEFORM")
+	linkdelete := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
 	q.Del("action")
@@ -142,7 +146,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	menu = append(menu, escape("?", linkselect))
 	menu = append(menu, escape("+", linkinsert))
 	menu = append(menu, escape("~", linkupdate))
-	menu = append(menu, escape("-", linkdeleteF))
+	menu = append(menu, escape("-", linkdelete))
 	menu = append(menu, escape("i", linkinfo))
 
 	var msg Message
@@ -151,8 +155,14 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	} else {
 		msg = Message{Msg:sql2string(query),Rows:rownum,Affected:-1,Seconds:sec }
 	}
-	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, []Message{msg}, "", url.Values{})
+	messageStack = append(messageStack,msg)
+	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, "", url.Values{})
 }
+
+// difference to dumprows
+// 1. counter, label, linkleft and linkright
+// 2. as there is already a selection, update will show UPDATEFORM
+// 3. Delete will delete immediately
 
 func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, query sqlstring, q url.Values) {
 
@@ -201,14 +211,14 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		records = append(records, row)
 	}
 
-	q.Set("action", "QUERY")
+	q.Set("action", "SELECTFORM")
 	linkselect := q.Encode()
-	q.Set("action", "ADD")
+	q.Set("action", "INSERTFORM")
 	linkinsert := q.Encode()
-/*	q.Set("action", "UPDATEFORM")
+	q.Set("action", "UPDATEFORM")
 	linkupdate := q.Encode()
-	q.Set("action", "DELETE")
-	linkdelete := q.Encode() */
+	q.Set("action", "GV_DELETEG")
+	linkdelete := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
 	q.Del("action")
@@ -216,8 +226,8 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	menu := []Entry{}
 	menu = append(menu, escape("?", linkselect))
 	menu = append(menu, escape("+", linkinsert))
-/*	menu = append(menu, escape("~", linkupdate))
-	menu = append(menu, escape("-", linkdelete)) */
+	menu = append(menu, escape("~", linkupdate))
+	menu = append(menu, escape("-", linkdelete))
 	menu = append(menu, escape("i", linkinfo))
 	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 
@@ -245,6 +255,11 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	}
 	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, []Message{msg},wherestring, q)
 }
+
+// difference to dumprows
+// 1. trail shows where clauses
+// 2. as there is already a selection, update will show UPDATEFORM
+// 3. delete will show filled DELETEFORM for confirmation (TODO)
 
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring, q url.Values) {
 
@@ -294,13 +309,13 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		records = append(records, row)
 	}
 
-	q.Set("action", "QUERY")
+	q.Set("action", "SELECTFORM")
 	linkselect := q.Encode()
-	q.Set("action", "ADD")
+	q.Set("action", "INSERTFORM")
 	linkinsert := q.Encode()
 	q.Set("action", "UPDATEFORM")
 	linkupdate := q.Encode()
-	q.Set("action", "DELETE")
+	q.Set("action", "FILLEDDELETEFORM")
 	linkdelete := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()
@@ -322,14 +337,15 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, []Message{msg}, wherestring, q)
 }
 
+// as this is not a selection based on where clauses, manipulation is not possible
 func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64, query sqlstring) {
 
 	q := url.Values{}
 	q.Add("db", db)
 	q.Add("t", t)
-	q.Add("action", "ADD")
+	q.Add("action", "INSERTFORM")
 	linkinsert := q.Encode()
-	q.Set("action", "QUERY")
+	q.Set("action", "SELECTFORM")
 	linkselect := q.Encode()
 	q.Set("action", "INFO")
 	linkinfo := q.Encode()

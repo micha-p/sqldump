@@ -55,30 +55,31 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if action == "QUERY" && db != "" && t != "" {
-		actionQUERY(w, r, conn, host, db, t, o, d)
+	// TODO change *FORM to form="*"
+	if action == "SELECTFORM" && db != "" && t != "" {
+		actionSELECTFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "SELECT" && db != "" && t != "" {
 		actionSELECT(w, r, conn, host, db, t, o, d)
 	} else if action == "INFO" && db != "" && t != "" {
 		actionINFO(w, r, conn, host, db, t)
-	} else if action == "ADD" && !READONLY && db != "" && t != "" {
-		actionADD(w, r, conn, host, db, t, o, d)
+	} else if action == "INSERTFORM" && !READONLY && db != "" && t != "" {
+		actionINSERTFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "INSERT" && !READONLY && db != "" && t != "" {
 		actionINSERT(w, r, conn, host, db, t, o, d)
-	} else if action == "QUERYDELETE" && !READONLY && db != "" && t != "" { // Create subset for DELETE
-		actionQUERYDELETE(w, r, conn, host, db, t, o, d)
+	} else if action == "DELETEFORM" && !READONLY && db != "" && t != "" { // Create subset for DELETE
+		actionDELETEFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "DELETE" && !READONLY && db != "" && t != "" { // DELETE a selected subset
 		actionDELETE(w, r, conn, host, db, t, o, d)
 	} else if action == "UPDATE" && !READONLY && db != "" && t != "" { // UPDATE a selected subset
 		actionUPDATE(w, r, conn, host, db, t, o, d)
 	} else if action == "UPDATEFORM" && !READONLY && db != "" && t != "" { // ask for changed values
 		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "EDITFORM" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionEDITFORM(w, r, conn, host, db, t, k, v)
-	} else if action == "UPDATEPRI" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionUPDATEPRI(w, r, conn, host, db, t, k, v)
-	} else if action == "DELETEPRI" && !READONLY && db != "" && t != "" && k != "" && v != "" {
-		actionDELETEPRI(w, r, conn, host, db, t, k, v)
+	} else if action == "KV_UPDATEFORM" && !READONLY && db != "" && t != "" && k != "" && v != "" {
+		actionKV_UPDATEFORM(w, r, conn, host, db, t, k, v)
+	} else if action == "KV_UPDATE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
+		actionKV_UPDATE(w, r, conn, host, db, t, k, v)
+	} else if action == "KV_DELETE" && !READONLY && db != "" && t != "" && k != "" && v != "" {
+		actionKV_DELETE(w, r, conn, host, db, t, k, v)
 	} else if action == "GOTO" && db != "" && t != "" && n != "" {
 		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "BACK" {

@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}} -- {{.Action}}</title> 
+<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}} -- {{.Action}}</title>
 {{if .CSS}}<link rel="stylesheet" type="text/css" href="{{.CSS}}"/>{{end}}
 
 <body>
@@ -33,7 +33,7 @@
       <OPTION value="!0"> !0 </OPTION>
 {{end}}</SELECT>{{end}}
 {{define "oselector"}}
-<SELECT name="{{.Name}}O" style="width: 100%"> 
+<SELECT name="{{.Name}}O" style="width: 100%">
       <OPTION value="="> =  </OPTION>
       <OPTION value="<>"> &ne; </OPTION>
       <OPTION value=">"> &gt; </OPTION>
@@ -46,17 +46,17 @@
 {{end}}</SELECT>{{end}}
 {{define "selector"}}{{if .IsNumeric}}{{template "nselector" .}}{{else if .IsString}}{{template "tselector" .}}{{else}}{{template "oselector" .}}{{end}}{{end}}
 {{define "set"}}<input class="cell" type="text" name="{{.Name}}S" value="{{.Value}}">{{end}}
-{{define "null"}}<input class="cell" type="checkbox" name="{{.Name}}N" value=1 {{if .Valid}}{{else}} checked="checked"{{end}}>{{end}}
+{{define "null"}}<input class="cell" type="checkbox" name="{{.Name}}N" {{if .Nullable}}value=1 {{if .Valid}}{{else}} checked="checked"{{end}}{{else}} disabled = "disabled"{{end}}>{{end}}
 {{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
 {{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 {{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
 {{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "where" .}}{{end}}{{end}}
 
-<!-- 
+<!--
 <input
     id="example"
-    name="example" 
-    onClick="toggle('example', 'disableMe')" 
+    name="example"
+    onClick="toggle('example', 'disableMe')"
     type="checkbox" value="1" /> When this is checked, something is disabled <br />
 
 <input
@@ -70,7 +70,7 @@
 	<div class="breadcrumb">
 	    <a class="trail" href="logout">&times;</a>{{range .Trail}}
 	    <a class="trail" href="{{.Link}}">{{.Text}}</a>{{end}}
-	</div>    
+	</div>
 </div>{{end}}
 
 <div class="main">
