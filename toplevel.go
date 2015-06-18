@@ -14,7 +14,7 @@ func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 		dumpHome(w, conn, host)
 		return
 	} else if t == "" {
-		dumpTables(w, db, conn, host)
+		dumpTables(w, conn, host, db, t, o, d, g, v)
 	} else if k != "" && v != "" && k == getPrimary(conn, t) {
 		dumpKeyValue(w, db, t, k, v, conn, host, sqlStar(t)+sqlWhere(k, "=", v))
 	} else {
@@ -50,29 +50,74 @@ func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 }
 
 //  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, db string, conn *sql.DB, host string) {
+func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string) {
 
 	q := url.Values{}
 	q.Add("db", db)
-	stmt := string2sql("SHOW TABLES")
+    // "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
+	stmt := string2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
+
+	stmt = stmt + " FROM information_schema.TABLES"
+	stmt = stmt + sqlWhere("TABLE_SCHEMA","=",db) + sqlHaving(g, "=", v) + sqlOrder(o,d)
 	rows, err, sec := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 
-	records := [][]Entry{}
-	head := []Entry{{"#", "", ""}, {"Table", "", ""}, {"Rows", "", ""}} // TODO create head with order
+	columns, err := rows.Columns()
+	checkY(err)
+	home := url.Values{}
+	home.Add("db", db)
+	home.Add("o", o)
+	home.Add("d", d)
+	head := createHead(db, "", o, d, "", "", columns, home)
 
+	count := len(columns)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
+	for i, _ := range columns {
+		valuePtrs[i] = &values[i]
+	}
+	records := [][]Entry{}
 	rownum := 0
 	for rows.Next() {
 		rownum = rownum + 1
-		var field string
-		rows.Scan(&field)
-		nrows := getCount(conn, field)
-
-		q.Set("t", field)
-		link := q.Encode()
-		row := []Entry{escape(strconv.Itoa(rownum), link), escape(field, link), escape(nrows, "")}
+		row := []Entry{}
+		err = rows.Scan(valuePtrs...)
+		checkY(err)
+		g := url.Values{}
+		g.Add("db", db)
+		g.Add("t", getNullString(values[0]).String)
+		row = append(row, escape(strconv.Itoa(rownum), g.Encode()))
+		for i, c := range columns {
+			nv := getNullString(values[i])
+			if c == "Table" || c == "Comment" {
+				v := nv.String
+				g := url.Values{}
+				g.Add("db", db)
+				g.Add("t", v)
+				row = append(row, escape(v, g.Encode()))
+			} else if c == "Rows" && (db == "INFORMATION_SCHEMA" || db =="information_schema") && (INFOFLAG || EXPERTFLAG) {
+				v := getCount(conn,row[1].Text)
+				g := url.Values{}
+				g.Add("db", db)
+				g.Add("g", c)
+				g.Add("v", v)
+				row = append(row, escape(v, g.Encode()))
+			} else if nv.Valid {
+				v := nv.String
+				g := url.Values{}
+				g.Add("db", db)
+				g.Add("g", c)
+				g.Add("v", v)
+				row = append(row, escape(v, g.Encode()))
+			} else {
+				row = append(row, escapeNull())
+			}
+		}
 		records = append(records, row)
 	}
+
+	// Shortened statement
+	stmt = "SHOW TABLES" + sqlHaving(g, "=", v) + sqlOrder(o,d)
 	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, sql2string(stmt), rownum, -1, sec,"", url.Values{})
 }

@@ -80,7 +80,6 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	for i, _ := range columns {
 		valuePtrs[i] = &values[i]
 	}
-
 	records := [][]Entry{}
 	rownum := 0
 	for rows.Next() {
@@ -97,11 +96,11 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
 
-		for i, _ := range columns {
+		for i, c := range columns {
 			nv := getNullString(values[i])
 			if nv.Valid {
 				v := nv.String
-				if columns[i] == primary {
+				if c == primary {
 					q.Del("o")
 					q.Del("d")
 					q.Del("n")
@@ -114,7 +113,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 					g := url.Values{}
 					g.Add("db", db)
 					g.Add("t", t)
-					g.Add("g", columns[i])
+					g.Add("g", c)
 					g.Add("v", v)
 					row = append(row, escape(v, g.Encode()))
 				}
@@ -194,11 +193,11 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
 
-		for i, _ := range columns {
+		for i, c := range columns {
 			nv := getNullString(values[i])
 			if nv.Valid {
 				v := nv.String
-				if columns[i] == primary {
+				if c == primary {
 					q.Del("o")
 					q.Del("d")
 					q.Del("n")
@@ -211,7 +210,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 					g := url.Values{}
 					g.Add("db", db)
 					g.Add("t", t)
-					g.Add("g", columns[i])
+					g.Add("g", c)
 					g.Add("v", v)
 					row = append(row, escape(v, g.Encode()))
 				}
@@ -306,11 +305,11 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
 
-		for i, _ := range columns {
+		for i, c := range columns {
 			nv := getNullString(values[i])
 			if nv.Valid {
 				v := nv.String
-				if columns[i] == primary {
+				if c == primary {
 					q.Del("o")
 					q.Del("d")
 					q.Del("n")
@@ -323,7 +322,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 					g := url.Values{}
 					g.Add("db", db)
 					g.Add("t", t)
-					g.Add("g", columns[i])
+					g.Add("g", c)
 					g.Add("v", v)
 					row = append(row, escape(v, g.Encode()))
 				}
@@ -420,11 +419,11 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
 
-		for i, _ := range columns {
+		for i, c := range columns {
 			nv := getNullString(values[i])
 			if nv.Valid {
 				v := nv.String
-				if columns[i] == primary {
+				if c == primary {
 					q.Del("o")
 					q.Del("d")
 					q.Del("n")
@@ -435,7 +434,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 					g := url.Values{}
 					g.Add("db", db)
 					g.Add("t", t)
-					g.Add("g", columns[i])
+					g.Add("g", c)
 					g.Add("v", v)
 					row = append(row, escape(v, g.Encode()))
 				}

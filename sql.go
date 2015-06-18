@@ -91,7 +91,20 @@ func sqlDelete(t string) sqlstring {
 }
 
 func sqlWhere(k string, c string, v string) sqlstring {
-	return string2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + sqlProtectString(v)
+	if k =="" {
+		return ""
+	} else {
+		return string2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + sqlProtectString(v)
+	}
+}
+
+// TODO: check usefulness for quick groups
+func sqlHaving(g string, c string, v string) sqlstring {
+	if g =="" {
+		return ""
+	} else {
+		return string2sql(" HAVING ") + sqlProtectIdentifier(g) + sqlFilterComparator(c) + sqlProtectString(v)
+	}
 }
 
 // from http://golang.org/src/strings/strings.go?h=Join#L382
