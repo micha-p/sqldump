@@ -217,15 +217,6 @@ func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
 	return strings.Join(clauses, " & ")
 }
 
-func actionSELECT(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-	wclauses, _, whereQ := collectClauses(r, conn, t)
-	if len(wclauses) > 0 {
-		query := sqlStar(t) + sqlWhereClauses(wclauses)
-		dumpWhere(w, conn, host, db, t, o, d, query, whereQ)
-	} else {
-		shipMessage(w, host, db, "Where clauses not found")
-	}
-}
 
 // Excutes a statement on a selection by where-clauses
 // Used, when rows are not adressable by a primary key or in table having a group
@@ -244,7 +235,7 @@ func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 
 	messageStack = append(messageStack, Message{"EXECUTE stmt", -1,affected,sec})
 	nextstmt := sqlStar(t) + sqlOrder(o,d)
-	dumpQuery(w, conn, host, db, t, o, d, messageStack, nextstmt)
+	dumpRows(w, conn, host, db, t, o, d, messageStack, nextstmt)
 }
 
 
@@ -266,7 +257,7 @@ func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t 
 
 	messageStack = append(messageStack, Message{"EXECUTE stmt USING \"" + arg + "\"", -1,affected,sec})
 	nextstmt := sqlStar(t)
-	dumpQuery(w, conn, host, db, t, "", "", messageStack, nextstmt)
+	dumpRows(w, conn, host, db, t, "", "", messageStack, nextstmt)
 }
 
 

@@ -7,6 +7,19 @@ import (
 	"regexp"
 )
 
+// rows are not adressable:
+// dumpRows  -> SELECTFORM, INSERTFORM, INFO
+// dumpRange -> SELECTFORM, INSERTFORM, INFO
+// dumpField -> SELECTFORM, INSERTFORM, INFO
+
+// rows are selected by where-clause
+// dumpWhere 		-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+
+// rows are selected by key or group
+// dumpKeyValue 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+// dumpGroup	 	-> SELECTFORM, INSERTFORM, UPDATEFORM, DELETE, INFO
+
+
 func makeEntry(nv sql.NullString, db string, t string, c string, primary string) Entry {
 	if nv.Valid {
 		v := nv.String
@@ -28,7 +41,6 @@ func makeEntry(nv sql.NullString, db string, t string, c string, primary string)
 }
 
 
-// TODO: better dispatching
 func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
@@ -70,16 +82,13 @@ func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 		if len(wclauses) > 0 {
 			dumpWhere(w, conn, host, db, t, o, d, query, whereQ)
 		} else {
-			dumpRows(w, conn, host, db, t, o, d, query)
+			dumpRows(w, conn, host, db, t, o, d, []Message{}, query)
 		}
 	}
 }
 
-func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring) {
-	dumpQuery(w, conn, host, db, t, o, d, []Message{}, query)
-}
 
-func dumpQuery(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, messageStack []Message, query sqlstring) {
+func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, messageStack []Message, query sqlstring) {
 
 	q := url.Values{}
 	q.Add("db", db)
@@ -260,7 +269,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 // difference to dumprows
 // 1. trail shows where clauses
 // 2. as there is already a selection, update will show UPDATEFORM
-// 3. delete will show filled DELETEFORM for confirmation (TODO)
+// 3. delete will show FILLEDDELETEFORM for confirmation (TODO)
 
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, query sqlstring, q url.Values) {
 

@@ -55,7 +55,7 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if action !=""  && db != "" && t != "" {
-		wclauses, sclauses, _ := collectClauses(r, conn, t)
+		wclauses, sclauses, whereQ := collectClauses(r, conn, t)
 		// TODO change *FORM to form="*"
 		if action == "INFO" {
 			actionINFO(w, r, conn, host, db, t)
@@ -72,26 +72,27 @@ func workload(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string)
 		} else if action == "GV_UPDATEFORM" && !READONLY && g != "" && v != "" {
 			actionGV_UPDATEFORM(w, r, conn, host, db, t, g, v)
 
-		} else if action == "SELECT" {				// SELECT a subset
+		} else if action == "SELECT"  && len(wclauses)> 0 {
 			stmt := sqlStar(t) + sqlWhereClauses(wclauses)
-			actionEXEC(w, conn, host, db, t, o, d, stmt)
-		} else if action == "INSERT" && !READONLY {
+			// actionEXEC(w, conn, host, db, t, o, d, stmt)
+			dumpWhere(w, conn, host, db, t, o, d, stmt, whereQ)
+		} else if action == "INSERT" && !READONLY  && len(sclauses)> 0 {
 			stmt := sqlInsert(t) + sqlSetClauses(sclauses)
 			actionEXEC(w, conn, host, db, t, o, d, stmt)
-		} else if action == "DELETE" && !READONLY { // DELETE a selected subset
+		} else if action == "DELETE" && !READONLY  && len(wclauses)> 0 {
 			stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
 			actionEXEC(w, conn, host, db, t, o, d, stmt)
-		} else if action == "UPDATE" && !READONLY { // UPDATE a selected subset
+		} else if action == "UPDATE" && !READONLY  && len(sclauses)> 0  && len(wclauses)> 0 {
 			stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
 			actionEXEC(w, conn, host, db, t, o, d, stmt)
 
-		} else if action == "KV_UPDATE" && !READONLY && k != "" && v != "" {
+		} else if action == "KV_UPDATE" && !READONLY && k != "" && v != ""  && len(sclauses)> 0 {
 			stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
 			actionEXEC1(w, conn, host, db, t, stmt, v)
 		} else if action == "KV_DELETE" && !READONLY && k != "" && v != "" {
 			stmt := sqlDelete(t) + sqlWhere1(k, "=")
 			actionEXEC1(w, conn, host, db, t, stmt, v)
-		} else if action == "GV_UPDATE" && !READONLY && g != "" && v != "" {
+		} else if action == "GV_UPDATE" && !READONLY && g != "" && v != ""  && len(sclauses)> 0{
 			stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
 			actionEXEC1(w, conn, host, db, t, stmt, v)
 		} else if action == "GV_DELETE" && !READONLY && g != "" && v != "" {
