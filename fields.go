@@ -9,9 +9,9 @@ import (
 
 // Dump all fields of a record, one column per line
 
-func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, query sqlstring, v url.Values) {
+func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, stmt sqlstring, v url.Values) {
 
-	rows, err, _ := getRows(conn, query)
+	rows, err, _ := getRows(conn, stmt)
 	defer rows.Close()
 	checkY(err)
 
@@ -64,9 +64,9 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	tableOutFields(w, conn, host, db, t, "", o, d, "", n, "#", linkleft, linkright, head, records, menu)
 }
 
-func dumpKeyValue(w http.ResponseWriter, db string, t string, k string, v string, conn *sql.DB, host string, query sqlstring) {
+func dumpKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, k string, v string,  stmt sqlstring) {
 
-	rows, err, _ := getRows(conn, query)
+	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 

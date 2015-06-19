@@ -30,15 +30,15 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	action := q.Get("action")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	wclauses, sclauses, whereQ := collectClauses(r, conn, t)
+	wclauses, sclauses, _ := collectClauses(r, conn, t)
 	// TODO change *FORM to form="*"
 	if action == "INFO" {
 		stmt := string2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
 		dumpInfo(w, conn, host, db, t, stmt)
 	} else if action == "GOTO" && n != "" {
-		dumpIt(w, r, conn, host, db, t, o, d, n, g, k, v)
+		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "BACK" {
-		dumpIt(w, r, conn, host, db, "", "", "", "", "", "", "")
+		dumpRouter(w, r, conn, host, db, "", "", "", "", "", "", "")
 	} else if action == "SELECTFORM" {
 		actionSELECTFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "INSERTFORM" && !READONLY {
@@ -54,7 +54,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	} else if action == "SELECT"  && len(wclauses)> 0 {
 		stmt := sqlStar(t) + sqlWhereClauses(wclauses)
 		// actionEXEC(w, conn, host, db, t, o, d, stmt)
-		dumpWhere(w, conn, host, db, t, o, d, stmt, whereQ)
+		dumpWhere(w, conn, host, db, t, o, d, stmt, q)
 	} else if action == "INSERT" && !READONLY  && len(sclauses)> 0 {
 		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
@@ -200,7 +200,7 @@ func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 
 	messageStack = append(messageStack, Message{"EXECUTE stmt", -1,affected,sec})
 	nextstmt := sqlStar(t) + sqlOrder(o,d)
-	dumpRows(w, conn, host, db, t, o, d, messageStack, nextstmt)
+	dumpRows(w, conn, host, db, t, o, d, nextstmt, messageStack)
 }
 
 
@@ -222,7 +222,7 @@ func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t 
 
 	messageStack = append(messageStack, Message{"EXECUTE stmt USING \"" + arg + "\"", -1,affected,sec})
 	nextstmt := sqlStar(t)
-	dumpRows(w, conn, host, db, t, "", "", messageStack, nextstmt)
+	dumpRows(w, conn, host, db, t, "", "",nextstmt, messageStack)
 }
 
 

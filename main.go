@@ -59,11 +59,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		setCredentials(w, r, dbms, host, port, user, pass)
 		conn, err := sql.Open(dbms, dsn(user, pass, host, port, db))
 		checkY(err)
-		workload(w, r, conn, host)
+		workRouter(w, r, conn, host)
 	} else if dbms, host, port, user, pass, err := getCredentials(r); err == nil {
 		conn, err := sql.Open(dbms, dsn(user, pass, host, port, db))
 		checkY(err)
-		workload(w, r, conn, host)
+		workRouter(w, r, conn, host)
 	} else {
 		loginPageHandler(w, r)
 	}

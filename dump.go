@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-/* Outline of these routines:
+/* Outline of routines:
  *
  * get pointer to rows
  * get further data
@@ -19,7 +19,7 @@ import (
  */
 
 
-func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, messageStack []Message, stmt sqlstring) {
+func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, messageStack []Message) {
 
 	q := makeFreshQuery(db,t,o,d)
 	rows, err, sec := getRows(conn, stmt)
@@ -143,11 +143,12 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, wherestring, q)
 }
 
-func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64, stmt sqlstring) {
+func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64, stmt sqlstring, q url.Values) {
 
+	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 	limitstring := Int64toa(start) + "-" + Int64toa(end)
-	q := makeFreshQuery(db,t,o,d)
-	q.Add("n", limitstring)
+//	q := makeFreshQuery(db,t,o,d)
+//	q.Add("n", limitstring)
 
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
@@ -185,7 +186,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	var messageStack []Message
 	messageStack = append(messageStack,Message{Msg:sql2string(stmt),Rows:rownum,Affected:-1,Seconds:sec })
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, "", url.Values{})
+	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, wherestring, url.Values{})
 }
 
 /**** HELPERS ***********************/

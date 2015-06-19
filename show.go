@@ -4,27 +4,9 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
-	"regexp"
 )
 
-func dumpIt(w http.ResponseWriter, r *http.Request, conn *sql.DB,
-	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
-
-	if db == "" {
-		dumpHome(w, conn, host)
-		return
-	} else if t == "" {
-		dumpTables(w, conn, host, db, t, o, d, g, v)
-	} else if k != "" && v != "" && k == getPrimary(conn, t) {
-		dumpKeyValue(w, db, t, k, v, conn, host, sqlStar(t)+sqlWhere(k, "=", v))
-	} else {
-		dumpSelection(w, r, conn, host, db, t, o, d, n, g, k, v)
-	}
-}
-
-// Shows selection of databases at top level
-// TODO: Chnage to formUSE and actionUSE
-func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
+func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
     // "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
@@ -52,59 +34,11 @@ func dumpHome(w http.ResponseWriter, conn *sql.DB, host string) {
 }
 
 
-func dumpSelection(w http.ResponseWriter, r *http.Request, conn *sql.DB,
-	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
-
-	stmt := sqlStar(t)
-	wclauses, _, whereQ := collectClauses(r, conn, t)
-
-	if len(wclauses) > 0 {
-		stmt = "SELECT TEMP.* FROM (" + stmt + sqlWhereClauses(wclauses) + ") TEMP "
-	}
-	if o != "" {
-		stmt = stmt + sqlOrder(o, d)
-	}
-
-	if g !="" && v !=""{
-		stmt = sqlStar(t) + sqlWhereClauses(wclauses) + sqlHaving(g, "=", v) + sqlOrder(o, d)
-		dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, r.URL.Query())
-	} else if n != "" {
-		singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
-		limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
-
-		if singlenumber != "" {
-			nint, _ := Atoi64(singlenumber)
-			stmt = stmt + sqlLimit(2, nint) // for finding next record
-			dumpFields(w, conn, host, db, t, o, d, singlenumber, nint, stmt, r.URL.Query())
-		} else if len(limits) == 3 {
-			startint, err := Atoi64(limits[1])
-			checkY(err)
-			endint, err := Atoi64(limits[2])
-			checkY(err)
-			maxint, err := Atoi64(getCount(conn, t))
-			checkY(err)
-			endint = minInt64(endint, maxint)
-			stmt = stmt + sqlLimit(1+endint-startint, startint)
-			dumpRange(w, conn, host, db, t, o, d, startint, endint, maxint, stmt)
-		} else {
-			shipMessage(w, host, db, "Can't convert to number or range: "+n)
-		}
-	} else {
-		if len(wclauses) > 0 {
-			dumpWhere(w, conn, host, db, t, o, d, stmt, whereQ)
-		} else {
-			dumpRows(w, conn, host, db, t, o, d, []Message{}, stmt)
-		}
-	}
-}
-
-//  Dump all tables of a database
-func dumpTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string) {
+func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string) {
 
 	q := url.Values{}
 	q.Add("db", db)
 	query := string2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
-
 	query = query + " FROM information_schema.TABLES"
 	query = query + sqlWhere("TABLE_SCHEMA","=",db) + sqlHaving(g, "=", v) + sqlOrder(o,d)
 	rows, err, sec := getRows(conn, query)
