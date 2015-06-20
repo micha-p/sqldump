@@ -76,7 +76,6 @@ func getCount(conn *sql.DB, t string) string {
 
 func getCols(conn *sql.DB, t string) []string {
 
-	log.Println("[SQL]", "get columns quickly: ", t)
 	err := conn.Ping()
 	checkY(err)
 	rows, _, err := sqlQuery(conn, sqlStar(t)+sqlLimit(0, 0))

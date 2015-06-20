@@ -28,7 +28,7 @@ import (
 
 //
 //       __________  home: lift restrictions from right lo left
-//      /   ___________ column: ascending and descending orde
+//      /   ___________ column: ascending and descending order
 //     /   /   ___________ indicator for primary key
 //    /   /   /
 //   #	 c1(ID)   c2	c3
@@ -109,7 +109,7 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 			dumpRows(w, conn, host, db, t, o, d, stmt, []Message{})
 
 		} else {
-			stmt = stmt + "/*W*/" +sqlWhereClauses(wclauses)
+			stmt = stmt +sqlWhereClauses(wclauses)
 			// should be recursive for every where-level
 			// stmt = "SELECT * FROM (" + stmt + sqlWhereClauses(wclauses) + ") AS TEMP "
 			stmt = stmt + sqlHaving(g, "=", v)
@@ -122,20 +122,21 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 				} else {
 					singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 					limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
+					nmax, err := Atoi64(getCount(conn, t))
+					checkY(err)
 					if singlenumber != "" {
-						nint, _ := Atoi64(singlenumber)
-						stmt = stmt + sqlLimit(2, nint) // for finding next record
-						dumpFields(w, conn, host, db, t, o, d, singlenumber, nint, stmt, q)
+						ni, _ := Atoi64(singlenumber)
+						ni = minInt64(ni,nmax)
+						stmt = stmt + sqlLimit(1, ni)
+						dumpFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax,stmt, q)
 					} else if len(limits) == 3 {
-						startint, err := Atoi64(limits[1])
+						nstart, err := Atoi64(limits[1])
 						checkY(err)
-						endint, err := Atoi64(limits[2])
+						nend, err := Atoi64(limits[2])
 						checkY(err)
-						maxint, err := Atoi64(getCount(conn, t))
-						checkY(err)
-						endint = minInt64(endint, maxint)
-						stmt = stmt + sqlLimit(1+endint-startint, startint)
-						dumpRange(w, conn, host, db, t, o, d, startint, endint, maxint, stmt, q)
+						nend = minInt64(nend, nmax)
+						stmt = stmt + sqlLimit(1+nend-nstart, nstart)
+						dumpRange(w, conn, host, db, t, o, d, nstart, nend, nmax, stmt, q)
 					} else {
 						shipMessage(w, host, db, "Can't understand number or range: "+n)
 					}

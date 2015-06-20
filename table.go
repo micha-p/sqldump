@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
-	"log"
 )
 
 /*
@@ -100,12 +99,12 @@ func makeTrail(host string, db string, t string, w string, wq url.Values) []Entr
 	return trail
 }
 
-func makeArrow(title string, primary string, d string) string {
-	if primary !="" {
+func makeTitleWithArrow(title string, primary string, d string) string {
+	if title == primary {
 		if d == "" {
-			return primary + "↑" // "⇑"
+			return primary + " (ID)" + "↑" // "⇑"
 		} else {
-			return primary + "↓" // "⇓"
+			return primary + " (ID)" + "↓" // "⇓"
 		}
 	} else {
 		if d == "" {
@@ -116,50 +115,46 @@ func makeArrow(title string, primary string, d string) string {
 	}
 }
 
-func createHead(db string, t string, o string, d string, n string, primary string, columns []string, original url.Values) []Entry {
+func makeTitleEntry(q url.Values, column string ,primary string, o string, d string) Entry{
+	var r Entry
+	if o == column {
+		label := makeTitleWithArrow(column, primary, d)
+		q.Set("o",o)
+		if d == "" {
+			q.Set("d", "1")
+			r=escape(label, q.Encode())
+			q.Del("d")
+		} else {
+			q.Del("d")
+			r=escape(label, q.Encode())
+			q.Set("d", d)
+		}
+		q.Set("o",o)
+	} else {
+		q.Set("o", column)
+		q.Del("d")
+		if primary == column {
+			r=escape(column + " (ID)", q.Encode())
+		} else {
+			r=escape(column, q.Encode())
+		}
+	}
+	q.Set("o", o)
+	q.Set("d",d)
+	return r
+}
+
+func createHead(db string, t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
 	head := []Entry{}
 	home := url.Values{}
 	home.Set("db", db)
 	home.Set("t", t)
 	head = append(head, escape("#", home.Encode()))
 
-
-	q, err := url.ParseQuery(original.Encode()) // brute force to preserve original
-	checkY(err)
-	log.Println(original.Encode())
-	log.Println(q.Encode())
-
 	q.Set("db", db)
 	q.Set("t", t)
 	for _, title := range columns {
-		if o == title {
-			q.Set("o", title)
-			if primary == title {
-				if d == "" {
-					q.Set("d", "1")
-					head = append(head, escape(makeArrow("", primary + " (ID)", d), q.Encode()))
-				} else {
-					q.Del("d")
-					head = append(head, escape(makeArrow("", primary + " (ID)", d), q.Encode()))
-				}
-			} else {
-				if d == "" {
-					q.Set("d", "1")
-					head = append(head, escape(makeArrow(title, "", d), q.Encode()))
-				} else {
-					q.Del("d")
-					head = append(head, escape(makeArrow(title, "", d), q.Encode()))
-				}
-			}
-		} else {
-			q.Set("o", title)
-			q.Del("d")
-			if primary == title {
-				head = append(head, escape(title + " (ID)", q.Encode()))
-			} else {
-				head = append(head, escape(title, q.Encode()))
-			}
-		}
+		head = append(head, makeTitleEntry(q, title,primary,o,d))
 	}
 	return head
 }

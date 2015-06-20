@@ -97,7 +97,6 @@ func sqlOrder(order string, desc string) sqlstring {
 }
 
 // records start with number 1. Every child knows
-
 func sqlLimit(limit int64, offset int64) sqlstring {
 	var query sqlstring
 	if limit >= 0 {
