@@ -90,7 +90,7 @@ func getCols(conn *sql.DB, t string) []string {
 func getPrimary(conn *sql.DB, t string) string {
 	err := conn.Ping()
 	checkY(err)
-	rows, _, err := sqlQuery(conn, sqlColumns(t)+sqlWhere("Key", "=", "PRI"))
+	rows, _, err := sqlQueryInternal(conn, sqlColumns(t)+sqlWhere("Key", "=", "PRI"))
 	checkY(err)
 	defer rows.Close()
 

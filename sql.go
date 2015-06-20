@@ -32,6 +32,13 @@ func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, float64, error) {
 	return r, t1.Sub(t0).Seconds(), err
 }
 
+func sqlQueryInternal(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {
+	stmtstr := string(s)
+	stmt, err := conn.Query(stmtstr)
+	return stmt, 0, err
+}
+
+
 func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {
 	stmtstr := string(s)
 	log.Println("[SQL]", stmtstr)
