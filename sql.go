@@ -13,11 +13,11 @@ import (
 // special type to prevent mixture with normal strings
 type sqlstring string
 
-func sql2string(s sqlstring) string {
+func sql2str(s sqlstring) string {
 	return string(s)
 }
 
-func string2sql(s string) sqlstring {
+func str2sql(s string) sqlstring {
 	return sqlstring(s)
 }
 
@@ -25,7 +25,7 @@ func string2sql(s string) sqlstring {
 
 func sqlPrepare(conn *sql.DB, s sqlstring) (*sql.Stmt, float64, error) {
 	t0 := time.Now()
-	stmtstr := sql2string(s)
+	stmtstr := sql2str(s)
 	log.Println("[SQL]", stmtstr)
 	r, err := conn.Prepare(stmtstr)
 	t1 := time.Now()
@@ -64,25 +64,26 @@ func sqlExec1(prepared *sql.Stmt, arg string) (sql.Result, float64, error) {
 }
 
 func sqlQueryRow(conn *sql.DB, s sqlstring) *sql.Row {
-	return conn.QueryRow(sql2string(s))
+	return conn.QueryRow(sql2str(s))
 }
 
 // functions to prepare sql statements
 
 func sqlStar(t string) sqlstring {
-	return string2sql("SELECT * FROM ") + sqlProtectIdentifier(t)
+	return str2sql("SELECT * FROM ") + sqlProtectIdentifier(t)
 }
 
 func sqlSelect(c string, t string) sqlstring {
-	return string2sql("SELECT ") + sqlProtectIdentifier(c) + string2sql(" FROM ") + sqlProtectIdentifier(t)
+	return str2sql("SELECT ") + sqlProtectIdentifier(c) + str2sql(" FROM ") + sqlProtectIdentifier(t)
 }
 
 func sqlOrder(order string, desc string) sqlstring {
+	log.Println("O",order,desc)
 	var query sqlstring
 	if order != "" {
-		query = string2sql(" ORDER BY ") + sqlProtectIdentifier(order)
+		query = str2sql(" ORDER BY ") + sqlProtectIdentifier(order)
 		if desc != "" {
-			query = query + string2sql(" DESC")
+			query = query + str2sql(" DESC")
 		}
 	}
 	return query
@@ -91,38 +92,41 @@ func sqlOrder(order string, desc string) sqlstring {
 // records start with number 1. Every child knows
 
 func sqlLimit(limit int64, offset int64) sqlstring {
-	query := string2sql(" LIMIT " + Int64toa(maxInt64(limit, 1)))
-	if offset > 0 {
-		query = query + string2sql(" OFFSET "+Int64toa(offset-1))
+	var query sqlstring
+	if limit >= 0 {
+		query = str2sql(" LIMIT " + Int64toa(maxInt64(limit, 1)))
+		if offset > 0 {
+			query = query + str2sql(" OFFSET "+Int64toa(offset-1))
+		}
 	}
 	return query
 }
 
 func sqlCount(t string) sqlstring {
-	return string2sql("SELECT COUNT(*) FROM ") + sqlProtectIdentifier(t)
+	return str2sql("SELECT COUNT(*) FROM ") + sqlProtectIdentifier(t)
 }
 
 func sqlColumns(t string) sqlstring {
-	return string2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
+	return str2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
 }
 
 func sqlInsert(t string) sqlstring {
-	return string2sql("INSERT INTO ") + sqlProtectIdentifier(t)
+	return str2sql("INSERT INTO ") + sqlProtectIdentifier(t)
 }
 
 func sqlUpdate(t string) sqlstring {
-	return string2sql("UPDATE ") + sqlProtectIdentifier(t)
+	return str2sql("UPDATE ") + sqlProtectIdentifier(t)
 }
 
 func sqlDelete(t string) sqlstring {
-	return string2sql("DELETE FROM ") + sqlProtectIdentifier(t)
+	return str2sql("DELETE FROM ") + sqlProtectIdentifier(t)
 }
 
 func sqlWhere(k string, c string, v string) sqlstring {
 	if k =="" {
 		return ""
 	} else {
-		return string2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + sqlProtectString(v)
+		return str2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + sqlProtectString(v)
 	}
 }
 
@@ -130,7 +134,7 @@ func sqlWhere1(k string, c string) sqlstring {
 	if k =="" {
 		return ""
 	} else {
-		return string2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + "?"
+		return str2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + "?"
 	}
 }
 
@@ -139,14 +143,14 @@ func sqlHaving(g string, c string, v string) sqlstring {
 	if g =="" {
 		return ""
 	} else {
-		return string2sql(" HAVING ") + sqlProtectIdentifier(g) + sqlFilterComparator(c) + sqlProtectString(v)
+		return str2sql(" HAVING ") + sqlProtectIdentifier(g) + sqlFilterComparator(c) + sqlProtectString(v)
 	}
 }
 
 // from http://golang.org/src/strings/strings.go?h=Join#L382
 func sqlJoin(a []sqlstring, sep string) sqlstring {
 	if len(a) == 0 {
-		return string2sql("")
+		return str2sql("")
 	}
 	if len(a) == 1 {
 		return a[0]
@@ -159,7 +163,7 @@ func sqlJoin(a []sqlstring, sep string) sqlstring {
 	b := make([]byte, n)
 	bp := copy(b, a[0])
 	for _, q := range a[1:] {
-		s := sql2string(q)
+		s := sql2str(q)
 		bp += copy(b[bp:], sep)
 		bp += copy(b[bp:], s)
 	}
@@ -170,7 +174,7 @@ func sqlWhereClauses(clauses []sqlstring) sqlstring {
 	if len(clauses) ==0 {
 		return ""
 	} else {
-		return string2sql(" WHERE ") + sqlJoin(clauses, " AND ")
+		return str2sql(" WHERE ") + sqlJoin(clauses, " AND ")
 	}
 }
 
@@ -178,7 +182,7 @@ func sqlSetClauses(clauses []sqlstring) sqlstring {
 	if len(clauses) ==0 {
 		return ""
 	} else {
-		return string2sql(" SET ") + sqlJoin(clauses, " , ")
+		return str2sql(" SET ") + sqlJoin(clauses, " , ")
 	}
 }
 
@@ -208,9 +212,9 @@ func sqlProtectIdentifier(s string) sqlstring {
 		if DEBUGFLAG {
 			log.Println("[SQLINJECTION?]", s+" -> "+r)
 		}
-		return string2sql("`" + r + "`")
+		return str2sql("`" + r + "`")
 	} else {
-		return string2sql("`" + s + "`")
+		return str2sql("`" + s + "`")
 	}
 }
 
@@ -232,9 +236,9 @@ func sqlProtectString(s string) sqlstring {
 		if DEBUGFLAG {
 			log.Println("[SQLINJECTION?]", s+" -> "+r)
 		}
-		return string2sql("\"" + r + "\"")
+		return str2sql("\"" + r + "\"")
 	} else {
-		return string2sql("\"" + s + "\"")
+		return str2sql("\"" + s + "\"")
 	}
 }
 
@@ -253,10 +257,10 @@ func sqlFilterNumericComparison(t string) (string, string) {
 
 func sqlFilterNumber(t string) sqlstring {
 	re := regexp.MustCompile("^ *(" + SQLNUM + ") *$")
-	return string2sql("'" + re.FindString(t) + "'")
+	return str2sql("'" + re.FindString(t) + "'")
 }
 
 func sqlFilterComparator(t string) sqlstring {
 	re := regexp.MustCompile("^ *(" + SQLCMP + ") *$")
-	return string2sql(re.FindString(t))
+	return str2sql(re.FindString(t))
 }

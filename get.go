@@ -44,7 +44,7 @@ func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error, float64) {
 }
 
 func getSingleValue(conn *sql.DB, host string, db string, stmt sqlstring) (string, error) {
-	log.Println("[SQL]", sql2string(stmt))
+	log.Println("[SQL]", sql2str(stmt))
 	err := conn.Ping()
 	checkY(err)
 	row := sqlQueryRow(conn, stmt)
@@ -59,7 +59,7 @@ func getSingleValue(conn *sql.DB, host string, db string, stmt sqlstring) (strin
 func getCount(conn *sql.DB, t string) string {
 	stmt := sqlCount(t)
 	if EXPERTFLAG {
-		log.Println("[SQL]", sql2string(stmt))
+		log.Println("[SQL]", sql2str(stmt))
 	}
 	err := conn.Ping()
 	checkY(err)

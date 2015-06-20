@@ -46,7 +46,7 @@
 {{end}}</SELECT>{{end}}
 {{define "selector"}}{{if .IsNumeric}}{{template "nselector" .}}{{else if .IsString}}{{template "tselector" .}}{{else}}{{template "oselector" .}}{{end}}{{end}}
 {{define "set"}}<input class="cell" type="text" name="{{.Name}}S" value="{{.Value}}">{{end}}
-{{define "null"}}<input class="cell" type="checkbox" name="{{.Name}}N" {{if .Nullable}}value=1 {{if .Valid}}{{else}} checked="checked"{{end}}{{else}} disabled = "disabled"{{end}}>{{end}}
+{{define "null"}}<input class="cell" type="checkbox" name="{{.Name}}N" {{if .Nullable}}value=1 {{/*if .Valid}}{{else}} checked="checked"{{end*/}}{{else}} disabled = "disabled"{{end}}>{{end}}
 {{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
 {{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 {{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}

@@ -19,6 +19,7 @@ import (
  */
 
 
+
 func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, messageStack []Message) {
 
 	q := makeFreshQuery(db,t,o,d)
@@ -36,17 +37,10 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	head := createHead(db, t, o, d, "", primary, columns, url.Values{})
 	records, rownum := makeRecords(rows, db,t, primary, 0, q)
 
-	m := makeFreshQuery(db,t,o,d)
-	var menu []Entry
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","~"))
-	menu = append(menu,makeMenu(m, "action", "DELETEFORM","-"))
-	menu = append(menu,makeMenu(m, "action", "INFO","?"))
-
+	menu := makeMenu5(makeFreshQuery(db,t,o,d))
 	linkleft := escape("<", q.Encode())
 	linkright := escape(">", q.Encode())
-	messageStack = append(messageStack,Message{Msg:sql2string(stmt),Rows:rownum,Affected:-1,Seconds:sec })
+	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
 	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, "", url.Values{})
 }
 
@@ -85,6 +79,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 			q.Set("v", v)
 		}
 		linkleft = escape("<", q.Encode())
+		q.Set("v", v)
 	}
 
 	primary := getPrimary(conn, t)
@@ -93,18 +88,11 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, "", primary, columns, q)
 	records, rownum := makeRecords(rows, db,t, primary, 0, q)
 
-	m := makeFreshQuery(db,t,o,d)
-	var menu []Entry
-	m.Set("g",g)
-	m.Set("v",v)
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "action", "GV_UPDATEFORM","~"))
-	menu = append(menu,makeMenu(m, "action", "GV_DELETE","-"))
-	menu = append(menu,makeMenu(m, "action", "INFO","?"))
-
+	q.Set("g",g)
+	q.Set("v",v)
+    menu:=makeMenu5(q)
 	var messageStack []Message
-	messageStack = append(messageStack,Message{Msg:sql2string(stmt),Rows:rownum,Affected:-1,Seconds:sec })
+	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
 	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, messageStack,wherestring, q)
 }
 
@@ -130,16 +118,9 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, "", primary, columns, q)
 	records, rownum := makeRecords(rows, db,t, primary, 0, q)
 
-	m := makeFreshQuery(db,t,o,d)
-	var menu []Entry
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "action", "UPDATEFORM","~"))
-	menu = append(menu,makeMenu(m, "action", "FILLEDDELETEFORM","-"))
-	menu = append(menu,makeMenu(m, "action", "INFO","?"))
-
+    menu:=makeMenu5(q)
 	var messageStack []Message
-	messageStack = append(messageStack,Message{Msg:sql2string(stmt),Rows:rownum,Affected:-1,Seconds:sec })
+	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, wherestring, q)
 }
 
@@ -147,8 +128,6 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 	limitstring := Int64toa(start) + "-" + Int64toa(end)
-//	q := makeFreshQuery(db,t,o,d)
-//	q.Add("n", limitstring)
 
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
@@ -164,14 +143,6 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, limitstring, "", columns, q)
 	records, rownum := makeRecords(rows, db,t, primary, start - 1, q)
 
-	m := makeFreshQuery(db,t,o,d)
-	var menu []Entry
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","~"))
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","-"))
-	menu = append(menu,makeMenu(m, "action", "INFO","?"))
-
 	q.Del("o")
 	q.Del("d")
 	q.Del("k")
@@ -184,8 +155,11 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	q.Set("n", Int64toa(1+right-rowrange)+"-"+Int64toa(right))
 	linkright := escape(">", q.Encode())
 
+
+	q.Set("n",limitstring)
+    menu:=makeMenu3(q)
 	var messageStack []Message
-	messageStack = append(messageStack,Message{Msg:sql2string(stmt),Rows:rownum,Affected:-1,Seconds:sec })
+	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
 	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, wherestring, url.Values{})
 }
 
@@ -208,12 +182,6 @@ func makeRowNum(q url.Values, rownum int64) Entry {
 	return escape(Int64toa(rownum), link)
 }
 
-func makeMenu(q url.Values,name string, value string, label string) Entry {
-	q.Set(name, value)
-	link := q.Encode()
-	q.Del(name)
-	return escape(label, link)
-}
 
 func makeValuesPointers(columns []string) ([]interface{},[]interface{}) {
 	count := len(columns)

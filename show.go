@@ -10,7 +10,7 @@ func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
     // "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
-	stmt := string2sql("SHOW DATABASES")
+	stmt := str2sql("SHOW DATABASES")
 	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
@@ -38,7 +38,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 
 	q := url.Values{}
 	q.Add("db", db)
-	query := string2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
+	query := str2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 	query = query + " FROM information_schema.TABLES"
 	query = query + sqlWhere("TABLE_SCHEMA","=",db) + sqlHaving(g, "=", v) + sqlOrder(o,d)
 	rows, err, sec := getRows(conn, query)
@@ -94,7 +94,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	if QUIETFLAG {
 		msg = Message{}
 	} else {
-		msg = Message{Msg:sql2string(query),Rows:rownum,Affected:-1,Seconds:sec }
+		msg = Message{Msg:sql2str(query),Rows:rownum,Affected:-1,Seconds:sec }
 	}
 	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, "", url.Values{})
 }
@@ -109,7 +109,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 | start | date        | YES  |     | NULL    |       |
 +-------+-------------+------+-----+---------+-------+
 */
-func dumpInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring) {
+func showInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring) {
 
 	rows, err, _:= getRows(conn, stmt)
 	checkY(err)

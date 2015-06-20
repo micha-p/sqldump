@@ -98,23 +98,28 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	stmt := sqlStar(t)
 
     if k != "" && v != "" && k == getPrimary(conn, t) {
-		stmt = stmt + sqlWhere(k, "=", v)
+		stmt = stmt + sqlHaving(k, "=", v)
 		dumpKeyValue(w, conn, host, db, t, k, v, stmt)
 	} else {
 		q := r.URL.Query()
 		wclauses, _, _ := collectClauses(r, conn, t)
 
-		if len(wclauses) > 0 {
-			stmt = "SELECT TEMP.* FROM (" + stmt + sqlWhereClauses(wclauses) + ") TEMP "
+		if len(wclauses) == 0 && g=="" && v =="" && n=="" {
+			stmt = stmt + sqlOrder(o, d)
+			dumpRows(w, conn, host, db, t, o, d, stmt, []Message{})
 
-			if g !="" && v !=""{
-				stmt = stmt + sqlHaving(g, "=", v) + sqlOrder(o, d)
-				dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, q)
+		} else {
+			stmt = stmt + "/*W*/" +sqlWhereClauses(wclauses)
+			// should be recursive for every where-level
+			// stmt = "SELECT * FROM (" + stmt + sqlWhereClauses(wclauses) + ") AS TEMP "
+			stmt = stmt + sqlHaving(g, "=", v)
+			stmt = stmt  + sqlOrder(o, d)
+			if g == "" && n == "" {
+				dumpWhere(w, conn, host, db, t, o, d, stmt, q)
 			} else {
-				if o != "" {
-					stmt = stmt + sqlOrder(o, d)
-				}
-				if n != "" {
+				if n == "" {
+					dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, q)
+				} else {
 					singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 					limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
 					if singlenumber != "" {
@@ -132,15 +137,10 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 						stmt = stmt + sqlLimit(1+endint-startint, startint)
 						dumpRange(w, conn, host, db, t, o, d, startint, endint, maxint, stmt, q)
 					} else {
-						shipMessage(w, host, db, "Can't convert to number or range: "+n)
+						shipMessage(w, host, db, "Can't understand number or range: "+n)
 					}
-				} else {
-					dumpWhere(w, conn, host, db, t, o, d, stmt, q)
 				}
 			}
-		} else {
-			stmt = stmt + sqlOrder(o, d)
-			dumpRows(w, conn, host, db, t, o, d, stmt, []Message{})
 		}
 	}
 }
@@ -157,6 +157,36 @@ func readRequest(r *http.Request) (string, string, string, string, string, strin
 	v := q.Get("v")
 	return db, t, o, d, n, g, k, v
 }
+
+func makeMenu(q url.Values, name string, value string, label string) Entry {
+	if name !="" {
+		q.Set(name, value)
+	}
+	link := q.Encode()
+	q.Del(name)
+	return escape(label, link)
+}
+
+func makeMenu5(m url.Values) []Entry {
+	var menu []Entry
+	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
+	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
+	menu = append(menu,makeMenu(m, "action", "UPDATEFORM","~"))	 // KV-DELETE, GV-DELETE
+	menu = append(menu,makeMenu(m, "action", "DELETE",    "-"))  // DELETEFILLED, KV-DELETE, GV-DELETE
+	menu = append(menu,makeMenu(m, "action", "INFO",      "?"))
+	return menu
+}
+
+func makeMenu3(m url.Values) []Entry {
+	var menu []Entry
+	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
+	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
+	menu = append(menu,makeMenu(m, "", ""," "))
+	menu = append(menu,makeMenu(m, "", ""," "))
+	menu = append(menu,makeMenu(m, "action", "INFO","?"))
+	return menu
+}
+
 
 
 func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
@@ -202,25 +232,25 @@ func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sql
 				whereclauses = append(whereclauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
 			} else if comp == "=" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+string2sql(" = ")+sqlProtectString(val))
+				whereclauses = append(whereclauses, colname+str2sql(" = ")+sqlProtectString(val))
 			} else if comp == "~" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+string2sql(" LIKE ")+sqlProtectString(val))
+				whereclauses = append(whereclauses, colname+str2sql(" LIKE ")+sqlProtectString(val))
 			} else if comp == "!~" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+string2sql(" NOT LIKE ")+sqlProtectString(val))
+				whereclauses = append(whereclauses, colname+str2sql(" NOT LIKE ")+sqlProtectString(val))
 			} else if comp == "==" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, string2sql("BINARY ")+colname+string2sql("=")+sqlProtectString(val))
+				whereclauses = append(whereclauses, str2sql("BINARY ")+colname+str2sql("=")+sqlProtectString(val))
 			} else if comp == "!=" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, string2sql("BINARY ")+colname+string2sql("!=")+sqlProtectString(val))
+				whereclauses = append(whereclauses, str2sql("BINARY ")+colname+str2sql("!=")+sqlProtectString(val))
 			} else if comp == "=0" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+string2sql(" IS NULL"))
+				whereclauses = append(whereclauses, colname+str2sql(" IS NULL"))
 			} else if comp == "!0" {
 				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+string2sql(" IS NOT NULL"))
+				whereclauses = append(whereclauses, colname+str2sql(" IS NOT NULL"))
 			} else {
 				v.Add(colhtml+"O", comp)
 				if sqlFilterNumber(val) != "" {
@@ -236,8 +266,9 @@ func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sql
 		} else if set != "" {
 			v.Add(colhtml+"S", set)
 			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
-		} else {
-			setclauses = append(setclauses, colname+"="+"\"\"")
+		} else if set != "" {            // TODO empty values should INSERT empty strings, but ignored for UPDATE
+			v.Add(colhtml+"S", set)
+			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
 		}
 	}
 	return whereclauses, setclauses, v
@@ -252,7 +283,7 @@ func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
 		if val != "" || comp == "=0" || comp == "!0" {
 			if comp == "" {
 				comp, val = sqlFilterNumericComparison(val)
-				clauses = append(clauses, colname+sql2string(sqlFilterComparator(comp))+sql2string(sqlFilterNumber(val)))
+				clauses = append(clauses, colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val)))
 			} else if comp == "~" {
 				clauses = append(clauses, colname+" LIKE \""+val+"\"")
 			} else if comp == "!~" {
@@ -267,9 +298,9 @@ func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
 				clauses = append(clauses, colname+" IS NOT NULL")
 			} else {
 				if col.IsNumeric != "" {
-					clauses = append(clauses, colname+sql2string(sqlFilterComparator(comp))+sql2string(sqlFilterNumber(val)))
+					clauses = append(clauses, colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val)))
 				} else {
-					clauses = append(clauses, colname+sql2string(sqlFilterComparator(comp))+" \""+val+"\"")
+					clauses = append(clauses, colname+sql2str(sqlFilterComparator(comp))+" \""+val+"\"")
 				}
 			}
 		}

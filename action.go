@@ -33,50 +33,53 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	wclauses, sclauses, _ := collectClauses(r, conn, t)
 	// TODO change *FORM to form="*"
 	if action == "INFO" {
-		stmt := string2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
-		dumpInfo(w, conn, host, db, t, stmt)
+		stmt := str2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
+		showInfo(w, conn, host, db, t, stmt)
 	} else if action == "GOTO" && n != "" {
+		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
+	} else if action == "SELECT" {
 		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "BACK" {
 		dumpRouter(w, r, conn, host, db, "", "", "", "", "", "", "")
+	} else if action == "INSERT" && !READONLY  && len(sclauses)> 0 {
+		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
+		actionEXEC(w, conn, host, db, t, o, d, stmt)
+
 	} else if action == "SELECTFORM" {
 		actionSELECTFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "INSERTFORM" && !READONLY {
 		actionINSERTFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "DELETEFORM" && !READONLY { // Create subset for DELETE
+	} else if action == "DELETEFORM" && !READONLY {
 		actionDELETEFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "UPDATEFORM" && !READONLY { // ask for changed values
-		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
-	} else if action == "KV_UPDATEFORM" && !READONLY && k != "" && v != "" {
+
+	} else if action == "UPDATEFORM" && !READONLY && k != "" && v != "" {
 		actionKV_UPDATEFORM(w, r, conn, host, db, t, k, v)
-	} else if action == "GV_UPDATEFORM" && !READONLY && g != "" && v != "" {
+	} else if action == "UPDATEFORM" && !READONLY && g != "" && v != "" {
 		actionGV_UPDATEFORM(w, r, conn, host, db, t, g, v)
-	} else if action == "SELECT"  && len(wclauses)> 0 {
-		stmt := sqlStar(t) + sqlWhereClauses(wclauses)
-		// actionEXEC(w, conn, host, db, t, o, d, stmt)
-		dumpWhere(w, conn, host, db, t, o, d, stmt, q)
-	} else if action == "INSERT" && !READONLY  && len(sclauses)> 0 {
-		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
-		actionEXEC(w, conn, host, db, t, o, d, stmt)
-	} else if action == "DELETE" && !READONLY  && len(wclauses)> 0 {
-		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
-		actionEXEC(w, conn, host, db, t, o, d, stmt)
+	} else if action == "UPDATEFORM" && !READONLY {
+		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
+
+	} else if action == "UPDATE" && !READONLY && k != "" && v != ""  && len(sclauses)> 0 {
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
+		actionEXEC1(w, conn, host, db, t, stmt, v)
+	} else if action == "UPDATE" && !READONLY && g != "" && v != ""  && len(sclauses)> 0{
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
+		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "UPDATE" && !READONLY  && len(sclauses)> 0  && len(wclauses)> 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
 
-	} else if action == "KV_UPDATE" && !READONLY && k != "" && v != ""  && len(sclauses)> 0 {
-		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
-		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "KV_DELETE" && !READONLY && k != "" && v != "" {
-		stmt := sqlDelete(t) + sqlWhere1(k, "=")
-		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "GV_UPDATE" && !READONLY && g != "" && v != ""  && len(sclauses)> 0{
-		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
-		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "GV_DELETE" && !READONLY && g != "" && v != "" {
+	} else if action == "DELETE" && !READONLY && g != "" && v != "" {
 		stmt := sqlDelete(t) + sqlWhere1(g, "=")
 		actionEXEC1(w, conn, host, db, t, stmt, v)
+	} else if action == "DELETE" && !READONLY && k != "" && v != "" {
+		stmt := sqlDelete(t) + sqlWhere1(k, "=")
+		actionEXEC1(w, conn, host, db, t, stmt, v)
+	} else if action == "DELETE" && !READONLY  && len(wclauses)> 0 {
+		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
+		actionEXEC(w, conn, host, db, t, o, d, stmt)
+
+
 	} else {
 		shipMessage(w, host, db, "Action unknown or insufficient parameters: "+action)
 	}
@@ -130,6 +133,8 @@ func actionINSERTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", getColumnInfo(conn, t), []CContext{})
 }
 
+
+// TODO combine next 3 to 1 function: always promote gk,v, always fill if count = 1
 func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 
 	wclauses, _, whereQ := collectClauses(r, conn, t)
@@ -148,7 +153,6 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfo(conn, t), hiddencols)
 	}
 }
-
 func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	hiddencols := []CContext{
 		CContext{"", "k", "", "", "", "", "valid", k, ""},
@@ -161,9 +165,8 @@ func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "KV_UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
 }
-
 func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
 	hiddencols := []CContext{
 		CContext{"", "g", "", "", "", "", "valid", g, ""},
@@ -176,7 +179,7 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "GV_UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
 }
 
 
@@ -191,7 +194,7 @@ func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	preparedStmt, sec, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,sec})
+	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1,0,sec})
 
 	result, sec, err := sqlExec(preparedStmt)
 	checkErrorPage(w, host, db, t, stmt, err)
@@ -213,7 +216,7 @@ func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t 
 	preparedStmt, sec, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2string(stmt) + "'", -1,0,sec})
+	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1,0,sec})
 
 	result, sec, err := sqlExec1(preparedStmt,arg)
 	checkErrorPage(w, host, db, t, stmt, err)

@@ -54,13 +54,7 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	linkright := escape(">", v.Encode())
 	v.Set("n", n)
 
-	var menu []Entry
-	m := makeFreshQuery(db,t,o,d)
-	m.Set("n",n)
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "action", "INFO","?"))
-
+	menu := makeMenu3(v)
 	tableOutFields(w, conn, host, db, t, "", o, d, "", n, "#", linkleft, linkright, head, records, menu)
 }
 
@@ -102,15 +96,7 @@ func dumpKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	linkleft := escape("<", q.Encode())
 
 	m := makeFreshQuery(db,t,"","")
-	m.Set("k",k)
-	m.Set("v",v)
-	var menu []Entry
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "action", "KV_UPDATEFORM","~"))
-	menu = append(menu,makeMenu(m, "action", "KV_DELETE","-"))
-	menu = append(menu,makeMenu(m, "action", "INFO","?"))
-
+	menu := makeMenu3(m)
 	tableOutFields(w, conn, host, db, t, primary, k, "", k, v, k + " (ID) =", linkleft, linkright, head, records, menu)
 }
 
