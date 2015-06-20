@@ -168,7 +168,7 @@ a.count:active {text-decoration: none; color:orange;}
 	position: relative;
 }
 .breadcrumb a.trail:first-child {
-	padding-left: 0.5rem;
+	padding-left: 1rem;
 	border-radius: 5px 0 0 5px; /*to match with the parent's radius*/
 }
 .breadcrumb a.trail:first-child:before {
