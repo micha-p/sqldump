@@ -99,7 +99,7 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 
     if k != "" && v != "" && k == getPrimary(conn, t) {
 		stmt = stmt + sqlHaving(k, "=", v)
-		dumpKeyValue(w, conn, host, db, t, k, v, stmt)
+		showKeyValue(w, conn, host, db, t, o, d, k, v, stmt)
 	} else {
 		q := r.URL.Query()
 		wclauses, _, _ := collectClauses(r, conn, t)
@@ -128,7 +128,7 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 						ni, _ := Atoi64(singlenumber)
 						ni = minInt64(ni,nmax)
 						stmt = stmt + sqlLimit(1, ni)
-						dumpFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax,stmt, q)
+						showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax,stmt, q)
 					} else if len(limits) == 3 {
 						nstart, err := Atoi64(limits[1])
 						checkY(err)

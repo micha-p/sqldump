@@ -7,9 +7,35 @@ import (
 	"strconv"
 )
 
-// Dump all fields of a record, one column per line
 
-func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64, stmt sqlstring, q url.Values) {
+func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64, stmt sqlstring, q url.Values) {
+
+	q.Set("db", db)
+	q.Set("t", t)
+
+	left := Int64toa(maxInt64(nint-1,   1))
+	var right string
+	right = Int64toa(minInt64(nint+1,nmax))
+	if o != "" {
+		q.Set("o", o)
+	}
+	if d != "" {
+		q.Set("d", d)
+	}
+	q.Set("n", left)
+	linkleft := escape("<", q.Encode())
+	q.Set("n", right)
+	linkright := escape(">", q.Encode())
+	q.Set("n", n)
+	nstring := Int64toa(nint)
+
+	menu := makeMenu3(q)
+	verticalView(w, conn, stmt, host, db, t, o, d, /* primary: */ "", nstring, "#", linkleft, linkright, menu, q)
+}
+
+func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host string, db string, t string, o string, d string,
+                primary string, counter string, counterlabel string,
+                linkleft Entry, linkright Entry, menu []Entry, q url.Values) {
 
 	rows, err, _ := getRows(conn, stmt)
 	defer rows.Close()
@@ -43,57 +69,19 @@ func dumpFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	records := [][]Entry{}
 	for i, c := range cols {
 		nv := getNullString(vals[i])
+	    label := c
+		if c==primary{
+			label=label+" (ID)"
+		}
 		row := []Entry{	Entry{Text: strconv.Itoa(i+1)},
-						escape(c, ""),
+						Entry{Text:label},
 						makeEntry(nv, db, t, c, "")}
 		records = append(records, row)
 	}
-
-	q.Set("db", db)
-	q.Set("t", t)
-
-	left := Int64toa(maxInt64(nint-1,   1))
-	var right string
-	right = Int64toa(minInt64(nint+1,nmax))
-	if o != "" {
-		q.Set("o", o)
-	}
-	if d != "" {
-		q.Set("d", d)
-	}
-	q.Set("n", left)
-	linkleft := escape("<", q.Encode())
-	q.Set("n", right)
-	linkright := escape(">", q.Encode())
-	q.Set("n", n)
-
-	menu := makeMenu3(q)
-	tableOutFields(w, conn, host, db, t, "", o, d, "", Int64toa(nint), "#", linkleft, linkright, head, records, menu)
+	tableOutFields(w, conn, host, db, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu)
 }
 
-func dumpKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, k string, v string,  stmt sqlstring) {
-
-	rows, err, _ := getRows(conn, stmt)
-	checkY(err)
-	defer rows.Close()
-
-	primary := getPrimary(conn, t)
-	home := url.Values{}
-	home.Add("db", db)
-	home.Add("t", t)
-	head := []Entry{escape("#", home.Encode()), escape("Column"), escape("Data")}
-
-	rows.Next()
-	cols, vals, err := getRowScan(rows)
-	checkY(err)
-	records := [][]Entry{}
-	for i, c := range cols {
-		nv := getNullString(vals[i])
-		row := []Entry{	escape(strconv.Itoa(i+1), ""),
-						escape(c, ""),
-						makeEntry(nv, db, t, c, "")}
-		records = append(records, row)
-	}
+func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, k string, v string,  stmt sqlstring) {
 
 	q := makeFreshQuery(db,t,"","")
 	q.Set("k",k)
@@ -113,7 +101,9 @@ func dumpKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	linkleft := escape("<", q.Encode())
 
 	m := makeFreshQuery(db,t,"","")
+	m.Set("k",k)
+	m.Set("v",v)
 	menu := makeMenu5(m)
-	tableOutFields(w, conn, host, db, t, primary, k, "", k, v, k + " (ID) =", linkleft, linkright, head, records, menu)
+	verticalView(w, conn, stmt, host, db, t, /* order: */ k, d, k, v, k + " (ID) =", linkleft, linkright, menu, q)
 }
 

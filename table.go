@@ -224,8 +224,10 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 }
 
 func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
-	db string, t string, primary string, o string, d string, k string, n string, counterLabel string,
-	linkleft Entry, linkright Entry, head []Entry, records [][]Entry, menu []Entry) {
+	db string, t string, o string, d string,
+	counterContent string, counterLabel string,
+	linkleft Entry, linkright Entry,
+	head []Entry, records [][]Entry, menu []Entry) {
 
 	initTemplate()
 
@@ -241,7 +243,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Records:  records,
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
-		Counter:  n,
+		Counter:  counterContent,
 		Label:	  counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
