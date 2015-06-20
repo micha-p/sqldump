@@ -52,6 +52,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	} else if action == "DELETEFORM" && !READONLY {
 		actionDELETEFORM(w, r, conn, host, db, t, o, d)
 
+	// TODO check Update insert and delete
 	} else if action == "UPDATEFORM" && !READONLY && k != "" && v != "" {
 		actionKV_UPDATEFORM(w, r, conn, host, db, t, k, v)
 	} else if action == "UPDATEFORM" && !READONLY && g != "" && v != "" {
