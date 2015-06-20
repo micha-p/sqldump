@@ -38,7 +38,6 @@ func sqlQueryInternal(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {
 	return stmt, 0, err
 }
 
-
 func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {
 	stmtstr := string(s)
 	log.Println("[SQL]", stmtstr)
@@ -48,7 +47,7 @@ func sqlQuery(conn *sql.DB, s sqlstring) (*sql.Rows, float64, error) {
 	return stmt, t1.Sub(t0).Seconds(), err
 }
 
-func sqlQuery1(prepared *sql.Stmt, arg string) (*sql.Rows,float64, error) {
+func sqlQuery1(prepared *sql.Stmt, arg string) (*sql.Rows, float64, error) {
 	t0 := time.Now()
 	r, err := prepared.Query(arg)
 	t1 := time.Now()
@@ -85,7 +84,7 @@ func sqlSelect(c string, t string) sqlstring {
 }
 
 func sqlOrder(order string, desc string) sqlstring {
-	log.Println("O",order,desc)
+	log.Println("O", order, desc)
 	var query sqlstring
 	if order != "" {
 		query = str2sql(" ORDER BY ") + sqlProtectIdentifier(order)
@@ -129,7 +128,7 @@ func sqlDelete(t string) sqlstring {
 }
 
 func sqlWhere(k string, c string, v string) sqlstring {
-	if k =="" {
+	if k == "" {
 		return ""
 	} else {
 		return str2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + sqlProtectString(v)
@@ -137,7 +136,7 @@ func sqlWhere(k string, c string, v string) sqlstring {
 }
 
 func sqlWhere1(k string, c string) sqlstring {
-	if k =="" {
+	if k == "" {
 		return ""
 	} else {
 		return str2sql(" WHERE ") + sqlProtectIdentifier(k) + sqlFilterComparator(c) + "?"
@@ -146,7 +145,7 @@ func sqlWhere1(k string, c string) sqlstring {
 
 // TODO: check usefulness for quick groups
 func sqlHaving(g string, c string, v string) sqlstring {
-	if g =="" {
+	if g == "" {
 		return ""
 	} else {
 		return str2sql(" HAVING ") + sqlProtectIdentifier(g) + sqlFilterComparator(c) + sqlProtectString(v)
@@ -177,7 +176,7 @@ func sqlJoin(a []sqlstring, sep string) sqlstring {
 }
 
 func sqlWhereClauses(clauses []sqlstring) sqlstring {
-	if len(clauses) ==0 {
+	if len(clauses) == 0 {
 		return ""
 	} else {
 		return str2sql(" WHERE ") + sqlJoin(clauses, " AND ")
@@ -185,7 +184,7 @@ func sqlWhereClauses(clauses []sqlstring) sqlstring {
 }
 
 func sqlSetClauses(clauses []sqlstring) sqlstring {
-	if len(clauses) ==0 {
+	if len(clauses) == 0 {
 		return ""
 	} else {
 		return str2sql(" SET ") + sqlJoin(clauses, " , ")

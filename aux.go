@@ -44,12 +44,12 @@ func dsn(user string, pw string, host string, port string, db string) string {
 }
 
 func Atoi64(s string) (int64, error) {
-	n,err :=  strconv.ParseInt(s,10,64)
+	n, err := strconv.ParseInt(s, 10, 64)
 	return n, err
 }
 
-func Int64toa(i int64) string{
-	return strconv.FormatInt(i,10)
+func Int64toa(i int64) string {
+	return strconv.FormatInt(i, 10)
 }
 
 func maxInt(a int, b int) int {

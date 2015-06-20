@@ -18,11 +18,9 @@ import (
  * table out
  */
 
-
-
 func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, messageStack []Message) {
 
-	q := makeFreshQuery(db,t,o,d)
+	q := makeFreshQuery(db, t, o, d)
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
 		checkErrorPage(w, host, db, t, stmt, err)
@@ -35,12 +33,12 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	columns, err := rows.Columns()
 	checkY(err)
 	head := createHead(db, t, o, d, "", primary, columns, url.Values{})
-	records, rownum := makeRecords(rows, db,t, primary, 0, q)
+	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	menu := makeMenu5(makeFreshQuery(db,t,o,d))
+	menu := makeMenu5(makeFreshQuery(db, t, o, d))
 	linkleft := escape("<", q.Encode())
 	linkright := escape(">", q.Encode())
-	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
+	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, "", url.Values{})
 }
 
@@ -86,14 +84,14 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	columns, err := rows.Columns()
 	checkY(err)
 	head := createHead(db, t, o, d, "", primary, columns, q)
-	records, rownum := makeRecords(rows, db,t, primary, 0, q)
+	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	q.Set("g",g)
-	q.Set("v",v)
-    menu:=makeMenu5(q)
+	q.Set("g", g)
+	q.Set("v", v)
+	menu := makeMenu5(q)
 	var messageStack []Message
-	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
-	tableOutRows(w, conn, host, db, t, primary, o, d, v, g + " =" , linkleft, linkright, head, records, menu, messageStack,wherestring, q)
+	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
+	tableOutRows(w, conn, host, db, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, wherestring, q)
 }
 
 // difference to dumprows
@@ -116,11 +114,11 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	columns, err := rows.Columns()
 	checkY(err)
 	head := createHead(db, t, o, d, "", primary, columns, q)
-	records, rownum := makeRecords(rows, db,t, primary, 0, q)
+	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-    menu:=makeMenu5(q)
+	menu := makeMenu5(q)
 	var messageStack []Message
-	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
+	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, wherestring, q)
 }
 
@@ -141,7 +139,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	columns, err := rows.Columns()
 	checkY(err)
 	head := createHead(db, t, o, d, limitstring, "", columns, q)
-	records, rownum := makeRecords(rows, db,t, primary, start - 1, q)
+	records, rownum := makeRecords(rows, db, t, primary, start-1, q)
 
 	q.Del("o")
 	q.Del("d")
@@ -155,35 +153,36 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	q.Set("n", Int64toa(1+right-rowrange)+"-"+Int64toa(right))
 	linkright := escape(">", q.Encode())
 
-
-	q.Set("n",limitstring)
-    menu:=makeMenu3(q)
+	q.Set("n", limitstring)
+	menu := makeMenu3(q)
 	var messageStack []Message
-	messageStack = append(messageStack,Message{Msg:sql2str(stmt),Rows:rownum,Affected:-1,Seconds:sec })
+	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, wherestring, url.Values{})
 }
 
 /**** HELPERS ***********************/
 
-
-func makeFreshQuery (db string, t string, o string, d string) url.Values {
+func makeFreshQuery(db string, t string, o string, d string) url.Values {
 	q := url.Values{}
 	q.Set("db", db)
 	q.Set("t", t)
-	if o != "" { q.Set("o", o) }
-	if d != "" { q.Set("d", d) }
+	if o != "" {
+		q.Set("o", o)
+	}
+	if d != "" {
+		q.Set("d", d)
+	}
 	return q
 }
 
 func makeRowNum(q url.Values, rownum int64) Entry {
 	q.Set("n", Int64toa(rownum))
 	link := q.Encode()
-	q.Del("n",)
+	q.Del("n")
 	return escape(Int64toa(rownum), link)
 }
 
-
-func makeValuesPointers(columns []string) ([]interface{},[]interface{}) {
+func makeValuesPointers(columns []string) ([]interface{}, []interface{}) {
 	count := len(columns)
 	values := make([]interface{}, count)
 	valuePtrs := make([]interface{}, count)
@@ -193,7 +192,7 @@ func makeValuesPointers(columns []string) ([]interface{},[]interface{}) {
 	return values, valuePtrs
 }
 
-func makeRecords(rows *sql.Rows, db string,t string, primary string, offset int64, original url.Values) ([][]Entry, int64) {
+func makeRecords(rows *sql.Rows, db string, t string, primary string, offset int64, original url.Values) ([][]Entry, int64) {
 
 	q, err := url.ParseQuery(original.Encode()) // brute force to preserve original
 	checkY(err)
@@ -205,7 +204,7 @@ func makeRecords(rows *sql.Rows, db string,t string, primary string, offset int6
 	for rows.Next() {
 		rownum = rownum + 1
 		row := []Entry{}
-		row = append(row, makeRowNum(q,rownum))
+		row = append(row, makeRowNum(q, rownum))
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
 

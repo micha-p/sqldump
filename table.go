@@ -22,12 +22,11 @@ type Entry struct {
 }
 
 type Message struct {
-	Msg string
-	Rows int64
+	Msg      string
+	Rows     int64
 	Affected int64
-	Seconds float64
+	Seconds  float64
 }
-
 
 type Context struct {
 	User     string
@@ -42,7 +41,7 @@ type Context struct {
 	Head     []Entry
 	Records  [][]Entry
 	Counter  string
-	Label  	 string
+	Label    string
 	Left     Entry
 	Right    Entry
 	Trail    []Entry
@@ -115,32 +114,32 @@ func makeTitleWithArrow(title string, primary string, d string) string {
 	}
 }
 
-func makeTitleEntry(q url.Values, column string ,primary string, o string, d string) Entry{
+func makeTitleEntry(q url.Values, column string, primary string, o string, d string) Entry {
 	var r Entry
 	if o == column {
 		label := makeTitleWithArrow(column, primary, d)
-		q.Set("o",o)
+		q.Set("o", o)
 		if d == "" {
 			q.Set("d", "1")
-			r=escape(label, q.Encode())
+			r = escape(label, q.Encode())
 			q.Del("d")
 		} else {
 			q.Del("d")
-			r=escape(label, q.Encode())
+			r = escape(label, q.Encode())
 			q.Set("d", d)
 		}
-		q.Set("o",o)
+		q.Set("o", o)
 	} else {
 		q.Set("o", column)
 		q.Del("d")
 		if primary == column {
-			r=escape(column + " (ID)", q.Encode())
+			r = escape(column+" (ID)", q.Encode())
 		} else {
-			r=escape(column, q.Encode())
+			r = escape(column, q.Encode())
 		}
 	}
 	q.Set("o", o)
-	q.Set("d",d)
+	q.Set("d", d)
 	return r
 }
 
@@ -154,7 +153,7 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	q.Set("db", db)
 	q.Set("t", t)
 	for _, title := range columns {
-		head = append(head, makeTitleEntry(q, title,primary,o,d))
+		head = append(head, makeTitleEntry(q, title, primary, o, d))
 	}
 	return head
 }
@@ -174,7 +173,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  "",
-		Label:	  "",
+		Label:    "",
 		Left:     Entry{},
 		Right:    Entry{},
 		Trail:    makeTrail(host, db, t, "", url.Values{}),
@@ -193,7 +192,9 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, where string, whereQ url.Values) {
 
 	var msgs []Message
-	if !QUIETFLAG { msgs = messageStack }
+	if !QUIETFLAG {
+		msgs = messageStack
+	}
 
 	c := Context{
 		User:     "",
@@ -208,7 +209,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  n,
-		Label:	  counterLabel,
+		Label:    counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, where, whereQ),
@@ -244,7 +245,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  counterContent,
-		Label:	  counterLabel,
+		Label:    counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, "", url.Values{}),

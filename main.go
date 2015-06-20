@@ -7,8 +7,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 // restrict GET to reserved files
@@ -33,8 +33,6 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, loginPage)
 }
 
-
-
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
@@ -44,9 +42,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	host := q.Get("host")
 	port := q.Get("port")
 	dbms := q.Get("dbms")
-	db :=   q.Get("db")
+	db := q.Get("db")
 	if user != "" && pass != "" {
-        log.Println("[LOGIN]",dbms,user,host, port,db)
+		log.Println("[LOGIN]", dbms, user, host, port, db)
 		if dbms == "" {
 			dbms = "mysql"
 		}
@@ -70,14 +68,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var EXPERTFLAG bool
-var QUIETFLAG bool  // TODO: better located in session
+var QUIETFLAG bool // TODO: better located in session
 var INFOFLAG bool
 var DEBUGFLAG bool
 var MODIFYFLAG bool
 var READONLY bool
 var CSS_FILE string
 var TLS_PATH string
-
 
 func main() {
 
@@ -131,11 +128,11 @@ func main() {
 	}
 
 	if TLS_PATH != "" {
-		if !strings.HasSuffix(TLS_PATH,"/") {
+		if !strings.HasSuffix(TLS_PATH, "/") {
 			TLS_PATH = TLS_PATH + "/"
 		}
-		certfile := TLS_PATH+"cert.pem"
-		keyfile := TLS_PATH+"key.pem"
+		certfile := TLS_PATH + "cert.pem"
+		keyfile := TLS_PATH + "key.pem"
 		if troubleF(certfile) != nil || troubleF(keyfile) != nil {
 			fmt.Println("generating " + certfile + " and " + keyfile + " ...")
 			generate_cert(*HOST, 2048, false, TLS_PATH)

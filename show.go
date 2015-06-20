@@ -9,7 +9,7 @@ import (
 func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 
 	q := url.Values{}
-    // "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
+	// "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
 	stmt := str2sql("SHOW DATABASES")
 	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
@@ -33,14 +33,13 @@ func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 	tableOutSimple(w, conn, host, "", "", head, records, []Entry{})
 }
 
-
 func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string) {
 
 	q := url.Values{}
 	q.Add("db", db)
 	query := str2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 	query = query + " FROM information_schema.TABLES"
-	query = query + sqlWhere("TABLE_SCHEMA","=",db) + sqlHaving(g, "=", v) + sqlOrder(o,d)
+	query = query + sqlWhere("TABLE_SCHEMA", "=", db) + sqlHaving(g, "=", v) + sqlOrder(o, d)
 	rows, err, sec := getRows(conn, query)
 	checkY(err)
 	defer rows.Close()
@@ -72,8 +71,8 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		row = append(row, escape(Int64toa(rownum), g.Encode()))
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			if c == "Rows" && (db == "INFORMATION_SCHEMA" || db =="information_schema") && (INFOFLAG || EXPERTFLAG) {
-				nv = sql.NullString{Valid: true, String: getCount(conn,row[1].Text)}
+			if c == "Rows" && (db == "INFORMATION_SCHEMA" || db == "information_schema") && (INFOFLAG || EXPERTFLAG) {
+				nv = sql.NullString{Valid: true, String: getCount(conn, row[1].Text)}
 			}
 			if c == "Table" || c == "Comment" {
 				v := nv.String
@@ -89,16 +88,15 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	}
 
 	// Shortened statement
-	query = "SHOW TABLES" + sqlHaving(g, "=", v) + sqlOrder(o,d)
+	query = "SHOW TABLES" + sqlHaving(g, "=", v) + sqlOrder(o, d)
 	var msg Message
 	if QUIETFLAG {
 		msg = Message{}
 	} else {
-		msg = Message{Msg:sql2str(query),Rows:rownum,Affected:-1,Seconds:sec }
+		msg = Message{Msg: sql2str(query), Rows: rownum, Affected: -1, Seconds: sec}
 	}
 	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, "", url.Values{})
 }
-
 
 /*
  show columns from posts;
@@ -111,7 +109,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 */
 func showInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring) {
 
-	rows, err, _:= getRows(conn, stmt)
+	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 

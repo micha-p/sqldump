@@ -7,15 +7,14 @@ import (
 	"strconv"
 )
 
-
 func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64, stmt sqlstring, q url.Values) {
 
 	q.Set("db", db)
 	q.Set("t", t)
 
-	left := Int64toa(maxInt64(nint-1,   1))
+	left := Int64toa(maxInt64(nint-1, 1))
 	var right string
-	right = Int64toa(minInt64(nint+1,nmax))
+	right = Int64toa(minInt64(nint+1, nmax))
 	if o != "" {
 		q.Set("o", o)
 	}
@@ -30,12 +29,12 @@ func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	nstring := Int64toa(nint)
 
 	menu := makeMenu3(q)
-	verticalView(w, conn, stmt, host, db, t, o, d, /* primary: */ "", nstring, "#", linkleft, linkright, menu, q)
+	verticalView(w, conn, stmt, host, db, t, o, d /* primary: */, "", nstring, "#", linkleft, linkright, menu, q)
 }
 
 func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host string, db string, t string, o string, d string,
-                primary string, counter string, counterlabel string,
-                linkleft Entry, linkright Entry, menu []Entry, q url.Values) {
+	primary string, counter string, counterlabel string,
+	linkleft Entry, linkright Entry, menu []Entry, q url.Values) {
 
 	rows, err, _ := getRows(conn, stmt)
 	defer rows.Close()
@@ -45,21 +44,21 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 
 	var title_column Entry
 	if d == "" {
-		q.Set("d","1")
-		title_column = escape("Column",q.Encode())
+		q.Set("d", "1")
+		title_column = escape("Column", q.Encode())
 		q.Del("d")
 	} else {
-		count:=len(cols)
-		newcols:=make([]string,count)
-		n:=0
+		count := len(cols)
+		newcols := make([]string, count)
+		n := 0
 		for i := count - 1; i >= 0; i-- {
-			newcols[n]=cols[i]
-			n=n+1
+			newcols[n] = cols[i]
+			n = n + 1
 		}
 		q.Del("d")
-		cols=newcols
-		title_column = escape(makeTitleWithArrow("Column", "", d),q.Encode()) // its really an index
-		q.Set("d",d)
+		cols = newcols
+		title_column = escape(makeTitleWithArrow("Column", "", d), q.Encode()) // its really an index
+		q.Set("d", d)
 	}
 	home := url.Values{}
 	home.Add("db", db)
@@ -69,22 +68,22 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 	records := [][]Entry{}
 	for i, c := range cols {
 		nv := getNullString(vals[i])
-	    label := c
-		if c==primary{
-			label=label+" (ID)"
+		label := c
+		if c == primary {
+			label = label + " (ID)"
 		}
-		row := []Entry{	Entry{Text: strconv.Itoa(i+1)},
-						Entry{Text:label},
-						makeEntry(nv, db, t, c, "")}
+		row := []Entry{Entry{Text: strconv.Itoa(i + 1)},
+			Entry{Text: label},
+			makeEntry(nv, db, t, c, "")}
 		records = append(records, row)
 	}
 	tableOutFields(w, conn, host, db, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu)
 }
 
-func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, k string, v string,  stmt sqlstring) {
+func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, k string, v string, stmt sqlstring) {
 
-	q := makeFreshQuery(db,t,"","")
-	q.Set("k",k)
+	q := makeFreshQuery(db, t, "", "")
+	q.Set("k", k)
 	next, err := getSingleValue(conn, host, db, sqlSelect(k, t)+sqlWhere(k, ">", v)+sqlOrder(k, "")+sqlLimit(1, 0))
 	if err == nil {
 		q.Set("v", next)
@@ -100,10 +99,9 @@ func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	}
 	linkleft := escape("<", q.Encode())
 
-	m := makeFreshQuery(db,t,"","")
-	m.Set("k",k)
-	m.Set("v",v)
+	m := makeFreshQuery(db, t, "", "")
+	m.Set("k", k)
+	m.Set("v", v)
 	menu := makeMenu5(m)
-	verticalView(w, conn, stmt, host, db, t, /* order: */ k, d, k, v, k + " (ID) =", linkleft, linkright, menu, q)
+	verticalView(w, conn, stmt, host, db, t /* order: */, k, d, k, v, k+" (ID) =", linkleft, linkright, menu, q)
 }
-

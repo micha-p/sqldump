@@ -2,11 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"html"
 	"log"
 	"regexp"
-	"errors"
 )
 
 // http://stackoverflow.com/questions/17845619/how-to-call-the-scan-variadic-function-in-golang-using-reflection/17885636#17885636
@@ -221,7 +221,7 @@ func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary
 		if name == primary {
 			readonly = "1"
 		}
-		if nv.Valid{
+		if nv.Valid {
 			valid = "1"
 		}
 		newcols = append(newcols, CContext{col.Number, name, name, col.IsNumeric, col.IsString, col.Nullable, valid, value, readonly})

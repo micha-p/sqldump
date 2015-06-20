@@ -41,7 +41,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "BACK" {
 		dumpRouter(w, r, conn, host, db, "", "", "", "", "", "", "")
-	} else if action == "INSERT" && !READONLY  && len(sclauses)> 0 {
+	} else if action == "INSERT" && !READONLY && len(sclauses) > 0 {
 		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
 
@@ -59,13 +59,13 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	} else if action == "UPDATEFORM" && !READONLY {
 		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
 
-	} else if action == "UPDATE" && !READONLY && k != "" && v != ""  && len(sclauses)> 0 {
+	} else if action == "UPDATE" && !READONLY && k != "" && v != "" && len(sclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
 		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "UPDATE" && !READONLY && g != "" && v != ""  && len(sclauses)> 0{
+	} else if action == "UPDATE" && !READONLY && g != "" && v != "" && len(sclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
 		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "UPDATE" && !READONLY  && len(sclauses)> 0  && len(wclauses)> 0 {
+	} else if action == "UPDATE" && !READONLY && len(sclauses) > 0 && len(wclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
 
@@ -75,16 +75,14 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	} else if action == "DELETE" && !READONLY && k != "" && v != "" {
 		stmt := sqlDelete(t) + sqlWhere1(k, "=")
 		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "DELETE" && !READONLY  && len(wclauses)> 0 {
+	} else if action == "DELETE" && !READONLY && len(wclauses) > 0 {
 		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
-
 
 	} else {
 		shipMessage(w, host, db, "Action unknown or insufficient parameters: "+action)
 	}
 }
-
 
 // INSERTFORM and SELECTFORM provide columns without values, EDIT/UPDATE provide a filled vmap
 // TODO: use DEFAULT and AUTOINCREMENT
@@ -133,7 +131,6 @@ func actionINSERTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", getColumnInfo(conn, t), []CContext{})
 }
 
-
 // TODO combine next 3 to 1 function: always promote gk,v, always fill if count = 1
 func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 
@@ -161,7 +158,7 @@ func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	preparedStmt, _, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	rows, _,err := sqlQuery1(preparedStmt,v)
+	rows, _, err := sqlQuery1(preparedStmt, v)
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
@@ -175,16 +172,12 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	preparedStmt, _, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	rows, _,err := sqlQuery1(preparedStmt,v)
+	rows, _, err := sqlQuery1(preparedStmt, v)
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
 	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
 }
-
-
-
-
 
 // Excutes a statement on a selection by where-clauses
 // Used, when rows are not adressable by a primary key or in table having a group
@@ -194,18 +187,17 @@ func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	preparedStmt, sec, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1,0,sec})
+	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1, 0, sec})
 
 	result, sec, err := sqlExec(preparedStmt)
 	checkErrorPage(w, host, db, t, stmt, err)
 	affected, err := result.RowsAffected()
 	checkErrorPage(w, host, db, t, stmt, err)
 
-	messageStack = append(messageStack, Message{"EXECUTE stmt", -1,affected,sec})
-	nextstmt := sqlStar(t) + sqlOrder(o,d)
+	messageStack = append(messageStack, Message{"EXECUTE stmt", -1, affected, sec})
+	nextstmt := sqlStar(t) + sqlOrder(o, d)
 	dumpRows(w, conn, host, db, t, o, d, nextstmt, messageStack)
 }
-
 
 /* Executes prepared statements about modifications in tables with primary key or having a group
  * Uses one argument as value for where clause
@@ -216,17 +208,14 @@ func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t 
 	preparedStmt, sec, err := sqlPrepare(conn, stmt)
 	defer preparedStmt.Close()
 	checkErrorPage(w, host, db, t, stmt, err)
-	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1,0,sec})
+	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1, 0, sec})
 
-	result, sec, err := sqlExec1(preparedStmt,arg)
+	result, sec, err := sqlExec1(preparedStmt, arg)
 	checkErrorPage(w, host, db, t, stmt, err)
 	affected, err := result.RowsAffected()
 	checkErrorPage(w, host, db, t, stmt, err)
 
-	messageStack = append(messageStack, Message{"EXECUTE stmt USING \"" + arg + "\"", -1,affected,sec})
+	messageStack = append(messageStack, Message{"EXECUTE stmt USING \"" + arg + "\"", -1, affected, sec})
 	nextstmt := sqlStar(t)
-	dumpRows(w, conn, host, db, t, "", "",nextstmt, messageStack)
+	dumpRows(w, conn, host, db, t, "", "", nextstmt, messageStack)
 }
-
-
-

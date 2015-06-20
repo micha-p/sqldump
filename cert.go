@@ -91,12 +91,12 @@ func generate_cert(host string, rsaBits int, isCA bool, path string) {
 	certOut.Close()
 	log.Print("written " + path + "cert.pem\n")
 
-	keyOut, err := os.OpenFile(path + "key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	keyOut, err := os.OpenFile(path+"key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		log.Print("failed to open "+ path + "key.pem for writing:", err)
+		log.Print("failed to open "+path+"key.pem for writing:", err)
 		return
 	}
 	pem.Encode(keyOut, pemBlockForKey(priv))
 	keyOut.Close()
-	log.Print("written "+path+"key.pem\n")
+	log.Print("written " + path + "key.pem\n")
 }

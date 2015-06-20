@@ -3,11 +3,11 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"net/url"
-	"net/http"
 	"html"
-	"strings"
+	"net/http"
+	"net/url"
 	"regexp"
+	"strings"
 )
 
 /* dumpRows is the basic routine for any view without further restrictions. It starts with a fresh query.
@@ -89,31 +89,30 @@ import (
 
 /* showing always the same five menu entries introduces lesser changes in user interface.
  * Two subsequent forms might be confusing as well, on the other hand, insisting on select step might feel pedantic.
- */
-
+*/
 
 func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
 	stmt := sqlStar(t)
 
-    if k != "" && v != "" && k == getPrimary(conn, t) {
+	if k != "" && v != "" && k == getPrimary(conn, t) {
 		stmt = stmt + sqlHaving(k, "=", v)
 		showKeyValue(w, conn, host, db, t, o, d, k, v, stmt)
 	} else {
 		q := r.URL.Query()
 		wclauses, _, _ := collectClauses(r, conn, t)
 
-		if len(wclauses) == 0 && g=="" && v =="" && n=="" {
+		if len(wclauses) == 0 && g == "" && v == "" && n == "" {
 			stmt = stmt + sqlOrder(o, d)
 			dumpRows(w, conn, host, db, t, o, d, stmt, []Message{})
 
 		} else {
-			stmt = stmt +sqlWhereClauses(wclauses)
+			stmt = stmt + sqlWhereClauses(wclauses)
 			// should be recursive for every where-level
 			// stmt = "SELECT * FROM (" + stmt + sqlWhereClauses(wclauses) + ") AS TEMP "
 			stmt = stmt + sqlHaving(g, "=", v)
-			stmt = stmt  + sqlOrder(o, d)
+			stmt = stmt + sqlOrder(o, d)
 			if g == "" && n == "" {
 				dumpWhere(w, conn, host, db, t, o, d, stmt, q)
 			} else {
@@ -126,9 +125,9 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 					checkY(err)
 					if singlenumber != "" {
 						ni, _ := Atoi64(singlenumber)
-						ni = minInt64(ni,nmax)
+						ni = minInt64(ni, nmax)
 						stmt = stmt + sqlLimit(1, ni)
-						showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax,stmt, q)
+						showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax, stmt, q)
 					} else if len(limits) == 3 {
 						nstart, err := Atoi64(limits[1])
 						checkY(err)
@@ -160,7 +159,7 @@ func readRequest(r *http.Request) (string, string, string, string, string, strin
 }
 
 func makeMenu(q url.Values, name string, value string, label string) Entry {
-	if name !="" {
+	if name != "" {
 		q.Set(name, value)
 	}
 	link := q.Encode()
@@ -170,25 +169,23 @@ func makeMenu(q url.Values, name string, value string, label string) Entry {
 
 func makeMenu5(m url.Values) []Entry {
 	var menu []Entry
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "action", "UPDATEFORM","~"))	 // KV-DELETE, GV-DELETE
-	menu = append(menu,makeMenu(m, "action", "DELETE",    "-"))  // DELETEFILLED, KV-DELETE, GV-DELETE
-	menu = append(menu,makeMenu(m, "action", "INFO",      "?"))
+	menu = append(menu, makeMenu(m, "action", "SELECTFORM", "?"))
+	menu = append(menu, makeMenu(m, "action", "INSERTFORM", "+"))
+	menu = append(menu, makeMenu(m, "action", "UPDATEFORM", "~")) // KV-DELETE, GV-DELETE
+	menu = append(menu, makeMenu(m, "action", "DELETE", "-"))     // DELETEFILLED, KV-DELETE, GV-DELETE
+	menu = append(menu, makeMenu(m, "action", "INFO", "?"))
 	return menu
 }
 
 func makeMenu3(m url.Values) []Entry {
 	var menu []Entry
-	menu = append(menu,makeMenu(m, "action", "SELECTFORM","?"))
-	menu = append(menu,makeMenu(m, "action", "INSERTFORM","+"))
-	menu = append(menu,makeMenu(m, "", ""," "))
-	menu = append(menu,makeMenu(m, "", ""," "))
-	menu = append(menu,makeMenu(m, "action", "INFO","?"))
+	menu = append(menu, makeMenu(m, "action", "SELECTFORM", "?"))
+	menu = append(menu, makeMenu(m, "action", "INSERTFORM", "+"))
+	menu = append(menu, makeMenu(m, "", "", " "))
+	menu = append(menu, makeMenu(m, "", "", " "))
+	menu = append(menu, makeMenu(m, "action", "INFO", "?"))
 	return menu
 }
-
-
 
 func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
 
@@ -198,8 +195,8 @@ func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 	action := q.Get("action")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if action !=""  && db != "" && t != "" {
-		actionRouter(w, r ,conn, host)
+	if action != "" && db != "" && t != "" {
+		actionRouter(w, r, conn, host)
 	} else if db == "" {
 		showDatabases(w, conn, host)
 	} else if t == "" {
@@ -208,7 +205,6 @@ func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	}
 }
-
 
 // TODO: to allow for submitting multiple clauses for a field, they should be numbered W1, O1 ...
 
@@ -267,7 +263,7 @@ func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sql
 		} else if set != "" {
 			v.Add(colhtml+"S", set)
 			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
-		} else if set != "" {            // TODO empty values should INSERT empty strings, but ignored for UPDATE
+		} else if set != "" { // TODO empty values should INSERT empty strings, but ignored for UPDATE
 			v.Add(colhtml+"S", set)
 			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
 		}
@@ -308,5 +304,3 @@ func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
 	}
 	return strings.Join(clauses, " & ")
 }
-
-
