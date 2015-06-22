@@ -73,7 +73,7 @@ func makeBack(host string, db string, t string, o string, d string, k string) st
 	}
 }
 
-func makeTrail(host string, db string, t string, w string, wq url.Values) []Entry {
+func makeTrail(host string, db string, t string, o string, d string, w string, wq url.Values) []Entry {
 
 	q := url.Values{}
 
@@ -90,8 +90,8 @@ func makeTrail(host string, db string, t string, w string, wq url.Values) []Entr
 
 	wq.Set("db", db)
 	wq.Set("t", t)
-	wq.Del("o")
-	wq.Del("d")
+	wq.Set("o", o)
+	wq.Set("d", w)
 	if w != "" {
 		trail = append(trail, escape(w, wq.Encode()))
 	}
@@ -176,7 +176,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Label:    "",
 		Left:     Entry{},
 		Right:    Entry{},
-		Trail:    makeTrail(host, db, t, "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "","",url.Values{}),
 		Menu:     menu,
 		Messages: []Message{},
 	}
@@ -189,7 +189,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 
 func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
 	n string, counterLabel string, linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, where string, whereQ url.Values) {
+	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, whereString string, whereQuery url.Values) {
 
 	var msgs []Message
 	if !QUIETFLAG {
@@ -212,7 +212,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Label:    counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(host, db, t, where, whereQ),
+		Trail:	  makeTrail(host, db, t, o,d, whereString, whereQuery),
 		Menu:     menu,
 		Messages: msgs,
 	}
@@ -228,7 +228,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 	db string, t string, o string, d string,
 	counterContent string, counterLabel string,
 	linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry) {
+	head []Entry, records [][]Entry, menu []Entry, whereString string, whereQuery url.Values) {
 
 	initTemplate()
 
@@ -248,7 +248,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Label:    counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(host, db, t, "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "", whereString, whereQuery),
 		Menu:     menu,
 		Messages: []Message{},
 	}

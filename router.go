@@ -15,29 +15,6 @@ import (
  *
 
 
-//      ,------- home: 	lift restrictions from right lo left
-//     /      ,------ indicator for primary key
-//    /      /	   ,----- column:	ascending and descending order
-//   #	 c1(ID)   c2	c3
-//   1	   . 	   .	 .
-//   2	   . \     . ----- value: select group  (browse by group)
-//    \    .  `------ key value: show record  (browse by key values)
-//     `----------- row number: show record  (browse by number or range)
-//
-//
-
-//
-//       __________  home: lift restrictions from right lo left
-//      /   ___________ column: ascending and descending order
-//     /   /   ___________ indicator for primary key
-//    /   /   /
-//   #	 c1(ID)   c2	c3
-//   1	   -       -     -
-//   2	   - \     - \____ value: select group (browse by group)
-//    \    -  \______ key value: show record (browse by key values)
-//     \___________ row number: show record (browse by number or range)
-//
-//
 //	View			Click				Query				Result			SQL
 //	dumpRows
 //		|------->	#		->			db t				dumpRows 		select	order
@@ -121,7 +98,7 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 				} else {
 					singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 					limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
-					nmax, err := Atoi64(getCount(conn, t))
+					nmax, err := Atoi64(getCount(conn, sqlCount(t)+sqlWhereClauses(wclauses)))
 					checkY(err)
 					if singlenumber != "" {
 						ni, _ := Atoi64(singlenumber)
@@ -302,5 +279,5 @@ func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
 			}
 		}
 	}
-	return strings.Join(clauses, " & ")
+	return strings.Join(clauses, ", ")
 }

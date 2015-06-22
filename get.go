@@ -43,8 +43,10 @@ func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error, float64) {
 	return rows, err, sec
 }
 
-func getSingleValue(conn *sql.DB, host string, db string, stmt sqlstring) (string, error) {
-	log.Println("[SQL]", sql2str(stmt))
+func getSingleValue(conn *sql.DB, stmt sqlstring) (string, error) {
+	if EXPERTFLAG {
+		log.Println("[SQL]", sql2str(stmt))
+	}
 	err := conn.Ping()
 	checkY(err)
 	row := sqlQueryRow(conn, stmt)
@@ -56,8 +58,7 @@ func getSingleValue(conn *sql.DB, host string, db string, stmt sqlstring) (strin
 	return getNullString(value).String, err
 }
 
-func getCount(conn *sql.DB, t string) string {
-	stmt := sqlCount(t)
+func getCount(conn *sql.DB, stmt sqlstring) string {
 	if EXPERTFLAG {
 		log.Println("[SQL]", sql2str(stmt))
 	}

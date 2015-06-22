@@ -72,7 +72,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		for i, c := range columns {
 			nv := getNullString(values[i])
 			if c == "Rows" && (db == "INFORMATION_SCHEMA" || db == "information_schema") && (INFOFLAG || EXPERTFLAG) {
-				nv = sql.NullString{Valid: true, String: getCount(conn, row[1].Text)}
+				nv = sql.NullString{Valid: true, String: getCount(conn, sqlCount(row[1].Text))}
 			}
 			if c == "Table" || c == "Comment" {
 				v := nv.String

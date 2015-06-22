@@ -35,7 +35,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	head := createHead(db, t, o, d, "", primary, columns, url.Values{})
 	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	menu := makeMenu5(makeFreshQuery(db, t, o, d))
+	menu := makeMenu3(makeFreshQuery(db, t, o, d))
 	linkleft := escape("<", q.Encode())
 	linkright := escape(">", q.Encode())
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
@@ -63,14 +63,14 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	/********** do this first to ensure correct query */
 	var linkleft, linkright Entry
 	{
-		next, err := getSingleValue(conn, host, db, sqlSelect(g, t)+sqlWhere(g, ">", v)+sqlOrder(g, "")+sqlLimit(1, 0))
+		next, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhere(g, ">", v)+sqlOrder(g, "")+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", next)
 		} else {
 			q.Set("v", v)
 		}
 		linkright = escape(">", q.Encode())
-		prev, err := getSingleValue(conn, host, db, sqlSelect(g, t)+sqlWhere(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
+		prev, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhere(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", prev)
 		} else {
@@ -192,10 +192,9 @@ func makeValuesPointers(columns []string) ([]interface{}, []interface{}) {
 	return values, valuePtrs
 }
 
-func makeRecords(rows *sql.Rows, db string, t string, primary string, offset int64, original url.Values) ([][]Entry, int64) {
+func makeRecords(rows *sql.Rows, db string, t string, primary string, offset int64, q url.Values) ([][]Entry, int64) {
 
-	q, err := url.ParseQuery(original.Encode()) // brute force to preserve original
-	checkY(err)
+	//q, err := url.ParseQuery(original.Encode());checkY(err)   // brute force to preserve original
 	columns, err := rows.Columns()
 	checkY(err)
 	values, valuePtrs := makeValuesPointers(columns)

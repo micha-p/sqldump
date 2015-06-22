@@ -34,7 +34,6 @@ A small web-based tool for database administration.
 	-x  expert mode to access privileges, routines, triggers, views (Release 1.2)
 
 
-
    [http://localhost:8080](http://localhost:8080)
 
    [http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306](http://localhost:8080/user=galagopher&pass=mypassword&host=localhost&port=3306)
@@ -43,7 +42,19 @@ A small web-based tool for database administration.
     lynx -accept_all_cookies 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306'
     curl -s 'http://localhost:8080/?user=galagopher&pass=mypassword&host=localhost&port=3306&db=galadb&t=posts' | html2text
 
-### Interface
+### User interface
+
+
+         ___________ home: lift restrictions from right lo left
+        /   ___________ column: ascending and descending order
+       /   /   ___________ indicator for primary key
+      /   /   /
+     #	 c1(ID)   c2	c3
+     1	   -       -     -
+     2	   - \     - \____ value: select group (browse by group)
+      \    -  \______ key value: show record (browse by key values)
+       \___________ row number: show record (browse by number or range)
+
 
 Symbol 	|	Action
 --------|-------------
@@ -53,7 +64,6 @@ Symbol 	|	Action
 i 		|	Info
 <		|   Left (towards start)
 >		|   Right (towards end)
-#		|   Handle
 
 
 ### Security

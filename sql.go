@@ -84,7 +84,6 @@ func sqlSelect(c string, t string) sqlstring {
 }
 
 func sqlOrder(order string, desc string) sqlstring {
-	log.Println("O", order, desc)
 	var query sqlstring
 	if order != "" {
 		query = str2sql(" ORDER BY ") + sqlProtectIdentifier(order)

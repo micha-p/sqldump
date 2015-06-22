@@ -108,7 +108,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 		Back:     linkback,
 		Columns:  showncols,
 		Hidden:   hiddencols,
-		Trail:    makeTrail(host, db, t, "", url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "","",url.Values{}),
 	}
 
 	if DEBUGFLAG {
@@ -141,7 +141,7 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
 	}
 
-	count, _ := getSingleValue(conn, host, db, sqlCount(t)+sqlWhereClauses(wclauses))
+	count, _ := getSingleValue(conn, sqlCount(t)+sqlWhereClauses(wclauses))
 	if count == "1" {
 		rows, err, _ := getRows(conn, sqlStar(t)+sqlWhereClauses(wclauses))
 		checkY(err)

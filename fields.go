@@ -9,6 +9,7 @@ import (
 
 func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64, stmt sqlstring, q url.Values) {
 
+	whereString := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 	q.Set("db", db)
 	q.Set("t", t)
 
@@ -29,12 +30,12 @@ func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	nstring := Int64toa(nint)
 
 	menu := makeMenu3(q)
-	verticalView(w, conn, stmt, host, db, t, o, d /* primary: */, "", nstring, "#", linkleft, linkright, menu, q)
+	verticalView(w, conn, stmt, host, db, t, o, d /* primary: */, "", nstring, "#", linkleft, linkright, menu, whereString, q)
 }
 
 func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host string, db string, t string, o string, d string,
 	primary string, counter string, counterlabel string,
-	linkleft Entry, linkright Entry, menu []Entry, q url.Values) {
+	linkleft Entry, linkright Entry, menu []Entry, whereString string, q url.Values) {
 
 	rows, err, _ := getRows(conn, stmt)
 	defer rows.Close()
@@ -77,21 +78,21 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 			makeEntry(nv, db, t, c, "")}
 		records = append(records, row)
 	}
-	tableOutFields(w, conn, host, db, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu)
+	tableOutFields(w, conn, host, db, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu, whereString, q)
 }
 
 func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, k string, v string, stmt sqlstring) {
 
 	q := makeFreshQuery(db, t, "", "")
 	q.Set("k", k)
-	next, err := getSingleValue(conn, host, db, sqlSelect(k, t)+sqlWhere(k, ">", v)+sqlOrder(k, "")+sqlLimit(1, 0))
+	next, err := getSingleValue(conn, sqlSelect(k, t)+sqlWhere(k, ">", v)+sqlOrder(k, "")+sqlLimit(1, 0))
 	if err == nil {
 		q.Set("v", next)
 	} else {
 		q.Set("v", v)
 	}
 	linkright := escape(">", q.Encode())
-	prev, err := getSingleValue(conn, host, db, sqlSelect(k, t)+sqlWhere(k, "<", v)+sqlOrder(k, "1")+sqlLimit(1, 0))
+	prev, err := getSingleValue(conn, sqlSelect(k, t)+sqlWhere(k, "<", v)+sqlOrder(k, "1")+sqlLimit(1, 0))
 	if err == nil {
 		q.Set("v", prev)
 	} else {
@@ -103,5 +104,5 @@ func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	m.Set("k", k)
 	m.Set("v", v)
 	menu := makeMenu5(m)
-	verticalView(w, conn, stmt, host, db, t /* order: */, k, d, k, v, k+" (ID) =", linkleft, linkright, menu, q)
+	verticalView(w, conn, stmt, host, db, t /* order: */, k, d, k, v, k+" (ID) =", linkleft, linkright, menu, "", q)
 }
