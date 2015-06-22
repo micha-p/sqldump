@@ -251,36 +251,42 @@ func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sql
 	return whereclauses, setclauses, v
 }
 
-func WhereQuery2Pretty(q url.Values, ccols []CContext) string {
+func WhereQuery2Pretty(q url.Values, ccols []CContext) []string {
 	var clauses []string
 	for _, col := range ccols {
 		colname := col.Label
 		val := q.Get(html.EscapeString(col.Name) + "W")
 		comp := q.Get(html.EscapeString(col.Name) + "O")
 		if val != "" || comp == "=0" || comp == "!0" {
-			if comp == "" {
-				comp, val = sqlFilterNumericComparison(val)
-				clauses = append(clauses, colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val)))
-			} else if comp == "~" {
-				clauses = append(clauses, colname+" LIKE \""+val+"\"")
-			} else if comp == "!~" {
-				clauses = append(clauses, colname+" NOT LIKE \""+val+"\"")
-			} else if comp == "==" {
-				clauses = append(clauses, colname+"==\""+val+"\"")
-			} else if comp == "!=" {
-				clauses = append(clauses, colname+"!=\""+val+"\"")
-			} else if comp == "=0" {
-				clauses = append(clauses, colname+" IS NULL")
-			} else if comp == "!0" {
-				clauses = append(clauses, colname+" IS NOT NULL")
-			} else {
-				if col.IsNumeric != "" {
-					clauses = append(clauses, colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val)))
-				} else {
-					clauses = append(clauses, colname+sql2str(sqlFilterComparator(comp))+" \""+val+"\"")
-				}
-			}
+			clauses = append(clauses,whereComp2Pretty(colname, comp, val, col.IsNumeric))
 		}
 	}
-	return strings.Join(clauses, ", ")
+	return []string{strings.Join(clauses, ", ")} // TODO: this will contain one string per where level
+}
+
+func whereComp2Pretty(colname string, comp string, val string, IsNumeric string) string {
+	var r string
+	if comp == "" {
+		comp, val = sqlFilterNumericComparison(val)
+		r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
+	} else if comp == "~" {
+		r = colname+" LIKE \""+val+"\""
+	} else if comp == "!~" {
+		r = colname+" NOT LIKE \""+val+"\""
+	} else if comp == "==" {
+		r = colname+"==\""+val+"\""
+	} else if comp == "!=" {
+		r = colname+"!=\""+val+"\""
+	} else if comp == "=0" {
+		r = colname+" IS NULL"
+	} else if comp == "!0" {
+		r = colname+" IS NOT NULL"
+	} else {
+		if IsNumeric == "" {
+			r = colname+sql2str(sqlFilterComparator(comp))+" \""+val+"\""
+		} else {
+			r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
+		}
+	}
+	return r
 }

@@ -95,7 +95,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	} else {
 		msg = Message{Msg: sql2str(query), Rows: rownum, Affected: -1, Seconds: sec}
 	}
-	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, "", url.Values{})
+	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, []string{}, url.Values{})
 }
 
 /*
@@ -113,25 +113,6 @@ func showInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	checkY(err)
 	defer rows.Close()
 
-	q := url.Values{}
-	q.Add("db", db)
-	q.Add("t", t)
-	q.Set("action", "SELECTFORM")
-	linkselect := q.Encode()
-	q.Set("action", "INSERTFORM")
-	linkinsert := q.Encode()
-	q.Set("action", "DELETEFORM")
-	linkdeleteF := q.Encode()
-	q.Set("action", "INFO")
-	linkinfo := q.Encode()
-	q.Del("action")
-
-	menu := []Entry{}
-	menu = append(menu, escape("?", linkselect))
-	menu = append(menu, escape("+", linkinsert))
-	menu = append(menu, escape("-", linkdeleteF))
-	menu = append(menu, escape("i", linkinfo))
-
 	records := [][]Entry{}
 	head := []Entry{escape("#"), escape("Field"), escape("Type"), escape("Null"), escape("Key"), escape("Default"), escape("Extra")}
 
@@ -145,7 +126,7 @@ func showInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 		i = i + 1
 	}
 	// message not shown as it disturbs equal alignment of info, query and field.
-	tableOutSimple(w, conn, host, db, t, head, records, menu)
+	tableOutSimple(w, conn, host, db, t, head, records, []Entry{})
 }
 
 // do not export

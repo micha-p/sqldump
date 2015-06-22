@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"net/url"
+	"sort"
 )
 
 type FContext struct {
@@ -91,7 +92,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 
 func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string,
-	action string, button string, selector string, showncols []CContext, hiddencols []CContext, whereString string) {
+	action string, button string, selector string, showncols []CContext, hiddencols []CContext, whereStack []string) {
 
 	q := r.URL.Query()
 	q.Del("action")
@@ -109,7 +110,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 		Back:     linkback,
 		Columns:  showncols,
 		Hidden:   hiddencols,
-		Trail:    makeTrail(host, db, t, "", "",whereString,url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "", whereStack,url.Values{}),
 	}
 
 	if DEBUGFLAG {
@@ -123,20 +124,20 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 
 func actionSELECTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
-	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
-	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", colinfo, []CContext{}, whereString)
+	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", colinfo, []CContext{}, whereStack)
 }
 
 func actionDELETEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
-	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
-	shipForm(w, r, conn, host, db, t, o, d, "DELETE", "Delete", "true", colinfo, []CContext{}, whereString )
+	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	shipForm(w, r, conn, host, db, t, o, d, "DELETE", "Delete", "true", colinfo, []CContext{}, whereStack )
 }
 
 func actionINSERTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
-	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
-	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", colinfo, []CContext{}, whereString)
+	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", colinfo, []CContext{}, whereStack)
 }
 
 // TODO combine next 3 to 1 function: always promote gk,v, always fill if count = 1
@@ -144,7 +145,7 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 
 	wclauses, _, whereQ := collectClauses(r, conn, t)
 	colinfo := getColumnInfo(conn, t)
-	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
 	hiddencols := []CContext{}
 	for field, valueArray := range whereQ { //type Values map[string][]string
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
@@ -155,14 +156,16 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 		rows, err, _ := getRows(conn, sqlStar(t)+sqlWhereClauses(wclauses))
 		checkY(err)
 		defer rows.Close()
-		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, "", rows), hiddencols, whereString)
+		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, "", rows), hiddencols, whereStack)
 	} else {
-		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", colinfo, hiddencols, whereString)
+		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", colinfo, hiddencols, whereStack)
 	}
 }
 func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	colinfo := getColumnInfo(conn, t)
-	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	isNumeric := colinfo[sort.Search(len(colinfo), func(i int) bool { return colinfo[i].Name == k })].IsNumeric
+	whereStack = append(whereStack,whereComp2Pretty(k,"=",v,isNumeric))
 	hiddencols := []CContext{
 		CContext{"", "k", "", "", "", "", "valid", k, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
@@ -174,11 +177,13 @@ func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereString)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereStack)
 }
 func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
 	colinfo := getColumnInfo(conn, t)
-	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	isNumeric := colinfo[sort.Search(len(colinfo), func(i int) bool { return colinfo[i].Name == g })].IsNumeric
+	whereStack = append(whereStack,whereComp2Pretty(g,"=",v,isNumeric))
 	hiddencols := []CContext{
 		CContext{"", "g", "", "", "", "", "valid", g, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
@@ -190,7 +195,7 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereString)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereStack)
 }
 
 // Excutes a statement on a selection by where-clauses
