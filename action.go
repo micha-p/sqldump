@@ -44,7 +44,6 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	} else if action == "INSERT" && !READONLY && len(sclauses) > 0 {
 		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
-
 	} else if action == "SELECTFORM" {
 		actionSELECTFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "INSERTFORM" && !READONLY {

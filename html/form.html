@@ -4,6 +4,10 @@
 {{if .CSS}}<link rel="stylesheet" type="text/css" href="{{.CSS}}"/>{{end}}
 
 <body>
+{{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
+{{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
+{{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
+{{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "where" .}}{{end}}{{end}}
 {{define "tselector"}}
 <SELECT name="{{.Name}}O" style="width: 100%">
       <OPTION value="~"> &sim; </OPTION>
@@ -45,12 +49,34 @@
       <OPTION value="!0"> !0 </OPTION>
 {{end}}</SELECT>{{end}}
 {{define "selector"}}{{if .IsNumeric}}{{template "nselector" .}}{{else if .IsString}}{{template "tselector" .}}{{else}}{{template "oselector" .}}{{end}}{{end}}
-{{define "set"}}<input class="cell" type="text" name="{{.Name}}S" value="{{.Value}}">{{end}}
-{{define "null"}}<input class="cell" type="checkbox" name="{{.Name}}N" {{if .Nullable}}value=1 {{/*if .Valid}}{{else}} checked="checked"{{end*/}}{{else}} disabled = "disabled"{{end}}>{{end}}
-{{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
-{{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
-{{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
-{{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "where" .}}{{end}}{{end}}
+
+<script type="text/javascript">
+function uncheck(checkboxID, targetID) {if(document.getElementById(checkboxID).checked==true){document.getElementById(targetID).checked=false;}}
+</script>
+
+{{define "set"}}
+	<td class="cell">
+	<input class="cell" type="text" name="{{.Name}}S" id="{{.Name}}TEXT"
+		onKeyDown="document.getElementById('{{.Name}}EMPTY').checked=false;document.getElementById('{{.Name}}NULL').checked=false;"
+		value="{{.Value}}">
+	</td>
+{{end}}
+
+{{define "null"}}
+	<td class="cell">
+	<input class="cell" type="checkbox" id="{{.Name}}NULL" name="{{.Name}}N"
+		onClick="uncheck('{{.Name}}NULL', '{{.Name}}EMPTY')"{{if .Nullable}}
+		value="N" {{else}} disabled = "disabled"{{end}}>
+	</td>
+{{end}}
+{{define "empty"}}
+	<td class="cell">
+		<input class="cell" type="checkbox" id="{{.Name}}EMPTY" name="{{.Name}}N"
+		onClick="uncheck('{{.Name}}EMPTY', '{{.Name}}NULL')"{{if .IsString}}
+		value="E" {{else}} disabled = "disabled"{{end}}>
+	</td>
+{{end}}
+
 
 <!--
 <input
@@ -84,8 +110,8 @@
 		{{end}}<table>
 			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> </tr>
 			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td class="cell">{{template "selector" .}}</td> <td class="cell">{{template "field" .}}</td> </tr>
-			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Null</th> <th>Data</th> </tr>
-			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td class="cell">{{template "null" .}}</td> <td class="cell">{{template "set" .}}</td> </tr>
+			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Null</th> <th>&ldquo;&rdquo;</th> <th>Data</th> </tr>
+			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td>{{template "null" .}}{{template "empty" .}}{{template "set" .}}</tr>
 			{{end}}{{end}}
 		</table>
 		<br>

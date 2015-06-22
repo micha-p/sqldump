@@ -77,8 +77,7 @@ i 		|	Info
 
 ##### Javascript
 
-The provided html-templates do not use javascript at all. However, when toggling null values or entering nonempty strings, scripts might be useful and
- might be used in user-supplied templates.
+The provided html-templates do not require javascript. However, when toggling null values or entering nonempty strings, two small scripts are used.
 
 ##### SQL-injection via Request values
 
