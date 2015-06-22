@@ -94,7 +94,7 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 				dumpWhere(w, conn, host, db, t, o, d, stmt, q)
 			} else {
 				if n == "" {
-					dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, q)
+					dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, wclauses, q)
 				} else {
 					singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 					limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)

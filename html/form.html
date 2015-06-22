@@ -4,7 +4,7 @@
 {{if .CSS}}<link rel="stylesheet" type="text/css" href="{{.CSS}}"/>{{end}}
 
 <body>
-{{define "where"}}<input class="cell" type="text" name="{{.Name}}W" value="{{.Value}}">{{end}}
+{{define "where"}}<input class="cell" type="text" name="{{.Name}}W" tabindex="{{.Number}}" value="{{.Value}}">{{end}}
 {{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 {{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
 {{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "where" .}}{{end}}{{end}}
@@ -58,7 +58,7 @@ function uncheck(checkboxID, targetID) {if(document.getElementById(checkboxID).c
 	<td class="cell">
 	<input class="cell" type="text" name="{{.Name}}S" id="{{.Name}}TEXT"
 		onKeyDown="document.getElementById('{{.Name}}EMPTY').checked=false;document.getElementById('{{.Name}}NULL').checked=false;"
-		value="{{.Value}}">
+		tabindex="{{.Number}}" value="{{.Value}}">
 	</td>
 {{end}}
 

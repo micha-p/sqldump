@@ -20,7 +20,10 @@ import (
 
 func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, messageStack []Message) {
 
+	menu := makeMenu3(makeFreshQuery(db, t, o, d))
 	q := makeFreshQuery(db, t, o, d)
+	linkleft := escape("<", q.Encode())
+	linkright := escape(">", q.Encode())
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
 		checkErrorPage(w, host, db, t, stmt, err)
@@ -35,9 +38,6 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	head := createHead(db, t, o, d, "", primary, columns, url.Values{})
 	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	menu := makeMenu3(makeFreshQuery(db, t, o, d))
-	linkleft := escape("<", q.Encode())
-	linkright := escape(">", q.Encode())
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, "", url.Values{})
 }
@@ -49,8 +49,9 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 
 // func dumpGroupWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, q url.Values) {
 
-func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, q url.Values) {
+func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, wclauses []sqlstring,q url.Values) {
 
+	menu := makeMenu5(q)
 	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
@@ -63,14 +64,14 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	/********** do this first to ensure correct query */
 	var linkleft, linkright Entry
 	{
-		next, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhere(g, ">", v)+sqlOrder(g, "")+sqlLimit(1, 0))
+		next, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(wclauses) + sqlHaving(g, ">", v)+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", next)
 		} else {
 			q.Set("v", v)
 		}
 		linkright = escape(">", q.Encode())
-		prev, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhere(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
+		prev, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(wclauses) + sqlHaving(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", prev)
 		} else {
@@ -86,9 +87,6 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, "", primary, columns, q)
 	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	q.Set("g", g)
-	q.Set("v", v)
-	menu := makeMenu5(q)
 	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, wherestring, q)
@@ -101,6 +99,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, q url.Values) {
 
+	menu := makeMenu5(q)
 	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
@@ -116,7 +115,6 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, "", primary, columns, q)
 	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	menu := makeMenu5(q)
 	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, wherestring, q)
@@ -126,6 +124,16 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	wherestring := WhereQuery2Pretty(q, getColumnInfo(conn, t))
 	limitstring := Int64toa(start) + "-" + Int64toa(end)
+	rowrange := end - start
+	left := maxInt64(start-rowrange, 1)
+	right := minInt64(end+rowrange, max)
+	q.Set("n", Int64toa(left)+"-"+Int64toa(left+rowrange-1))
+	linkleft := escape("<", q.Encode())
+	q.Set("n", Int64toa(1+right-rowrange)+"-"+Int64toa(right))
+	linkright := escape(">", q.Encode())
+
+	q.Set("n", limitstring)
+	menu := makeMenu3(q)
 
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
@@ -141,20 +149,6 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, limitstring, "", columns, q)
 	records, rownum := makeRecords(rows, db, t, primary, start-1, q)
 
-	q.Del("o")
-	q.Del("d")
-	q.Del("k")
-	q.Del("v")
-	rowrange := end - start
-	left := maxInt64(start-rowrange, 1)
-	right := minInt64(end+rowrange, max)
-	q.Set("n", Int64toa(left)+"-"+Int64toa(left+rowrange-1))
-	linkleft := escape("<", q.Encode())
-	q.Set("n", Int64toa(1+right-rowrange)+"-"+Int64toa(right))
-	linkright := escape(">", q.Encode())
-
-	q.Set("n", limitstring)
-	menu := makeMenu3(q)
 	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, wherestring, url.Values{})
@@ -209,7 +203,7 @@ func makeRecords(rows *sql.Rows, db string, t string, primary string, offset int
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			row = append(row, makeEntry(nv, db, t, c, primary))
+			row = append(row, makeEntry(nv, db, t, c, primary,q))
 		}
 		records = append(records, row)
 	}

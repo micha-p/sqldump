@@ -75,7 +75,7 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 		}
 		row := []Entry{Entry{Text: strconv.Itoa(i + 1)},
 			Entry{Text: label},
-			makeEntry(nv, db, t, c, "")}
+			makeEntry(nv, db, t, c, "",q)}
 		records = append(records, row)
 	}
 	tableOutFields(w, conn, host, db, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu, whereString, q)

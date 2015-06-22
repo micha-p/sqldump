@@ -60,10 +60,12 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
 
 	} else if action == "UPDATE" && !READONLY && k != "" && v != "" && len(sclauses) > 0 {
-		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(k, "=")
+		hclause := sqlProtectIdentifier(k) + "=?"
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "UPDATE" && !READONLY && g != "" && v != "" && len(sclauses) > 0 {
-		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhere1(g, "=")
+		hclause := sqlProtectIdentifier(g) + "=?"
+		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "UPDATE" && !READONLY && len(sclauses) > 0 && len(wclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
@@ -89,7 +91,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 
 func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string,
-	action string, button string, selector string, showncols []CContext, hiddencols []CContext) {
+	action string, button string, selector string, showncols []CContext, hiddencols []CContext, whereString string) {
 
 	q := r.URL.Query()
 	q.Del("action")
@@ -107,7 +109,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 		Back:     linkback,
 		Columns:  showncols,
 		Hidden:   hiddencols,
-		Trail:    makeTrail(host, db, t, "", "","",url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "",whereString,url.Values{}),
 	}
 
 	if DEBUGFLAG {
@@ -120,21 +122,29 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 /* The next four functions generate forms for doing SELECT, DELETE, INSERT, UPDATE */
 
 func actionSELECTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", getColumnInfo(conn, t), []CContext{})
+	colinfo := getColumnInfo(conn, t)
+	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", colinfo, []CContext{}, whereString)
 }
 
 func actionDELETEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-	shipForm(w, r, conn, host, db, t, o, d, "DELETE", "Delete", "true", getColumnInfo(conn, t), []CContext{})
+	colinfo := getColumnInfo(conn, t)
+	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	shipForm(w, r, conn, host, db, t, o, d, "DELETE", "Delete", "true", colinfo, []CContext{}, whereString )
 }
 
 func actionINSERTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
-	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", getColumnInfo(conn, t), []CContext{})
+	colinfo := getColumnInfo(conn, t)
+	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", colinfo, []CContext{}, whereString)
 }
 
 // TODO combine next 3 to 1 function: always promote gk,v, always fill if count = 1
 func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 
 	wclauses, _, whereQ := collectClauses(r, conn, t)
+	colinfo := getColumnInfo(conn, t)
+	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
 	hiddencols := []CContext{}
 	for field, valueArray := range whereQ { //type Values map[string][]string
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
@@ -145,12 +155,14 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 		rows, err, _ := getRows(conn, sqlStar(t)+sqlWhereClauses(wclauses))
 		checkY(err)
 		defer rows.Close()
-		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, "", rows), hiddencols)
+		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, "", rows), hiddencols, whereString)
 	} else {
-		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfo(conn, t), hiddencols)
+		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", colinfo, hiddencols, whereString)
 	}
 }
 func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
+	colinfo := getColumnInfo(conn, t)
+	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
 	hiddencols := []CContext{
 		CContext{"", "k", "", "", "", "", "valid", k, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
@@ -162,9 +174,11 @@ func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereString)
 }
 func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
+	colinfo := getColumnInfo(conn, t)
+	whereString := WhereQuery2Pretty(r.URL.Query(), colinfo)
 	hiddencols := []CContext{
 		CContext{"", "g", "", "", "", "", "valid", g, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
@@ -176,7 +190,7 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereString)
 }
 
 // Excutes a statement on a selection by where-clauses
