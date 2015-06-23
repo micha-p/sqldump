@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
-	"net/url"
 	"sort"
+	"strconv"
 )
 
 type FContext struct {
@@ -21,6 +21,7 @@ type FContext struct {
 	Columns  []CContext
 	Hidden   []CContext
 	Trail    []Entry
+	Level    string
 }
 
 func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
@@ -61,14 +62,14 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
 
 	} else if action == "UPDATE" && !READONLY && k != "" && v != "" && len(sclauses) > 0 {
-		hclause := sqlProtectIdentifier(k) + "=?"
+		hclause := []sqlstring{sqlProtectIdentifier(k) + "=?"}
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "UPDATE" && !READONLY && g != "" && v != "" && len(sclauses) > 0 {
-		hclause := sqlProtectIdentifier(g) + "=?"
+		hclause := []sqlstring{sqlProtectIdentifier(k) + "=?"}
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "UPDATE" && !READONLY && len(sclauses) > 0 && len(wclauses) > 0 {
+	} else if action == "UPDATE" && !READONLY && len(sclauses)  > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
 
@@ -78,7 +79,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	} else if action == "DELETE" && !READONLY && k != "" && v != "" {
 		stmt := sqlDelete(t) + sqlWhere1(k, "=")
 		actionEXEC1(w, conn, host, db, t, stmt, v)
-	} else if action == "DELETE" && !READONLY && len(wclauses) > 0 {
+	} else if action == "DELETE" && !READONLY {
 		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
 
@@ -92,7 +93,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 
 func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string,
-	action string, button string, selector string, showncols []CContext, hiddencols []CContext, whereStack []string) {
+	action string, button string, selector string, showncols []CContext, hiddencols []CContext, whereStack [][]Clause) {
 
 	q := r.URL.Query()
 	q.Del("action")
@@ -110,7 +111,8 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 		Back:     linkback,
 		Columns:  showncols,
 		Hidden:   hiddencols,
-		Trail:    makeTrail(host, db, t, "", "", whereStack,url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "", whereStack),
+		Level:	  strconv.Itoa(len(whereStack)+1),
 	}
 
 	if DEBUGFLAG {
@@ -124,19 +126,20 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 
 func actionSELECTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
-	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
-	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", colinfo, []CContext{}, whereStack)
+	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
+	hiddencols := WhereQuery2Hidden(r.URL.Query(), colinfo)
+	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", colinfo, hiddencols, whereStack)
 }
 
 func actionDELETEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
-	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
 	shipForm(w, r, conn, host, db, t, o, d, "DELETE", "Delete", "true", colinfo, []CContext{}, whereStack )
 }
 
 func actionINSERTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
-	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
 	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", colinfo, []CContext{}, whereStack)
 }
 
@@ -145,7 +148,7 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 
 	wclauses, _, whereQ := collectClauses(r, conn, t)
 	colinfo := getColumnInfo(conn, t)
-	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
 	hiddencols := []CContext{}
 	for field, valueArray := range whereQ { //type Values map[string][]string
 		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
@@ -163,9 +166,15 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 }
 func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	colinfo := getColumnInfo(conn, t)
-	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
 	isNumeric := colinfo[sort.Search(len(colinfo), func(i int) bool { return colinfo[i].Name == k })].IsNumeric
-	whereStack = append(whereStack,whereComp2Pretty(k,"=",v,isNumeric))
+	var numeric bool
+	if isNumeric !="" {
+		numeric = true
+	} else {
+		numeric = false
+	}
+	whereStack = append(whereStack,[]Clause{Clause{k,"=",v,numeric}})
 	hiddencols := []CContext{
 		CContext{"", "k", "", "", "", "", "valid", k, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
@@ -181,9 +190,15 @@ func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 }
 func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
 	colinfo := getColumnInfo(conn, t)
-	whereStack := WhereQuery2Pretty(r.URL.Query(), colinfo)
+	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
 	isNumeric := colinfo[sort.Search(len(colinfo), func(i int) bool { return colinfo[i].Name == g })].IsNumeric
-	whereStack = append(whereStack,whereComp2Pretty(g,"=",v,isNumeric))
+	var numeric bool
+	if isNumeric !="" {
+		numeric = true
+	} else {
+		numeric = false
+	}
+	whereStack = append(whereStack,[]Clause{Clause{g,"=",v,numeric}})
 	hiddencols := []CContext{
 		CContext{"", "g", "", "", "", "", "valid", g, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}

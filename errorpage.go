@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 )
 
 type EContext struct {
@@ -27,7 +26,7 @@ func shipErrorPage(w http.ResponseWriter, host string, db string, t string, cols
 		Table:    t,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Columns:  cols,
-		Trail:    makeTrail(host, db, t, "", "",[]string{},url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "",[][]Clause{}),
 	}
 
 	if DEBUGFLAG {
@@ -41,7 +40,7 @@ func checkErrorPage(w http.ResponseWriter, host string, db string, t string, que
 	if err != nil {
 		s := sql2str(query)
 		cols := []CContext{CContext{"1", "", "Query", "", "", "", "valid", s, ""},
-			CContext{"2", "", "Error", "", "", "", "valid", fmt.Sprint(err), ""}}
+			               CContext{"2", "", "Error", "", "", "", "valid", fmt.Sprint(err), ""}}
 		shipErrorPage(w, host, db, t, cols)
 	}
 }

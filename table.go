@@ -73,7 +73,7 @@ func makeBack(host string, db string, t string, o string, d string, k string) st
 	}
 }
 
-func makeTrail(host string, db string, t string, o string, d string, whereStack []string, wq url.Values) []Entry {
+func makeTrail(host string, db string, t string, o string, d string, whereStack [][]Clause) []Entry {
 
 	q := url.Values{}
 
@@ -88,12 +88,13 @@ func makeTrail(host string, db string, t string, o string, d string, whereStack 
 		trail = append(trail, escape(t, q.Encode()))
 	}
 
-	wq.Set("db", db)
-	wq.Set("t", t)
-	wq.Set("o", o)
-	wq.Set("d", d)
-	for _,s :=range whereStack{
-		trail = append(trail, escape(s, wq.Encode()))
+	q.Set("db", db)
+	q.Set("t", t)
+	q.Set("o", o)
+	q.Set("d", d)
+	for i,whereLevel :=range whereStack{
+		putWhereStackIntoQuery(q,whereStack[0:i+1])
+		trail = append(trail, escape(whereClauses2Pretty(whereLevel), q.Encode()))
 	}
 	return trail
 }
@@ -176,7 +177,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Label:    "",
 		Left:     Entry{},
 		Right:    Entry{},
-		Trail:    makeTrail(host, db, t, "", "",[]string{},url.Values{}),
+		Trail:    makeTrail(host, db, t, "", "",[][]Clause{}),
 		Menu:     menu,
 		Messages: []Message{},
 	}
@@ -189,7 +190,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 
 func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
 	n string, counterLabel string, linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, whereStack []string, whereQuery url.Values) {
+	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, whereStack [][]Clause) {
 
 	var msgs []Message
 	if !QUIETFLAG {
@@ -212,7 +213,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Label:    counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:	  makeTrail(host, db, t, o,d, whereStack, whereQuery),
+		Trail:	  makeTrail(host, db, t, o,d, whereStack),
 		Menu:     menu,
 		Messages: msgs,
 	}
@@ -228,7 +229,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 	db string, t string, o string, d string,
 	counterContent string, counterLabel string,
 	linkleft Entry, linkright Entry,
-	head []Entry, records [][]Entry, menu []Entry, whereStack []string, whereQuery url.Values) {
+	head []Entry, records [][]Entry, menu []Entry, whereStack [][]Clause) {
 
 	initTemplate()
 
@@ -248,7 +249,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Label:    counterLabel,
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:    makeTrail(host, db, t, "", "", whereStack, whereQuery),
+		Trail:    makeTrail(host, db, t, "", "", whereStack),
 		Menu:     menu,
 		Messages: []Message{},
 	}

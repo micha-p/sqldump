@@ -174,11 +174,20 @@ func sqlJoin(a []sqlstring, sep string) sqlstring {
 	return sqlstring(b)
 }
 
-func sqlWhereClauses(clauses []sqlstring) sqlstring {
-	if len(clauses) == 0 {
+func sqlWhereClauses(whereStack [][]sqlstring) sqlstring {
+	if len(whereStack) == 0 {
 		return ""
 	} else {
-		return str2sql(" WHERE ") + sqlJoin(clauses, " AND ")
+		var r sqlstring
+	 	for _,clauses := range(whereStack) {
+			for _,clause := range(clauses) {
+				if len(r) > 0 {
+					r = r +  " && "
+				}
+				r = r +  clause
+			}
+		}
+	return str2sql(" WHERE ") + r
 	}
 }
 

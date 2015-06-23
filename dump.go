@@ -39,7 +39,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, []string{}, url.Values{})
+	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, [][]Clause{})
 }
 
 // difference to dumprows
@@ -49,10 +49,10 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 
 // func dumpGroupWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, q url.Values) {
 
-func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, wclauses []sqlstring,q url.Values) {
+func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, wclauses [][]sqlstring,q url.Values) {
 
 	menu := makeMenu5(q)
-	whereStack := WhereQuery2Pretty(q, getColumnInfo(conn, t))
+	whereStack := WhereQuery2Stack(q, getColumnInfo(conn, t))
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
 		checkErrorPage(w, host, db, t, stmt, err)
@@ -89,7 +89,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, whereStack, q)
+	tableOutRows(w, conn, host, db, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, whereStack)
 }
 
 // difference to dumprows
@@ -100,7 +100,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, q url.Values) {
 
 	menu := makeMenu5(q)
-	whereStack := WhereQuery2Pretty(q, getColumnInfo(conn, t))
+	whereStack := WhereQuery2Stack(q, getColumnInfo(conn, t))
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
 		checkErrorPage(w, host, db, t, stmt, err)
@@ -117,12 +117,12 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, whereStack, q)
+	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, whereStack)
 }
 
 func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64, stmt sqlstring, q url.Values) {
 
-	whereStack := WhereQuery2Pretty(q, getColumnInfo(conn, t))
+	whereStack := WhereQuery2Stack(q, getColumnInfo(conn, t))
 	limitstring := Int64toa(start) + "-" + Int64toa(end)
 	rowrange := end - start
 	left := maxInt64(start-rowrange, 1)
@@ -151,7 +151,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, whereStack, url.Values{})
+	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, whereStack)
 }
 
 /**** HELPERS ***********************/

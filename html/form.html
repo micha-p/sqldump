@@ -1,124 +1,104 @@
 <html>
 <head>
-<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}} -- {{.Action}}</title>
-{{if .CSS}}<link rel="stylesheet" type="text/css" href="{{.CSS}}"/>{{end}}
+	<title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{end}} -- {{.Action}}</title>
+	{{if .CSS}}<link rel="stylesheet" type="text/css" href="{{.CSS}}"/>{{end}}
 
-<body>
-{{define "where"}}<input class="cell" type="text" name="{{.Name}}W" tabindex="{{.Number}}" value="{{.Value}}">{{end}}
-{{define "hidden"}}<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
-{{define "readonly"}}{{template "hidden" .}}{{.Value}}{{end}}
-{{define "field"}}{{if .Readonly}}{{template "readonly" .}}{{else}}{{template "where" .}}{{end}}{{end}}
-{{define "tselector"}}
-<SELECT name="{{.Name}}O" style="width: 100%">
-      <OPTION value="~"> &sim; </OPTION>
-      <OPTION value="!~"> !&sim; </OPTION>
-      <option disabled val="" class="select-hr"></option>
-      <OPTION value="=="> == </OPTION>
-      <OPTION value="!="> != </OPTION>
-      <OPTION value=">"> &gt; </OPTION>
-      <OPTION value=">="> &ge; </OPTION>
-      <OPTION value="<"> &lt; </OPTION>
-      <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
-      <option disabled val="" class="select-hr"></option>
-      <OPTION value="=0"> =0 </OPTION>
-      <OPTION value="!0"> !0 </OPTION>
-{{end}}</SELECT>{{end}}
-{{define "nselector"}}
-<SELECT name="{{.Name}}O" style="width: 100%">
-      <OPTION value=""> &nbsp;&nbsp;&nbsp; </OPTION>
-      <OPTION value="="> = </OPTION>
-      <OPTION value="<>"> &ne; </OPTION>
-      <OPTION value=">"> &gt; </OPTION>
-      <OPTION value=">="> &ge; </OPTION>
-      <OPTION value="<"> &lt; </OPTION>
-      <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
-      <option disabled val="" class="select-hr"></option>
-      <OPTION value="=0"> =0 </OPTION>
-      <OPTION value="!0"> !0 </OPTION>
-{{end}}</SELECT>{{end}}
-{{define "oselector"}}
-<SELECT name="{{.Name}}O" style="width: 100%">
-      <OPTION value="="> =  </OPTION>
-      <OPTION value="<>"> &ne; </OPTION>
-      <OPTION value=">"> &gt; </OPTION>
-      <OPTION value=">="> &ge; </OPTION>
-      <OPTION value="<"> &lt; </OPTION>
-      <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
-      <option disabled val="" class="select-hr"></option>
-      <OPTION value="=0"> =0 </OPTION>
-      <OPTION value="!0"> !0 </OPTION>
-{{end}}</SELECT>{{end}}
-{{define "selector"}}{{if .IsNumeric}}{{template "nselector" .}}{{else if .IsString}}{{template "tselector" .}}{{else}}{{template "oselector" .}}{{end}}{{end}}
+	<script type="text/javascript">
+	function uncheck(checkboxID, targetID) {if(document.getElementById(checkboxID).checked==true){document.getElementById(targetID).checked=false;}}
+	</script>
+</head>
 
-<script type="text/javascript">
-function uncheck(checkboxID, targetID) {if(document.getElementById(checkboxID).checked==true){document.getElementById(targetID).checked=false;}}
-</script>
+<body>{{$level := .Level}}{{/*
+*/}}{{define "tselector"}}
+					    <OPTION value="~"> &sim; </OPTION>
+					    <OPTION value="!~"> !&sim; </OPTION>
+					    <option disabled val="" class="select-hr"></option>
+					    <OPTION value="=="> == </OPTION>
+					    <OPTION value="!="> != </OPTION>
+					    <OPTION value=">"> &gt; </OPTION>
+					    <OPTION value=">="> &ge; </OPTION>
+					    <OPTION value="<"> &lt; </OPTION>
+					    <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+					    <option disabled val="" class="select-hr"></option>
+					    <OPTION value="=0"> =0 </OPTION>
+					    <OPTION value="!0"> !0 </OPTION>{{end}}{{end}}{{/*
+*/}}{{define "nselector"}}
+					    <OPTION value=""> &nbsp;&nbsp;&nbsp; </OPTION>
+					    <OPTION value="="> = </OPTION>
+					    <OPTION value="<>"> &ne; </OPTION>
+					    <OPTION value=">"> &gt; </OPTION>
+						<OPTION value=">="> &ge; </OPTION>
+  					    <OPTION value="<"> &lt; </OPTION>
+  					    <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+  					    <option disabled val="" class="select-hr"></option>
+						<OPTION value="=0"> =0 </OPTION>
+						<OPTION value="!0"> !0 </OPTION> {{end}}{{end}}{{/*
+*/}}{{define "oselector"}}
+  					    <OPTION value="="> =  </OPTION>
+  					    <OPTION value="<>"> &ne; </OPTION>
+ 					    <OPTION value=">"> &gt; </OPTION>
+						<OPTION value=">="> &ge; </OPTION>
+						<OPTION value="<"> &lt; </OPTION>
+						<OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+						<option disabled val="" class="select-hr"></option>
+						<OPTION value="=0"> =0 </OPTION>
+						<OPTION value="!0"> !0 </OPTION>{{end}}{{end}}{{/*
+*/}}{{define "selector"}}{{if .IsNumeric}}{{template "nselector" .}}{{else if .IsString}}{{template "tselector" .}}{{else}}{{template "oselector" .}}{{end}}{{end}}{{/*
+*/}}{{define "where"}}class="cell" type="text" tabindex="{{.Number}}" value="{{.Value}}"{{end}}{{/*
+*/}}{{define "set"}} class="cell" type="text" id="{{.Name}}TEXT"{{/*
+		*/}} onKeyDown="document.getElementById('{{.Name}}EMPTY').checked=false;document.getElementById('{{.Name}}NULL').checked=false;"{{/*
+		*/}} tabindex="{{.Number}}" value="{{.Value}}"{{end}}{{/*
+*/}}{{define "null"}}class="cell" type="checkbox" id="{{.Name}}NULL" {{/*
+		*/}} onClick="uncheck('{{.Name}}NULL', '{{.Name}}EMPTY')"{{if .Nullable}} {{/*
+		*/}} value="N" {{else}} disabled = "disabled"{{end}}{{end}}{{/*
+*/}}{{define "empty"}}class="cell" type="checkbox" id="{{.Name}}EMPTY" {{/*
+		*/}} onClick="uncheck('{{.Name}}EMPTY', '{{.Name}}NULL')"{{if .IsString}}{{/*
+		*/}} value="E" {{else}} disabled = "disabled"{{end}}{{end}}{{/*
 
-{{define "set"}}
-	<td class="cell">
-	<input class="cell" type="text" name="{{.Name}}S" id="{{.Name}}TEXT"
-		onKeyDown="document.getElementById('{{.Name}}EMPTY').checked=false;document.getElementById('{{.Name}}NULL').checked=false;"
-		tabindex="{{.Number}}" value="{{.Value}}">
-	</td>
-{{end}}
+*/}}{{if .Trail}}
+	<div class="top">
+		<div class="breadcrumb">
+		    <a class="trail" href="logout">&times;</a>{{range .Trail}}
+		    <a class="trail" href="{{.Link}}">{{.Text}}</a>{{end}}
+		</div>
+	</div>{{end}}
 
-{{define "null"}}
-	<td class="cell">
-	<input class="cell" type="checkbox" id="{{.Name}}NULL" name="{{.Name}}N"
-		onClick="uncheck('{{.Name}}NULL', '{{.Name}}EMPTY')"{{if .Nullable}}
-		value="N" {{else}} disabled = "disabled"{{end}}>
-	</td>
-{{end}}
-{{define "empty"}}
-	<td class="cell">
-		<input class="cell" type="checkbox" id="{{.Name}}EMPTY" name="{{.Name}}N"
-		onClick="uncheck('{{.Name}}EMPTY', '{{.Name}}NULL')"{{if .IsString}}
-		value="E" {{else}} disabled = "disabled"{{end}}>
-	</td>
-{{end}}
+	<div class="main">
+		<form action="/">
+			<input type="hidden" name="action" value="{{.Action}}">
+			<input type="hidden" name="db" value="{{.Database}}">
+			<input type="hidden" name="t"  value="{{.Table}}">
+			<input type="hidden" name="o"  value="{{.Order}}">
+			<input type="hidden" name="d"  value="{{.Desc}}">{{range .Hidden}}
+			<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 
+			{{if .Selector}}<table>
+				<tr>
+					<th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th>
+				</tr>{{range .Columns}}
+				<tr>
+					<td>{{.Number}}</td>
+					<td>{{.Label}}</td>
+					<td class="cell"><SELECT name="O{{$level}}{{.Name}}" style="width: 100%"> {{template "selector" .}}</SELECT></td>
+					<td class="cell"><input name="W{{$level}}{{.Name}}" {{template "where" .}}></td>
+				</tr>{{end}}
+			</table>{{else}}<table>
+				<tr>
+					<th>#</th> <th>Column</th> <th>Null</th> <th>&quot;&nbsp;&quot;</th> <th>Data</th>
+				</tr>{{range .Columns}}
+				<tr>
+					<td>{{.Number}}</td>
+					<td>{{.Label}}</td>
+					<td class="cell"><input name="N{{$level}}{{.Name}}" {{template "null" .}}></td>
+					<td class="cell"><input name="N{{$level}}{{.Name}}" {{template "empty" .}}></td>
+					<td class="cell"><input name="S{{$level}}{{.Name}}" {{template "set" .}}></td>
+				</tr>{{end}}
+			</table>{{end}}
 
-<!--
-<input
-    id="example"
-    name="example"
-    onClick="toggle('example', 'disableMe')"
-    type="checkbox" value="1" /> When this is checked, something is disabled <br />
-
-<input
-    id="disableMe"
-    name="disableMe"
-    type="text"
-    value="This input box will get disabled" />
--->
-
-{{if .Trail}}<div class="top">
-	<div class="breadcrumb">
-	    <a class="trail" href="logout">&times;</a>{{range .Trail}}
-	    <a class="trail" href="{{.Link}}">{{.Text}}</a>{{end}}
+			<br>
+			<button type="submit">{{.Button}}</button>
+		</form>
 	</div>
-</div>{{end}}
-
-<div class="main">
-	<form action="/">
-		<input type="hidden" name="action" value="{{.Action}}">
-		<input type="hidden" name="db" value="{{.Database}}">
-		<input type="hidden" name="t"  value="{{.Table}}">
-		<input type="hidden" name="o"  value="{{.Order}}">
-		<input type="hidden" name="d"  value="{{.Desc}}">
-		{{range .Hidden}}{{template "hidden" .}}
-		{{end}}<table>
-			{{if .Selector}}<tr> <th>#</th> <th>Column</th> <th>&nbsp;?</th> <th>Data</th> </tr>
-			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td> <td class="cell">{{template "selector" .}}</td> <td class="cell">{{template "field" .}}</td> </tr>
-			{{end}}{{else}}<tr> <th>#</th> <th>Column</th> <th>Null</th> <th>&ldquo;&rdquo;</th> <th>Data</th> </tr>
-			{{range .Columns}}<tr> <td>{{.Number}}</td> <td>{{.Label}}</td>{{template "null" .}}{{template "empty" .}}{{template "set" .}}</tr>
-			{{end}}{{end}}
-		</table>
-		<br>
-		<button type="submit">{{.Button}}</button>
-	</form>
-</div>
-
 </body>
 </html>
 

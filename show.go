@@ -95,7 +95,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	} else {
 		msg = Message{Msg: sql2str(query), Rows: rownum, Affected: -1, Seconds: sec}
 	}
-	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, []string{}, url.Values{})
+	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, [][]Clause{})
 }
 
 /*

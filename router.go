@@ -3,11 +3,9 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"html"
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
 )
 
 /* dumpRows is the basic routine for any view without further restrictions. It starts with a fresh query.
@@ -150,7 +148,7 @@ func makeMenu5(m url.Values) []Entry {
 	menu = append(menu, makeMenu(m, "action", "INSERTFORM", "+"))
 	menu = append(menu, makeMenu(m, "action", "UPDATEFORM", "~")) // KV-DELETE, GV-DELETE
 	menu = append(menu, makeMenu(m, "action", "DELETE", "-"))     // DELETEFILLED, KV-DELETE, GV-DELETE
-	menu = append(menu, makeMenu(m, "action", "INFO", "?"))
+	menu = append(menu, makeMenu(m, "action", "INFO", "i"))
 	return menu
 }
 
@@ -160,7 +158,7 @@ func makeMenu3(m url.Values) []Entry {
 	menu = append(menu, makeMenu(m, "action", "INSERTFORM", "+"))
 	menu = append(menu, makeMenu(m, "", "", " "))
 	menu = append(menu, makeMenu(m, "", "", " "))
-	menu = append(menu, makeMenu(m, "action", "INFO", "?"))
+	menu = append(menu, makeMenu(m, "action", "INFO", "i"))
 	return menu
 }
 
@@ -183,110 +181,4 @@ func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 	}
 }
 
-// TODO: to allow for submitting multiple clauses for a field, they should be numbered W1, O1 ...
 
-// do not export
-func collectClauses(r *http.Request, conn *sql.DB, t string) ([]sqlstring, []sqlstring, url.Values) {
-
-	v := url.Values{}
-	// we have to retrieve columns for getting where clauses => TODO: w1=column,c1,v1=value,s1=column
-	cols := getCols(conn, t)
-	var whereclauses, setclauses []sqlstring
-	for _, col := range cols {
-		colname := sqlProtectIdentifier(col)
-		colhtml := html.EscapeString(col)
-		val := r.FormValue(col + "W")
-		set := r.FormValue(col + "S")
-		null := r.FormValue(col + "N")
-		comp := r.FormValue(col + "O")
-		if val != "" || comp == "=0" || comp == "!0" {
-			v.Add(colhtml+"W", val)
-			if comp == "" {
-				comp, val = sqlFilterNumericComparison(val)
-				whereclauses = append(whereclauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
-			} else if comp == "=" {
-				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+str2sql(" = ")+sqlProtectString(val))
-			} else if comp == "~" {
-				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+str2sql(" LIKE ")+sqlProtectString(val))
-			} else if comp == "!~" {
-				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+str2sql(" NOT LIKE ")+sqlProtectString(val))
-			} else if comp == "==" {
-				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, str2sql("BINARY ")+colname+str2sql("=")+sqlProtectString(val))
-			} else if comp == "!=" {
-				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, str2sql("BINARY ")+colname+str2sql("!=")+sqlProtectString(val))
-			} else if comp == "=0" {
-				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+str2sql(" IS NULL"))
-			} else if comp == "!0" {
-				v.Add(colhtml+"O", comp)
-				whereclauses = append(whereclauses, colname+str2sql(" IS NOT NULL"))
-			} else {
-				v.Add(colhtml+"O", comp)
-				if sqlFilterNumber(val) != "" {
-					whereclauses = append(whereclauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
-				} else {
-					whereclauses = append(whereclauses, colname+sqlFilterComparator(comp)+sqlProtectString(val))
-				}
-			}
-		}
-		if null == "N" {
-			v.Add(colhtml+"N", null)
-			setclauses = append(setclauses, colname+"=NULL")
-		} else if null == "E" {
-			v.Add(colhtml+"N", null)
-			setclauses = append(setclauses, colname+"=\"\"")
-		} else if set != "" {
-			v.Add(colhtml+"S", set)
-			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
-		} else if set != "" { // TODO empty values should INSERT empty strings, but ignored for UPDATE
-			v.Add(colhtml+"S", set)
-			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
-		}
-	}
-	return whereclauses, setclauses, v
-}
-
-func WhereQuery2Pretty(q url.Values, ccols []CContext) []string {
-	var clauses []string
-	for _, col := range ccols {
-		colname := col.Label
-		val := q.Get(html.EscapeString(col.Name) + "W")
-		comp := q.Get(html.EscapeString(col.Name) + "O")
-		if val != "" || comp == "=0" || comp == "!0" {
-			clauses = append(clauses,whereComp2Pretty(colname, comp, val, col.IsNumeric))
-		}
-	}
-	return []string{strings.Join(clauses, ", ")} // TODO: this will contain one string per where level
-}
-
-func whereComp2Pretty(colname string, comp string, val string, IsNumeric string) string {
-	var r string
-	if comp == "" {
-		comp, val = sqlFilterNumericComparison(val)
-		r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
-	} else if comp == "~" {
-		r = colname+" LIKE \""+val+"\""
-	} else if comp == "!~" {
-		r = colname+" NOT LIKE \""+val+"\""
-	} else if comp == "==" {
-		r = colname+"==\""+val+"\""
-	} else if comp == "!=" {
-		r = colname+"!=\""+val+"\""
-	} else if comp == "=0" {
-		r = colname+" IS NULL"
-	} else if comp == "!0" {
-		r = colname+" IS NOT NULL"
-	} else {
-		if IsNumeric == "" {
-			r = colname+sql2str(sqlFilterComparator(comp))+" \""+val+"\""
-		} else {
-			r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
-		}
-	}
-	return r
-}
