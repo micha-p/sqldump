@@ -234,8 +234,7 @@ func putWhereStackIntoQuery(q url.Values,whereStack [][]Clause) {
 }
 
 func putWhereClausesIntoQuery(q url.Values,level string, whereClauses []Clause) {
-	for i,clause := range(whereClauses){
-		level := strconv.Itoa(i+1)
+	for _,clause := range(whereClauses){
 		colhtml := html.EscapeString(clause.Column)
 		if clause.Value != "" {
 			q.Set("W"+level+colhtml,html.EscapeString(clause.Value))
@@ -243,6 +242,28 @@ func putWhereClausesIntoQuery(q url.Values,level string, whereClauses []Clause) 
 		q.Set("O"+level+colhtml,html.EscapeString(clause.Comparator))
 	}
 }
+
+func WhereStack2Hidden(whereStack [][]Clause) []CContext{
+	var r []CContext
+	for i,whereClauses := range(whereStack){
+		level := strconv.Itoa(i+1)
+		r=append(r,WhereClauses2Hidden(level,whereClauses)...)
+	}
+	return r
+}
+
+func WhereClauses2Hidden(level string, whereClauses []Clause) []CContext{
+	var r []CContext
+	for _,clause := range(whereClauses){
+		colhtml := html.EscapeString(clause.Column)
+		if clause.Value != "" {
+			r=append(r,CContext{Name: "W"+level+colhtml , Value: html.EscapeString(clause.Value)})
+		}
+		r=append(r,CContext{Name: "O"+level+colhtml , Value: html.EscapeString(clause.Comparator)})
+	}
+	return r
+}
+
 
 func whereClauses2Pretty(whereClauses []Clause) string{
 	var r string

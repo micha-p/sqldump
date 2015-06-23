@@ -17,10 +17,11 @@
 			<a href="{{.Left.Link}}" class="count"> {{.Left.Text}} </a>{{end}}
 			{{if .Left}}<label class="count">{{.Label}}</label>
 			{{end}}<input type="hidden" name="action" value="GOTO">
-			<input type="hidden" name="db"     value="{{.Database}}">
-			<input type="hidden" name="t"      value="{{.Table}}">{{if .Order}}
-			<input type="hidden" name="o"      value="{{.Order}}">{{end}}{{if .Desc}}
-			<input type="hidden" name="d"      value="{{.Desc}}">{{end}}
+			<input type="hidden" name="db"        value="{{.Database}}">
+			<input type="hidden" name="t"         value="{{.Table}}">{{if .Order}}
+			<input type="hidden" name="o"         value="{{.Order}}">{{end}}{{if .Desc}}
+			<input type="hidden" name="d"         value="{{.Desc}}">{{end}}{{range .Hidden}}
+			<input type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 			<input type="text"   name="n"      value="{{.Counter}}" class="range" size=2 tabindex="1">
 			<button type="submit" hidden='hidden'>go</button>{{if .Right}}
 			<a href="{{.Right.Link}}" class="count" > {{.Right.Text}} </a>{{end}}

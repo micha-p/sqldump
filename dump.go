@@ -46,9 +46,6 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 // 1. counter, label, linkleft and linkright
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. Delete will delete immediately
-
-// func dumpGroupWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, q url.Values) {
-
 func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, wclauses [][]sqlstring,q url.Values) {
 
 	menu := makeMenu5(q)
@@ -92,11 +89,10 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	tableOutRows(w, conn, host, db, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, whereStack)
 }
 
-// difference to dumprows
+// difference to dumpRows
 // 1. trail shows where clauses
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. delete will show FILLEDDELETEFORM for confirmation (TODO)
-
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, q url.Values) {
 
 	menu := makeMenu5(q)

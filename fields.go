@@ -58,7 +58,7 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 		}
 		q.Del("d")
 		cols = newcols
-		title_column = escape(makeTitleWithArrow("Column", "", d), q.Encode()) // its really an index
+		title_column = escape(makeTitleWithArrow("Column", "", d), q.Encode()) // it is really an index
 		q.Set("d", d)
 	}
 	home := url.Values{}

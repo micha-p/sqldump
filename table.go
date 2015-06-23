@@ -28,7 +28,7 @@ type Message struct {
 	Seconds  float64
 }
 
-type Context struct {
+type TContext struct {
 	User     string
 	Host     string
 	Port     string
@@ -42,6 +42,7 @@ type Context struct {
 	Records  [][]Entry
 	Counter  string
 	Label    string
+	Hidden	 []CContext
 	Left     Entry
 	Right    Entry
 	Trail    []Entry
@@ -161,7 +162,7 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 
 func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
 
-	c := Context{
+	c := TContext{
 		User:     "",
 		Host:     host,
 		Port:     "",
@@ -175,6 +176,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  "",
 		Label:    "",
+		Hidden:   []CContext{},
 		Left:     Entry{},
 		Right:    Entry{},
 		Trail:    makeTrail(host, db, t, "", "",[][]Clause{}),
@@ -197,7 +199,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		msgs = messageStack
 	}
 
-	c := Context{
+	c := TContext{
 		User:     "",
 		Host:     host,
 		Port:     "",
@@ -209,8 +211,9 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Records:  records,
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
-		Counter:  n,
+		Counter:  n,  // TODO counter needs hidden cols for where clauses
 		Label:    counterLabel,
+		Hidden:	  WhereStack2Hidden(whereStack),
 		Left:     linkleft,
 		Right:    linkright,
 		Trail:	  makeTrail(host, db, t, o,d, whereStack),
@@ -233,7 +236,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 
 	initTemplate()
 
-	c := Context{
+	c := TContext{
 		User:     "",
 		Host:     host,
 		Port:     "",
@@ -247,6 +250,7 @@ func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
 		Back:     makeBack(host, db, t, "", "", ""),
 		Counter:  counterContent,
 		Label:    counterLabel,
+		Hidden:   WhereStack2Hidden(whereStack),
 		Left:     linkleft,
 		Right:    linkright,
 		Trail:    makeTrail(host, db, t, "", "", whereStack),
