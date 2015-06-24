@@ -11,7 +11,7 @@ func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	stmt sqlstring, whereStack [][]Clause) {
 
 	q := makeFreshQuery(db, t, o, d)
-	putWhereStackIntoQuery(q,whereStack)
+	putWhereStackIntoQuery(q, whereStack)
 
 	left := Int64toa(maxInt64(nint-1, 1))
 	var right string
@@ -70,7 +70,7 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 		}
 		row := []Entry{Entry{Text: strconv.Itoa(i + 1)},
 			Entry{Text: label},
-			makeEntry(nv, db, t, c, "",q)}
+			makeEntry(nv, db, t, c, "", q)}
 		records = append(records, row)
 	}
 	tableOutFields(w, conn, host, db, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu, whereStack)

@@ -81,7 +81,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 				g.Add("t", v)
 				row = append(row, escape(v, g.Encode()))
 			} else {
-				row = append(row, makeEntry(nv, db, "", c, "",q))
+				row = append(row, makeEntry(nv, db, "", c, "", q))
 			}
 		}
 		records = append(records, row)
@@ -137,14 +137,14 @@ func makeEntry(nv sql.NullString, db string, t string, c string, primary string,
 		if c == primary {
 			q.Set("k", primary)
 			q.Set("v", v)
-			link:= q.Encode()
+			link := q.Encode()
 			q.Del("k")
 			q.Del("v")
 			return escape(v, link)
 		} else {
 			q.Set("g", c)
 			q.Set("v", v)
-			link:= q.Encode()
+			link := q.Encode()
 			q.Del("g")
 			q.Del("v")
 			return escape(v, link)

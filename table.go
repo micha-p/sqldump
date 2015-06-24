@@ -42,7 +42,7 @@ type TContext struct {
 	Records  [][]Entry
 	Counter  string
 	Label    string
-	Hidden	 []CContext
+	Hidden   []CContext
 	Left     Entry
 	Right    Entry
 	Trail    []Entry
@@ -93,8 +93,8 @@ func makeTrail(host string, db string, t string, o string, d string, whereStack 
 	q.Set("t", t)
 	q.Set("o", o)
 	q.Set("d", d)
-	for i,whereLevel :=range whereStack{
-		putWhereStackIntoQuery(q,whereStack[0:i+1])
+	for i, whereLevel := range whereStack {
+		putWhereStackIntoQuery(q, whereStack[0:i+1])
 		trail = append(trail, escape(whereClauses2Pretty(whereLevel), q.Encode()))
 	}
 	return trail
@@ -179,7 +179,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 		Hidden:   []CContext{},
 		Left:     Entry{},
 		Right:    Entry{},
-		Trail:    makeTrail(host, db, t, "", "",[][]Clause{}),
+		Trail:    makeTrail(host, db, t, "", "", [][]Clause{}),
 		Menu:     menu,
 		Messages: []Message{},
 	}
@@ -211,12 +211,12 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		Records:  records,
 		Head:     head,
 		Back:     makeBack(host, db, t, "", "", ""),
-		Counter:  n,  // TODO counter needs hidden cols for where clauses
+		Counter:  n, // TODO counter needs hidden cols for where clauses
 		Label:    counterLabel,
-		Hidden:	  WhereStack2Hidden(whereStack),
+		Hidden:   WhereStack2Hidden(whereStack),
 		Left:     linkleft,
 		Right:    linkright,
-		Trail:	  makeTrail(host, db, t, o,d, whereStack),
+		Trail:    makeTrail(host, db, t, o, d, whereStack),
 		Menu:     menu,
 		Messages: msgs,
 	}

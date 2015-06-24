@@ -50,9 +50,9 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	stmt sqlstring, whereStack [][]Clause) {
 
 	q := makeFreshQuery(db, t, o, d)
-	q.Set("g",g)
-	q.Set("v",v)
-	putWhereStackIntoQuery(q,whereStack)
+	q.Set("g", g)
+	q.Set("v", v)
+	putWhereStackIntoQuery(q, whereStack)
 	menu := makeMenu5(q)
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
@@ -65,14 +65,14 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	/********** do this first to ensure correct query */
 	var linkleft, linkright Entry
 	{
-		next, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(whereStack) + sqlHaving(g, ">", v)+sqlLimit(1, 0))
+		next, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(whereStack)+sqlHaving(g, ">", v)+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", next)
 		} else {
 			q.Set("v", v)
 		}
 		linkright = escape(">", q.Encode())
-		prev, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(whereStack) + sqlHaving(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
+		prev, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(whereStack)+sqlHaving(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", prev)
 		} else {
@@ -101,7 +101,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	stmt sqlstring, whereStack [][]Clause) {
 
 	q := makeFreshQuery(db, t, o, d)
-	putWhereStackIntoQuery(q,whereStack)
+	putWhereStackIntoQuery(q, whereStack)
 	menu := makeMenu5(q)
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
@@ -126,7 +126,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	stmt sqlstring, whereStack [][]Clause) {
 
 	q := makeFreshQuery(db, t, o, d)
-	putWhereStackIntoQuery(q,whereStack)
+	putWhereStackIntoQuery(q, whereStack)
 
 	rowrange := end - start
 	left := maxInt64(start-rowrange, 1)
@@ -208,7 +208,7 @@ func makeRecords(rows *sql.Rows, db string, t string, primary string, offset int
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			row = append(row, makeEntry(nv, db, t, c, primary,q))
+			row = append(row, makeEntry(nv, db, t, c, primary, q))
 		}
 		records = append(records, row)
 	}

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-//	"fmt"
+	//	"fmt"
 )
 
 /* dumpRows is the basic routine for any view without further restrictions. It starts with a fresh query.
@@ -179,5 +179,3 @@ func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	}
 }
-
-

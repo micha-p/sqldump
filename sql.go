@@ -156,15 +156,15 @@ func sqlWhereClauses(whereStack [][]Clause) sqlstring {
 		return ""
 	} else {
 		var r sqlstring
-	 	for _,clauses := range(whereStack) {
-			for _,clause := range(clauses) {
+		for _, clauses := range whereStack {
+			for _, clause := range clauses {
 				if len(r) > 0 {
-					r = r +  " && "
+					r = r + " && "
 				}
-				r = r +  clause2sql(clause)
+				r = r + clause2sql(clause)
 			}
 		}
-	return str2sql(" WHERE ") + r
+		return str2sql(" WHERE ") + r
 	}
 }
 
@@ -173,13 +173,13 @@ func sqlSetClauses(clauses []Clause) sqlstring {
 		return ""
 	} else {
 		var r sqlstring
-		for _,clause := range(clauses) {
+		for _, clause := range clauses {
 			if len(r) > 0 {
-				r = r +  ", "
+				r = r + ", "
 			}
-			r = r +  clause2sql(clause)
+			r = r + clause2sql(clause)
 		}
-	return str2sql(" SET ") + r
+		return str2sql(" SET ") + r
 	}
 }
 
