@@ -152,7 +152,7 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 	colinfo := getColumnInfo(conn, t)
 	wclauses, _:= collectClauses(r, colinfo)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	hiddencols := WhereQuery2Hidden(r.URL.Query(), colinfo)
+	hiddencols := WhereStack2Hidden(whereStack)
 
 	count, _ := getSingleValue(conn, sqlCount(t)+sqlWhereClauses(wclauses))
 	if count == "1" {

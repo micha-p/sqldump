@@ -219,34 +219,6 @@ func WhereQuery2Level(q url.Values, ccols []CContext, level string) []Clause {
 	return clauses
 }
 
-func WhereQuery2Hidden1Level(q url.Values, ccols []CContext, level string) []CContext {
-	var clauses []CContext
-	for _, col := range ccols {
-		val := q.Get(html.EscapeString("W"+level+col.Name))
-		comp := q.Get(html.EscapeString("O"+level+col.Name))
-		if val != "" {
-			clauses = append(clauses,CContext{Name: "W"+level+col.Name, Value: val})
-		}
-		if comp != "" {
-			clauses = append(clauses,CContext{Name: "O"+level+col.Name, Value: string(comp)})
-		}
-	}
-	return clauses
-}
-
-func WhereQuery2Hidden(q url.Values, ccols []CContext) []CContext {
-	var r []CContext
-	for i := 1;; i++ {
-		level := strconv.Itoa(i)
-		rl:= WhereQuery2Hidden1Level(q, ccols, level)
-		if len(rl)==0 {
-			break
-		} else {
-			r=append(r,rl...)
-		}
-	}
-	return r
-}
 
 func putWhereStackIntoQuery(q url.Values,whereStack [][]Clause) {
 	for i,whereClauses := range(whereStack){
@@ -293,17 +265,15 @@ func whereClauses2Pretty(whereClauses []Clause) string{
 		if i>0 {
 			r=r+", "
 		}
-		if clause.Operator == "lk" {
-			r = r + clause.Column+" LIKE \""+clause.Value+"\""
-		} else if clause.Operator == "nl" {
-			r = r + clause.Column+" NOT LIKE \""+clause.Value+"\""
-		} else if clause.Operator == "i0" {
-			r = r + clause.Column+" IS NULL"
-		} else if clause.Operator == "n0" {
-			r = r + clause.Column+" IS NOT NULL"
+		if clause.IsNumeric {
+			r = r + clause.Column + op2str(clause.Operator,clause.IsNumeric) +     clause.Value
 		} else {
-			if clause.IsNumeric {
-				r = r + clause.Column + op2str(clause.Operator,clause.IsNumeric) +     clause.Value
+			if clause.Operator == "i0" {
+				r = r + clause.Column+" IS NULL"
+			} else if clause.Operator == "n0" {
+				r = r + clause.Column+" IS NOT NULL"
+			} else if clause.Operator == "eq" {
+				r = r + clause.Column+"=="+"\""+clause.Value+"\""
 			} else {
 				r = r + clause.Column + op2str(clause.Operator,clause.IsNumeric) +"\""+clause.Value+"\""
 			}
