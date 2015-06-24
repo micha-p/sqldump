@@ -7,29 +7,24 @@ import (
 	"strconv"
 )
 
-func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64, stmt sqlstring, q url.Values) {
+func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64,
+	stmt sqlstring, whereStack [][]Clause) {
 
-	whereStack := WhereQuery2Stack(q, getColumnInfo(conn, t))
-	q.Set("db", db)
-	q.Set("t", t)
+	q := makeFreshQuery(db, t, o, d)
+	putWhereStackIntoQuery(q,whereStack)
 
 	left := Int64toa(maxInt64(nint-1, 1))
 	var right string
 	right = Int64toa(minInt64(nint+1, nmax))
-	if o != "" {
-		q.Set("o", o)
-	}
-	if d != "" {
-		q.Set("d", d)
-	}
 	q.Set("n", left)
 	linkleft := escape("<", q.Encode())
 	q.Set("n", right)
 	linkright := escape(">", q.Encode())
-	q.Set("n", n)
-	nstring := Int64toa(nint)
 
+	nstring := Int64toa(nint)
+	q.Set("n", nstring)
 	menu := makeMenu3(q)
+
 	verticalView(w, conn, stmt, host, db, t, o, d /* primary: */, "", nstring, "#", linkleft, linkright, menu, whereStack, q)
 }
 

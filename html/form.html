@@ -10,39 +10,39 @@
 
 <body>{{$level := .Level}}{{/*
 */}}{{define "tselector"}}
-					    <OPTION value="~"> &sim; </OPTION>
-					    <OPTION value="!~"> !&sim; </OPTION>
+					    <OPTION value="lk"> &sim; </OPTION>
+					    <OPTION value="nl"> !&sim; </OPTION>
 					    <option disabled val="" class="select-hr"></option>
-					    <OPTION value="=="> == </OPTION>
-					    <OPTION value="!="> != </OPTION>
-					    <OPTION value=">"> &gt; </OPTION>
-					    <OPTION value=">="> &ge; </OPTION>
-					    <OPTION value="<"> &lt; </OPTION>
-					    <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+					    <OPTION value="eq"> == </OPTION>
+					    <OPTION value="ne"> != </OPTION>
+					    <OPTION value="gt"> &gt; </OPTION>
+					    <OPTION value="ge"> &ge; </OPTION>
+					    <OPTION value="lt"> &lt; </OPTION>
+					    <OPTION value="le"> &le; </OPTION>{{if .Nullable}}
 					    <option disabled val="" class="select-hr"></option>
-					    <OPTION value="=0"> =0 </OPTION>
-					    <OPTION value="!0"> !0 </OPTION>{{end}}{{end}}{{/*
+					    <OPTION value="i0"> =0 </OPTION>
+					    <OPTION value="n0"> !0 </OPTION>{{end}}{{end}}{{/*
 */}}{{define "nselector"}}
 					    <OPTION value=""> &nbsp;&nbsp;&nbsp; </OPTION>
-					    <OPTION value="="> = </OPTION>
-					    <OPTION value="<>"> &ne; </OPTION>
-					    <OPTION value=">"> &gt; </OPTION>
-						<OPTION value=">="> &ge; </OPTION>
-  					    <OPTION value="<"> &lt; </OPTION>
-  					    <OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+					    <OPTION value="eq"> = </OPTION>
+					    <OPTION value="ne"> &ne; </OPTION>
+					    <OPTION value="gt"> &gt; </OPTION>
+						<OPTION value="ge"> &ge; </OPTION>
+  					    <OPTION value="lt"> &lt; </OPTION>
+  					    <OPTION value="le"> &le; </OPTION>{{if .Nullable}}
   					    <option disabled val="" class="select-hr"></option>
-						<OPTION value="=0"> =0 </OPTION>
-						<OPTION value="!0"> !0 </OPTION> {{end}}{{end}}{{/*
+						<OPTION value="i0"> =0 </OPTION>
+						<OPTION value="n0"> !0 </OPTION> {{end}}{{end}}{{/*
 */}}{{define "oselector"}}
-  					    <OPTION value="="> =  </OPTION>
-  					    <OPTION value="<>"> &ne; </OPTION>
- 					    <OPTION value=">"> &gt; </OPTION>
-						<OPTION value=">="> &ge; </OPTION>
-						<OPTION value="<"> &lt; </OPTION>
-						<OPTION value="<="> &le; </OPTION>{{if .Nullable}}
+  					    <OPTION value=""> =  </OPTION>
+  					    <OPTION value="ne"> &ne; </OPTION>
+ 					    <OPTION value="gt"> &gt; </OPTION>
+						<OPTION value="ge"> &ge; </OPTION>
+						<OPTION value="lt"> &lt; </OPTION>
+						<OPTION value="le"> &le; </OPTION>{{if .Nullable}}
 						<option disabled val="" class="select-hr"></option>
-						<OPTION value="=0"> =0 </OPTION>
-						<OPTION value="!0"> !0 </OPTION>{{end}}{{end}}{{/*
+						<OPTION value="i0"> =0 </OPTION>
+						<OPTION value="n0"> !0 </OPTION>{{end}}{{end}}{{/*
 */}}{{define "selector"}}{{if .IsNumeric}}{{template "nselector" .}}{{else if .IsString}}{{template "tselector" .}}{{else}}{{template "oselector" .}}{{end}}{{end}}{{/*
 */}}{{define "where"}}class="cell" type="text" tabindex="{{.Number}}" value="{{.Value}}"{{end}}{{/*
 */}}{{define "set"}} class="cell" type="text" id="{{.Name}}TEXT"{{/*
@@ -89,9 +89,9 @@
 				<tr>
 					<td>{{.Number}}</td>
 					<td>{{.Label}}</td>
-					<td class="cell"><input name="N{{$level}}{{.Name}}" {{template "null" .}}></td>
-					<td class="cell"><input name="N{{$level}}{{.Name}}" {{template "empty" .}}></td>
-					<td class="cell"><input name="S{{$level}}{{.Name}}" {{template "set" .}}></td>
+					<td class="cell"><input name="N1{{.Name}}" {{template "null" .}}></td>
+					<td class="cell"><input name="N1{{.Name}}" {{template "empty" .}}></td>
+					<td class="cell"><input name="S1{{.Name}}" {{template "set" .}}></td>
 				</tr>{{end}}
 			</table>{{end}}
 

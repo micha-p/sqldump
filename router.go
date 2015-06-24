@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+//	"fmt"
 )
 
 /* dumpRows is the basic routine for any view without further restrictions. It starts with a fresh query.
@@ -69,14 +70,14 @@ import (
 func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
 
+	colinfo := getColumnInfo(conn, t)
 	stmt := sqlStar(t)
 
 	if k != "" && v != "" && k == getPrimary(conn, t) {
 		stmt = stmt + sqlHaving(k, "=", v)
 		showKeyValue(w, conn, host, db, t, o, d, k, v, stmt)
 	} else {
-		q := r.URL.Query()
-		wclauses, _, _ := collectClauses(r, conn, t)
+		wclauses, _ := collectClauses(r, colinfo)
 
 		if len(wclauses) == 0 && g == "" && v == "" && n == "" {
 			stmt = stmt + sqlOrder(o, d)
@@ -84,15 +85,13 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 
 		} else {
 			stmt = stmt + sqlWhereClauses(wclauses)
-			// should be recursive for every where-level
-			// stmt = "SELECT * FROM (" + stmt + sqlWhereClauses(wclauses) + ") AS TEMP "
 			stmt = stmt + sqlHaving(g, "=", v)
 			stmt = stmt + sqlOrder(o, d)
 			if g == "" && n == "" {
-				dumpWhere(w, conn, host, db, t, o, d, stmt, q)
+				dumpWhere(w, conn, host, db, t, o, d, stmt, wclauses)
 			} else {
 				if n == "" {
-					dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, wclauses, q)
+					dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, wclauses)
 				} else {
 					singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 					limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
@@ -102,7 +101,7 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 						ni, _ := Atoi64(singlenumber)
 						ni = minInt64(ni, nmax)
 						stmt = stmt + sqlLimit(1, ni)
-						showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax, stmt, q)
+						showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax, stmt, wclauses)
 					} else if len(limits) == 3 {
 						nstart, err := Atoi64(limits[1])
 						checkY(err)
@@ -110,7 +109,7 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 						checkY(err)
 						nend = minInt64(nend, nmax)
 						stmt = stmt + sqlLimit(1+nend-nstart, nstart)
-						dumpRange(w, conn, host, db, t, o, d, nstart, nend, nmax, stmt, q)
+						dumpRange(w, conn, host, db, t, o, d, nstart, nend, nmax, stmt, wclauses)
 					} else {
 						shipMessage(w, host, db, "Can't understand number or range: "+n)
 					}

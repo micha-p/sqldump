@@ -1,25 +1,132 @@
 package main
 
 import (
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"html"
 	"net/http"
 	"net/url"
 	"strconv"
 )
 
-// TODO: return array of structs Clause; remove whereQ; use readerfunc
+type opstring string
 
-func collectClauses(r *http.Request, conn *sql.DB, t string) ([][]sqlstring, []sqlstring, url.Values) {
+type Clause struct{
+	Column string
+	Operator opstring
+	Value string
+	IsNumeric bool
+}
 
-	cols := getCols(conn, t)
-	whereQ := url.Values{}
-	var whereclauses [][]sqlstring
-	var setclauses []sqlstring
+/* Forms and Links provide where clauses encoded via two types of keys: Wncolumn and Oncolumn.
+ * The first denotes the content of level n, the latter the operator of level n.
+ *
+ * They are submitted by forms as two-letter abbreviations and stored this way in type struct Clause.
+ * Numeric clauses submitted without operator and parsed from textual input are stored have to be transofmed into two-lett abbreviations before stacking.
+ *
+ */
+
+
+func clause2sql(c Clause) sqlstring {
+	colname := sqlProtectIdentifier(c.Column)
+	val := c.Value
+	comp := c.Operator
+	numeric := c.IsNumeric
+
+	if comp == "s?" {
+		return colname+op2sql(comp,numeric)
+	} else if comp == "i0" {
+		return colname+op2sql(comp,numeric)
+	} else if comp == "n0" {
+		return colname+op2sql(comp,numeric)
+	} else if val != "" {
+		if comp == "" {
+			return colname + str2sql("=") + sqlProtectString(val) // default
+		} else {
+			if numeric {
+				return colname+op2sql(comp,numeric)+sqlFilterNumber(val)
+			} else {
+				if comp == "eq" {
+					return str2sql("BINARY ")+colname+op2sql(comp,numeric)+sqlProtectString(val)
+				} else if comp == "ne" {
+					return str2sql("BINARY ")+colname+op2sql(comp,numeric)+sqlProtectString(val)
+				} else {
+					return colname+op2sql(comp,numeric)+sqlProtectString(val)
+				}
+			}
+		}
+	} else {
+		return ""
+	}
+}
+
+func op2sql(s opstring, numeric bool) sqlstring {
+	return str2sql(op2str(s, numeric))
+}
+
+func str2op(s string) opstring {
+	n := make(map[string]opstring,16) // numeric
+    n[""] = "eq"
+    n["="] = "eq"
+    n["=="] = "eq"
+    n["<>"] = "ne"
+    n["!="] = "ne"
+    n[">"] = "gt"
+    n[">="] = "ge"
+    n["<"] = "lt"
+    n["<="] = "le"
+	return n[s]
+}
+
+func op2str(s opstring, numeric bool) string {
+
+	n := make(map[opstring]string,16) // numeric
+    n["eq"] = "="
+    n["ne"] = "<>"
+    n["gt"] = ">"
+    n["ge"] = ">="
+    n["lt"] = "<"
+    n["le"] = "<="
+    n["i0"] = " IS NULL"
+    n["n0"] = " IS NOT NULL"
+    n["sn"] = "=" // set number
+    n["s0"] = "= NULL" // set NULL
+    n["s?"] = "= ?" // set ? using prepared statement
+
+
+	m := make(map[opstring]string,16) // strings
+    m["lk"] = " LIKE "
+    m["nl"] = " NOT LIKE "
+    m["eq"] = "="	// equal binary -> case sensitive
+    m["ne"] = "!="	// not equal binary
+    m["gt"] = ">"
+    m["ge"] = ">="
+    m["lt"] = "<"
+    m["le"] = "<="
+    m["i0"] = " IS NULL"
+    m["n0"] = " IS NOT NULL"
+    m["sv"] = "=" // set value
+    m["s0"] = "= NULL" // set NULL
+    m["s?"] = "= ?" // set ? using prepared statement
+
+	var r string
+	if numeric {
+		r=n[s]
+	} else {
+		r=m[s]
+	}
+	return r
+}
+
+
+
+
+// TODO: return array of structs Clause;  use readerfunc
+func collectClauses(r *http.Request, cols []CContext) ([][]Clause, []Clause) {
+
+	var whereclauses [][]Clause
+	var setclauses []Clause
 	for i := 1;; i++ {
 		level := strconv.Itoa(i)
-		wclausesOfLevel,sclausesOfLevel,_ := collectClausesOfLevel(r, cols,level, whereQ)
+		wclausesOfLevel,sclausesOfLevel := collectClausesOfLevel(r, cols,level)
 		if len(wclausesOfLevel)==0 && len(sclausesOfLevel)==0 {
 			break
 		} else {
@@ -27,71 +134,57 @@ func collectClauses(r *http.Request, conn *sql.DB, t string) ([][]sqlstring, []s
 			setclauses=append(setclauses,sclausesOfLevel...)
 		}
 	}
-	return whereclauses, setclauses, whereQ
+	return whereclauses, setclauses
 }
 
-// TODO: remove whereQ
+func collectClausesOfLevel(r *http.Request, cols []CContext, level string) ([]Clause, []Clause) {
 
-func collectClausesOfLevel(r *http.Request, cols []string, level string, whereQ url.Values) ([]sqlstring, []sqlstring, url.Values) {
-
-	var whereclauses, setclauses []sqlstring
+	var whereclauses, setclauses []Clause
 	for _, col := range cols {
-		colname := sqlProtectIdentifier(col)
-		colhtml := html.EscapeString(col)
-		val := r.FormValue("W"+level+col)
-		set := r.FormValue("S"+level+col)
-		null := r.FormValue("N"+level+col)
-		comp := r.FormValue("O"+level+col)
-		if val != "" || comp == "=0" || comp == "!0" {
-			whereQ.Add("W"+level+colhtml, val)
-			if comp == "" {
-				comp, val = sqlFilterNumericComparison(val)
-				whereclauses = append(whereclauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
-			} else if comp == "=" {
-				whereQ.Add("W"+level+colhtml, comp)
-				whereclauses = append(whereclauses, colname+str2sql(" = ")+sqlProtectString(val))
-			} else if comp == "~" {
-				whereQ.Add("W"+level+colhtml, comp)
-				whereclauses = append(whereclauses, colname+str2sql(" LIKE ")+sqlProtectString(val))
-			} else if comp == "!~" {
-				whereQ.Add("W"+level+colhtml, comp)
-				whereclauses = append(whereclauses, colname+str2sql(" NOT LIKE ")+sqlProtectString(val))
-			} else if comp == "==" {
-				whereQ.Add("W"+level+colhtml, comp)
-				whereclauses = append(whereclauses, str2sql("BINARY ")+colname+str2sql("=")+sqlProtectString(val))
-			} else if comp == "!=" {
-				whereQ.Add("W"+level+colhtml, comp)
-				whereclauses = append(whereclauses, str2sql("BINARY ")+colname+str2sql("!=")+sqlProtectString(val))
-			} else if comp == "=0" {
-				whereQ.Add("W"+level+colhtml, comp)
-				whereclauses = append(whereclauses, colname+str2sql(" IS NULL"))
-			} else if comp == "!0" {
-				whereQ.Add("W"+level+colhtml, comp)
-				whereclauses = append(whereclauses, colname+str2sql(" IS NOT NULL"))
-			} else {
-				whereQ.Add("W"+level+colhtml, comp)
-				if sqlFilterNumber(val) != "" {
-					whereclauses = append(whereclauses, colname+sqlFilterComparator(comp)+sqlFilterNumber(val))
-				} else {
-					whereclauses = append(whereclauses, colname+sqlFilterComparator(comp)+sqlProtectString(val))
-				}
-			}
+		colname := col.Name
+		val := r.FormValue("W"+level+colname)
+		set := r.FormValue("S"+level+colname)
+		null := r.FormValue("N"+level+colname)
+		comp := r.FormValue("O"+level+colname)
+		var numeric bool
+		if col.IsNumeric !="" {
+			numeric = true
+		} else {
+			numeric = false
 		}
 		if null == "N" {
-			whereQ.Add("N"+level+colhtml, null)
-			setclauses = append(setclauses, colname+"=NULL")
-		} else if null == "E" {
-			whereQ.Add("N"+level+colhtml, null)
-			setclauses = append(setclauses, colname+"=\"\"")
-		} else if set != "" {
-			whereQ.Add("S"+level+colhtml, set)
-			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
-		} else if set != "" {
-			whereQ.Add("S"+level+colhtml, set)
-			setclauses = append(setclauses, colname+"="+sqlProtectString(set))
+			setclauses=append(setclauses, Clause{Column: colname, Operator: "s0", IsNumeric: numeric})
+		} else if null == "E" && !numeric {
+			setclauses=append(setclauses, Clause{Column: colname, Operator: "sv", Value:"", IsNumeric: numeric})
+		} else if set != "" && numeric{
+			setclauses=append(setclauses, Clause{Column: colname, Operator: "sn", Value:set, IsNumeric: numeric})
+		} else if set != "" && !numeric {
+			setclauses=append(setclauses, Clause{Column: colname, Operator: "sv", Value:set, IsNumeric: numeric})
+		} else if val !="" || comp == "i0" || comp == "n0"{
+			new := val2clause(colname, val, comp, col)
+			whereclauses=append(whereclauses, new)
 		}
 	}
-	return whereclauses, setclauses, whereQ
+	return whereclauses, setclauses
+}
+
+func val2clause(colname string, val string, comp string, col CContext) Clause {
+	var numeric bool
+	if col.IsNumeric !="" {
+		if comp==""{
+			ncomp, nval := sqlFilterNumericComparison(html.UnescapeString(val))
+			if ncomp==""{
+				comp="eq"  // use default for numeric comparisons
+			} else {
+				comp = string(str2op(ncomp))
+				val = nval
+			}
+		}
+		numeric = true
+	} else {
+		numeric = false
+	}
+	return Clause{colname, opstring(comp), val, numeric}
 }
 
 
@@ -118,48 +211,12 @@ func WhereQuery2Level(q url.Values, ccols []CContext, level string) []Clause {
 		colname := col.Label
 		val := q.Get(html.EscapeString("W"+level+col.Name))
 		comp := q.Get(html.EscapeString("O"+level+col.Name))
-		if comp==""{
-			comp, val = sqlFilterNumericComparison(html.UnescapeString(val))
-		}
-		if val != "" || comp == "=0" || comp == "!0" {
-			var numeric bool
-
-			if col.IsNumeric !="" {
-				numeric = true
-			} else {
-				numeric = false
-			}
-			clauses = append(clauses,Clause{colname, comp, val, numeric}) // TODO check security: strings or sqlstrings?
+		if val != "" || comp == "i0" || comp == "n0" {
+			new := val2clause(colname, val, comp, col)
+			clauses = append(clauses,new)
 		}
 	}
 	return clauses
-}
-
-func whereComp2Pretty(colname string, comp string, val string, IsNumeric string) string {
-	var r string
-	if comp == "" {
-		comp, val = sqlFilterNumericComparison(val)
-		r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
-	} else if comp == "~" {
-		r = colname+" LIKE \""+val+"\""
-	} else if comp == "!~" {
-		r = colname+" NOT LIKE \""+val+"\""
-	} else if comp == "==" {
-		r = colname+"==\""+val+"\""
-	} else if comp == "!=" {
-		r = colname+"!=\""+val+"\""
-	} else if comp == "=0" {
-		r = colname+" IS NULL"
-	} else if comp == "!0" {
-		r = colname+" IS NOT NULL"
-	} else {
-		if IsNumeric == "" {
-			r = colname+sql2str(sqlFilterComparator(comp))+" \""+val+"\""
-		} else {
-			r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
-		}
-	}
-	return r
 }
 
 func WhereQuery2Hidden1Level(q url.Values, ccols []CContext, level string) []CContext {
@@ -169,10 +226,9 @@ func WhereQuery2Hidden1Level(q url.Values, ccols []CContext, level string) []CCo
 		comp := q.Get(html.EscapeString("O"+level+col.Name))
 		if val != "" {
 			clauses = append(clauses,CContext{Name: "W"+level+col.Name, Value: val})
-			clauses = append(clauses,CContext{Name: "O"+level+col.Name, Value: comp})
 		}
-		if comp == "=0" || comp == "!0" {
-			clauses = append(clauses,CContext{Name: "O"+level+col.Name, Value: comp})
+		if comp != "" {
+			clauses = append(clauses,CContext{Name: "O"+level+col.Name, Value: string(comp)})
 		}
 	}
 	return clauses
@@ -192,40 +248,6 @@ func WhereQuery2Hidden(q url.Values, ccols []CContext) []CContext {
 	return r
 }
 
-func whereComp2Hidden(colname string, comp string, val string, IsNumeric string) string {
-	var r string
-	if comp == "" {
-		comp, val = sqlFilterNumericComparison(val)
-		r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
-	} else if comp == "~" {
-		r = colname+" LIKE \""+val+"\""
-	} else if comp == "!~" {
-		r = colname+" NOT LIKE \""+val+"\""
-	} else if comp == "==" {
-		r = colname+"==\""+val+"\""
-	} else if comp == "!=" {
-		r = colname+"!=\""+val+"\""
-	} else if comp == "=0" {
-		r = colname+" IS NULL"
-	} else if comp == "!0" {
-		r = colname+" IS NOT NULL"
-	} else {
-		if IsNumeric == "" {
-			r = colname+sql2str(sqlFilterComparator(comp))+" \""+val+"\""
-		} else {
-			r = colname+sql2str(sqlFilterComparator(comp))+sql2str(sqlFilterNumber(val))
-		}
-	}
-	return r
-}
-
-type Clause struct{
-	Column string
-	Comparator string
-	Value string
-	IsNumeric bool
-}
-
 func putWhereStackIntoQuery(q url.Values,whereStack [][]Clause) {
 	for i,whereClauses := range(whereStack){
 		level := strconv.Itoa(i+1)
@@ -239,7 +261,7 @@ func putWhereClausesIntoQuery(q url.Values,level string, whereClauses []Clause) 
 		if clause.Value != "" {
 			q.Set("W"+level+colhtml,html.EscapeString(clause.Value))
 		}
-		q.Set("O"+level+colhtml,html.EscapeString(clause.Comparator))
+		q.Set("O"+level+colhtml,html.EscapeString(string(clause.Operator)))
 	}
 }
 
@@ -259,7 +281,7 @@ func WhereClauses2Hidden(level string, whereClauses []Clause) []CContext{
 		if clause.Value != "" {
 			r=append(r,CContext{Name: "W"+level+colhtml , Value: html.EscapeString(clause.Value)})
 		}
-		r=append(r,CContext{Name: "O"+level+colhtml , Value: html.EscapeString(clause.Comparator)})
+		r=append(r,CContext{Name: "O"+level+colhtml , Value: html.EscapeString(string(clause.Operator))})
 	}
 	return r
 }
@@ -271,23 +293,19 @@ func whereClauses2Pretty(whereClauses []Clause) string{
 		if i>0 {
 			r=r+", "
 		}
-		if clause.Comparator == "~" {
+		if clause.Operator == "lk" {
 			r = r + clause.Column+" LIKE \""+clause.Value+"\""
-		} else if clause.Comparator == "!~" {
+		} else if clause.Operator == "nl" {
 			r = r + clause.Column+" NOT LIKE \""+clause.Value+"\""
-		} else if clause.Comparator == "==" {
-			r = r + clause.Column+"==\""+clause.Value+"\""
-		} else if clause.Comparator == "!=" {
-			r = r + clause.Column+"!=\""+clause.Value+"\""
-		} else if clause.Comparator == "=0" {
+		} else if clause.Operator == "i0" {
 			r = r + clause.Column+" IS NULL"
-		} else if clause.Comparator == "!0" {
+		} else if clause.Operator == "n0" {
 			r = r + clause.Column+" IS NOT NULL"
 		} else {
 			if clause.IsNumeric {
-				r = r + clause.Column+clause.Comparator+clause.Value
+				r = r + clause.Column + op2str(clause.Operator,clause.IsNumeric) +     clause.Value
 			} else {
-				r = r + clause.Column+clause.Comparator+"\""+clause.Value+"\""
+				r = r + clause.Column + op2str(clause.Operator,clause.IsNumeric) +"\""+clause.Value+"\""
 			}
 		}
 	}

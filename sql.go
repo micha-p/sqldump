@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-/* sql escaping using prepared statements in Go is restricted, as it does not work for identifiers */
+/* sql escaping using prepared statements is restricted, as it does not work for identifiers */
 
 // special type to prevent mixture with normal strings
 type sqlstring string
@@ -151,30 +151,7 @@ func sqlHaving(g string, c string, v string) sqlstring {
 	}
 }
 
-// from http://golang.org/src/strings/strings.go?h=Join#L382
-func sqlJoin(a []sqlstring, sep string) sqlstring {
-	if len(a) == 0 {
-		return str2sql("")
-	}
-	if len(a) == 1 {
-		return a[0]
-	}
-	n := len(sep) * (len(a) - 1)
-	for i := 0; i < len(a); i++ {
-		n += len(a[i])
-	}
-
-	b := make([]byte, n)
-	bp := copy(b, a[0])
-	for _, q := range a[1:] {
-		s := sql2str(q)
-		bp += copy(b[bp:], sep)
-		bp += copy(b[bp:], s)
-	}
-	return sqlstring(b)
-}
-
-func sqlWhereClauses(whereStack [][]sqlstring) sqlstring {
+func sqlWhereClauses(whereStack [][]Clause) sqlstring {
 	if len(whereStack) == 0 {
 		return ""
 	} else {
@@ -184,18 +161,25 @@ func sqlWhereClauses(whereStack [][]sqlstring) sqlstring {
 				if len(r) > 0 {
 					r = r +  " && "
 				}
-				r = r +  clause
+				r = r +  clause2sql(clause)
 			}
 		}
 	return str2sql(" WHERE ") + r
 	}
 }
 
-func sqlSetClauses(clauses []sqlstring) sqlstring {
+func sqlSetClauses(clauses []Clause) sqlstring {
 	if len(clauses) == 0 {
 		return ""
 	} else {
-		return str2sql(" SET ") + sqlJoin(clauses, " , ")
+		var r sqlstring
+		for _,clause := range(clauses) {
+			if len(r) > 0 {
+				r = r +  ", "
+			}
+			r = r +  clause2sql(clause)
+		}
+	return str2sql(" SET ") + r
 	}
 }
 

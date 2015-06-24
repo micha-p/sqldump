@@ -32,7 +32,8 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	action := q.Get("action")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	wclauses, sclauses, _ := collectClauses(r, conn, t)
+	colinfo := getColumnInfo(conn, t)
+	wclauses, sclauses := collectClauses(r, colinfo)
 	// TODO change *FORM to form="*"
 	if action == "INFO" {
 		stmt := str2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
@@ -62,11 +63,11 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
 
 	} else if action == "UPDATE" && !READONLY && k != "" && v != "" && len(sclauses) > 0 {
-		hclause := []sqlstring{sqlProtectIdentifier(k) + "=?"}
+		hclause := []Clause{Clause{Column: k, Operator: "=?"}}
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "UPDATE" && !READONLY && g != "" && v != "" && len(sclauses) > 0 {
-		hclause := []sqlstring{sqlProtectIdentifier(k) + "=?"}
+		hclause := []Clause{Clause{Column: g, Operator: "=?"}}
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "UPDATE" && !READONLY && len(sclauses)  > 0 {
@@ -74,10 +75,12 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 		actionEXEC(w, conn, host, db, t, o, d, stmt)
 
 	} else if action == "DELETE" && !READONLY && g != "" && v != "" {
-		stmt := sqlDelete(t) + sqlWhere1(g, "=")
+		hclause := []Clause{Clause{Column: g, Operator: "=?"}}
+		stmt := sqlDelete(t) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "DELETE" && !READONLY && k != "" && v != "" {
-		stmt := sqlDelete(t) + sqlWhere1(k, "=")
+		hclause := []Clause{Clause{Column: k, Operator: "=?"}}
+		stmt := sqlDelete(t) + sqlWhereClauses(append(wclauses,hclause))
 		actionEXEC1(w, conn, host, db, t, stmt, v)
 	} else if action == "DELETE" && !READONLY {
 		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
@@ -127,7 +130,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 func actionSELECTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	hiddencols := WhereQuery2Hidden(r.URL.Query(), colinfo)
+	hiddencols := WhereStack2Hidden(whereStack)
 	shipForm(w, r, conn, host, db, t, o, d, "SELECT", "Select", "true", colinfo, hiddencols, whereStack)
 }
 
@@ -146,13 +149,10 @@ func actionINSERTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 // TODO combine next 3 to 1 function: always promote gk,v, always fill if count = 1
 func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 
-	wclauses, _, whereQ := collectClauses(r, conn, t)
 	colinfo := getColumnInfo(conn, t)
+	wclauses, _:= collectClauses(r, colinfo)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	hiddencols := []CContext{}
-	for field, valueArray := range whereQ { //type Values map[string][]string
-		hiddencols = append(hiddencols, CContext{"", field, "", "", "", "", "valid", valueArray[0], ""})
-	}
+	hiddencols := WhereQuery2Hidden(r.URL.Query(), colinfo)
 
 	count, _ := getSingleValue(conn, sqlCount(t)+sqlWhereClauses(wclauses))
 	if count == "1" {
@@ -203,9 +203,8 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 		CContext{"", "g", "", "", "", "", "valid", g, ""},
 		CContext{"", "v", "", "", "", "", "valid", v, ""}}
 	stmt := sqlStar(t) + sqlWhere1(g, "=")
-	preparedStmt, _, err := sqlPrepare(conn, stmt)
+	preparedStmt, _, err := sqlPrepare(conn, stmt); checkErrorPage(w, host, db, t, stmt, err)
 	defer preparedStmt.Close()
-	checkErrorPage(w, host, db, t, stmt, err)
 	rows, _, err := sqlQuery1(preparedStmt, v)
 	checkY(err)
 	defer rows.Close()
@@ -218,17 +217,13 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring) {
 
 	messageStack := []Message{}
-	preparedStmt, sec, err := sqlPrepare(conn, stmt)
+	preparedStmt, _, err := sqlPrepare(conn, stmt); checkErrorPage(w, host, db, t, stmt, err)
 	defer preparedStmt.Close()
-	checkErrorPage(w, host, db, t, stmt, err)
-	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1, 0, sec})
 
-	result, sec, err := sqlExec(preparedStmt)
-	checkErrorPage(w, host, db, t, stmt, err)
-	affected, err := result.RowsAffected()
-	checkErrorPage(w, host, db, t, stmt, err)
+	result, sec, err := sqlExec(preparedStmt); checkErrorPage(w, host, db, t, stmt, err)
+	affected, err := result.RowsAffected(); checkErrorPage(w, host, db, t, stmt, err)
 
-	messageStack = append(messageStack, Message{"EXECUTE stmt", -1, affected, sec})
+	messageStack = append(messageStack, Message{sql2str(stmt), -1, affected, sec})
 	nextstmt := sqlStar(t) + sqlOrder(o, d)
 	dumpRows(w, conn, host, db, t, o, d, nextstmt, messageStack)
 }
@@ -239,15 +234,12 @@ func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring, arg string) {
 
 	messageStack := []Message{}
-	preparedStmt, sec, err := sqlPrepare(conn, stmt)
+	preparedStmt, sec, err := sqlPrepare(conn, stmt); checkErrorPage(w, host, db, t, stmt, err)
 	defer preparedStmt.Close()
-	checkErrorPage(w, host, db, t, stmt, err)
 	messageStack = append(messageStack, Message{"PREPARE stmt FROM '" + sql2str(stmt) + "'", -1, 0, sec})
 
-	result, sec, err := sqlExec1(preparedStmt, arg)
-	checkErrorPage(w, host, db, t, stmt, err)
-	affected, err := result.RowsAffected()
-	checkErrorPage(w, host, db, t, stmt, err)
+	result, sec, err := sqlExec1(preparedStmt, arg); checkErrorPage(w, host, db, t, stmt, err)
+	affected, err := result.RowsAffected(); checkErrorPage(w, host, db, t, stmt, err)
 
 	messageStack = append(messageStack, Message{"EXECUTE stmt USING \"" + arg + "\"", -1, affected, sec})
 	nextstmt := sqlStar(t)

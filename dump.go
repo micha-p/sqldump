@@ -46,10 +46,14 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 // 1. counter, label, linkleft and linkright
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. Delete will delete immediately
-func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string, stmt sqlstring, wclauses [][]sqlstring,q url.Values) {
+func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string,
+	stmt sqlstring, whereStack [][]Clause) {
 
+	q := makeFreshQuery(db, t, o, d)
+	q.Set("g",g)
+	q.Set("v",v)
+	putWhereStackIntoQuery(q,whereStack)
 	menu := makeMenu5(q)
-	whereStack := WhereQuery2Stack(q, getColumnInfo(conn, t))
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
 		checkErrorPage(w, host, db, t, stmt, err)
@@ -61,14 +65,14 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	/********** do this first to ensure correct query */
 	var linkleft, linkright Entry
 	{
-		next, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(wclauses) + sqlHaving(g, ">", v)+sqlLimit(1, 0))
+		next, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(whereStack) + sqlHaving(g, ">", v)+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", next)
 		} else {
 			q.Set("v", v)
 		}
 		linkright = escape(">", q.Encode())
-		prev, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(wclauses) + sqlHaving(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
+		prev, err := getSingleValue(conn, sqlSelect(g, t)+sqlWhereClauses(whereStack) + sqlHaving(g, "<", v)+sqlOrder(g, "1")+sqlLimit(1, 0))
 		if err == nil {
 			q.Set("v", prev)
 		} else {
@@ -93,10 +97,12 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 // 1. trail shows where clauses
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. delete will show FILLEDDELETEFORM for confirmation (TODO)
-func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, q url.Values) {
+func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string,
+	stmt sqlstring, whereStack [][]Clause) {
 
+	q := makeFreshQuery(db, t, o, d)
+	putWhereStackIntoQuery(q,whereStack)
 	menu := makeMenu5(q)
-	whereStack := WhereQuery2Stack(q, getColumnInfo(conn, t))
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
 		checkErrorPage(w, host, db, t, stmt, err)
@@ -116,10 +122,12 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, whereStack)
 }
 
-func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64, stmt sqlstring, q url.Values) {
+func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64,
+	stmt sqlstring, whereStack [][]Clause) {
 
-	whereStack := WhereQuery2Stack(q, getColumnInfo(conn, t))
-	limitstring := Int64toa(start) + "-" + Int64toa(end)
+	q := makeFreshQuery(db, t, o, d)
+	putWhereStackIntoQuery(q,whereStack)
+
 	rowrange := end - start
 	left := maxInt64(start-rowrange, 1)
 	right := minInt64(end+rowrange, max)
@@ -128,6 +136,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	q.Set("n", Int64toa(1+right-rowrange)+"-"+Int64toa(right))
 	linkright := escape(">", q.Encode())
 
+	limitstring := Int64toa(start) + "-" + Int64toa(end)
 	q.Set("n", limitstring)
 	menu := makeMenu3(q)
 
