@@ -87,37 +87,45 @@ func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 			stmt = stmt + sqlWhereClauses(wclauses)
 			stmt = stmt + sqlHaving(g, "=", v)
 			stmt = stmt + sqlOrder(o, d)
-			if g == "" && n == "" {
-				dumpWhere(w, conn, host, db, t, o, d, stmt, wclauses)
+			dumpSelection(w, conn, host, db, t, o, d, n, g, v, stmt, wclauses, []Message{})
+		}
+	}
+}
+
+func dumpSelection(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, g string, v string,
+	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
+
+	if g == "" && n == "" {
+		dumpWhere(w, conn, host, db, t, o, d, stmt, whereStack, messageStack)
+	} else {
+		if n == "" {
+			dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, whereStack, messageStack)
+		} else {
+			singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
+			limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
+			nmax, err := Atoi64(getCount(conn, sqlCount(t)+sqlWhereClauses(whereStack)))
+			checkY(err)
+			if singlenumber != "" {
+				ni, _ := Atoi64(singlenumber)
+				ni = minInt64(ni, nmax)
+				stmt = stmt + sqlLimit(1, ni)
+				showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax, stmt, whereStack)
+			} else if len(limits) == 3 {
+				nstart, err := Atoi64(limits[1])
+				checkY(err)
+				nend, err := Atoi64(limits[2])
+				checkY(err)
+				nend = minInt64(nend, nmax)
+				stmt = stmt + sqlLimit(1+nend-nstart, nstart)
+				dumpRange(w, conn, host, db, t, o, d, nstart, nend, nmax, stmt, whereStack, messageStack)
 			} else {
-				if n == "" {
-					dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, wclauses)
-				} else {
-					singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
-					limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
-					nmax, err := Atoi64(getCount(conn, sqlCount(t)+sqlWhereClauses(wclauses)))
-					checkY(err)
-					if singlenumber != "" {
-						ni, _ := Atoi64(singlenumber)
-						ni = minInt64(ni, nmax)
-						stmt = stmt + sqlLimit(1, ni)
-						showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax, stmt, wclauses)
-					} else if len(limits) == 3 {
-						nstart, err := Atoi64(limits[1])
-						checkY(err)
-						nend, err := Atoi64(limits[2])
-						checkY(err)
-						nend = minInt64(nend, nmax)
-						stmt = stmt + sqlLimit(1+nend-nstart, nstart)
-						dumpRange(w, conn, host, db, t, o, d, nstart, nend, nmax, stmt, wclauses)
-					} else {
-						shipMessage(w, host, db, "Can't understand number or range: "+n)
-					}
-				}
+				shipMessage(w, host, db, "Can't understand number or range: "+n)
 			}
 		}
 	}
 }
+
+
 
 func readRequest(r *http.Request) (string, string, string, string, string, string, string, string) {
 	q := r.URL.Query()

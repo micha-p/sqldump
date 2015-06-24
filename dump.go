@@ -47,7 +47,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. Delete will delete immediately
 func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string,
-	stmt sqlstring, whereStack [][]Clause) {
+	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
 	q := makeFreshQuery(db, t, o, d)
 	q.Set("g", g)
@@ -88,7 +88,6 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, "", primary, columns, q)
 	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, whereStack)
 }
@@ -98,7 +97,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. delete will show FILLEDDELETEFORM for confirmation (TODO)
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string,
-	stmt sqlstring, whereStack [][]Clause) {
+	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
 	q := makeFreshQuery(db, t, o, d)
 	putWhereStackIntoQuery(q, whereStack)
@@ -117,13 +116,12 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, "", primary, columns, q)
 	records, rownum := makeRecords(rows, db, t, primary, 0, q)
 
-	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, whereStack)
 }
 
 func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64,
-	stmt sqlstring, whereStack [][]Clause) {
+	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
 	q := makeFreshQuery(db, t, o, d)
 	putWhereStackIntoQuery(q, whereStack)
@@ -154,7 +152,6 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	head := createHead(db, t, o, d, limitstring, "", columns, q)
 	records, rownum := makeRecords(rows, db, t, primary, start-1, q)
 
-	var messageStack []Message
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
 	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, whereStack)
 }

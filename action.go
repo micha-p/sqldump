@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
-	"sort"
 	"strconv"
+	//"fmt"
 )
 
 type FContext struct {
@@ -44,9 +44,6 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "BACK" {
 		dumpRouter(w, r, conn, host, db, "", "", "", "", "", "", "")
-	} else if action == "INSERT" && !READONLY && len(sclauses) > 0 {
-		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
-		actionEXEC(w, conn, host, db, t, o, d, stmt)
 	} else if action == "SELECTFORM" {
 		actionSELECTFORM(w, r, conn, host, db, t, o, d)
 	} else if action == "INSERTFORM" && !READONLY {
@@ -62,29 +59,33 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	} else if action == "UPDATEFORM" && !READONLY {
 		actionUPDATEFORM(w, r, conn, host, db, t, o, d)
 
+	} else if action == "INSERT" && !READONLY && len(sclauses) > 0 {
+		stmt := sqlInsert(t) + sqlSetClauses(sclauses)
+		actionEXEC(w, conn, host, db, t, o, d, n, g, v, wclauses, stmt)
+
 	} else if action == "UPDATE" && !READONLY && k != "" && v != "" && len(sclauses) > 0 {
-		hclause := []Clause{Clause{Column: k, Operator: "=?"}}
+		hclause := []Clause{Clause{Column: k, Operator: "s?"}}
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses, hclause))
-		actionEXEC1(w, conn, host, db, t, stmt, v)
+		actionEXEC1(w, conn, host, db, t, o, d, n, g, v, wclauses, stmt, v)
 	} else if action == "UPDATE" && !READONLY && g != "" && v != "" && len(sclauses) > 0 {
-		hclause := []Clause{Clause{Column: g, Operator: "=?"}}
+		hclause := []Clause{Clause{Column: g, Operator: "s?"}}
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(append(wclauses, hclause))
-		actionEXEC1(w, conn, host, db, t, stmt, v)
+		actionEXEC1(w, conn, host, db, t, o, d, n, g, v, wclauses, stmt, v)
 	} else if action == "UPDATE" && !READONLY && len(sclauses) > 0 {
 		stmt := sqlUpdate(t) + sqlSetClauses(sclauses) + sqlWhereClauses(wclauses)
-		actionEXEC(w, conn, host, db, t, o, d, stmt)
+		actionEXEC(w, conn, host, db, t, o, d, n, g, v, wclauses, stmt)
 
 	} else if action == "DELETE" && !READONLY && g != "" && v != "" {
-		hclause := []Clause{Clause{Column: g, Operator: "=?"}}
+		hclause := []Clause{Clause{Column: g, Operator: "s?"}}
 		stmt := sqlDelete(t) + sqlWhereClauses(append(wclauses, hclause))
-		actionEXEC1(w, conn, host, db, t, stmt, v)
+		actionEXEC1(w, conn, host, db, t, o, d, n, g, v, [][]Clause{}, stmt, v)
 	} else if action == "DELETE" && !READONLY && k != "" && v != "" {
-		hclause := []Clause{Clause{Column: k, Operator: "=?"}}
+		hclause := []Clause{Clause{Column: k, Operator: "s?"}}
 		stmt := sqlDelete(t) + sqlWhereClauses(append(wclauses, hclause))
-		actionEXEC1(w, conn, host, db, t, stmt, v)
+		actionEXEC1(w, conn, host, db, t, o, d, n, g, v, [][]Clause{}, stmt, v)
 	} else if action == "DELETE" && !READONLY {
 		stmt := sqlDelete(t) + sqlWhereClauses(wclauses)
-		actionEXEC(w, conn, host, db, t, o, d, stmt)
+		actionEXEC(w, conn, host, db, t, o, d, n, g, v, [][]Clause{}, stmt)
 
 	} else {
 		shipMessage(w, host, db, "Action unknown or insufficient parameters: "+action)
@@ -143,7 +144,8 @@ func actionDELETEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 func actionINSERTFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, o string, d string) {
 	colinfo := getColumnInfo(conn, t)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", colinfo, []CContext{}, whereStack)
+	hiddencols := WhereStack2Hidden(whereStack)
+	shipForm(w, r, conn, host, db, t, o, d, "INSERT", "Insert", "", colinfo, hiddencols, whereStack)
 }
 
 // TODO combine next 3 to 1 function: always promote gk,v, always fill if count = 1
@@ -167,7 +169,8 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	colinfo := getColumnInfo(conn, t)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	isNumeric := colinfo[sort.Search(len(colinfo), func(i int) bool { return colinfo[i].Name == k })].IsNumeric
+	col_g := getColumn(colinfo,k)
+	isNumeric := col_g.IsNumeric
 	var numeric bool
 	if isNumeric != "" {
 		numeric = true
@@ -191,7 +194,8 @@ func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
 	colinfo := getColumnInfo(conn, t)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	isNumeric := colinfo[sort.Search(len(colinfo), func(i int) bool { return colinfo[i].Name == g })].IsNumeric
+	col_g := getColumn(colinfo,g)
+	isNumeric := col_g.IsNumeric
 	var numeric bool
 	if isNumeric != "" {
 		numeric = true
@@ -215,7 +219,8 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 
 // Excutes a statement on a selection by where-clauses
 // Used, when rows are not adressable by a primary key or in table having a group
-func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring) {
+func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, g string, v string,
+	whereStack [][]Clause,stmt sqlstring) {
 
 	messageStack := []Message{}
 	preparedStmt, _, err := sqlPrepare(conn, stmt)
@@ -228,14 +233,15 @@ func actionEXEC(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	checkErrorPage(w, host, db, t, stmt, err)
 
 	messageStack = append(messageStack, Message{sql2str(stmt), -1, affected, sec})
-	nextstmt := sqlStar(t) + sqlOrder(o, d)
-	dumpRows(w, conn, host, db, t, o, d, nextstmt, messageStack)
+	nextstmt := sqlStar(t) + sqlWhereClauses(whereStack) + sqlOrder(o, d)
+	dumpSelection(w, conn, host, db, t, o, d, n, g, v, nextstmt, whereStack, messageStack)
 }
 
 /* Executes prepared statements about modifications in tables with primary key or having a group
  * Uses one argument as value for where clause
  * However, prepared statements only work with values, not in identifier position */
-func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring, arg string) {
+func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, g string, v string,
+	whereStack [][]Clause, stmt sqlstring, arg string) {
 
 	messageStack := []Message{}
 	preparedStmt, sec, err := sqlPrepare(conn, stmt)
@@ -249,6 +255,6 @@ func actionEXEC1(w http.ResponseWriter, conn *sql.DB, host string, db string, t 
 	checkErrorPage(w, host, db, t, stmt, err)
 
 	messageStack = append(messageStack, Message{"EXECUTE stmt USING \"" + arg + "\"", -1, affected, sec})
-	nextstmt := sqlStar(t)
-	dumpRows(w, conn, host, db, t, "", "", nextstmt, messageStack)
+	nextstmt := sqlStar(t) + sqlWhereClauses(whereStack) + sqlOrder(o, d)
+	dumpSelection(w, conn, host, db, t, o, d, n, g, v, nextstmt, whereStack, messageStack)
 }

@@ -70,7 +70,7 @@
 			<input type="hidden" name="t"  value="{{.Table}}">
 			<input type="hidden" name="o"  value="{{.Order}}">
 			<input type="hidden" name="d"  value="{{.Desc}}">{{range .Hidden}}
-			<input class="cell" type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
+			<input type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
 
 			{{if .Selector}}<table>
 				<tr>

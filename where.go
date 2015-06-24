@@ -1,10 +1,10 @@
 package main
 
 import (
-	"html"
 	"net/http"
 	"net/url"
 	"strconv"
+//	"fmt"
 )
 
 type opstring string
@@ -57,9 +57,7 @@ func clause2sql(c Clause) sqlstring {
 	}
 }
 
-func op2sql(s opstring, numeric bool) sqlstring {
-	return str2sql(op2str(s, numeric))
-}
+
 
 func str2op(s string) opstring {
 	n := make(map[string]opstring, 16) // numeric
@@ -73,6 +71,10 @@ func str2op(s string) opstring {
 	n["<"] = "lt"
 	n["<="] = "le"
 	return n[s]
+}
+
+func op2sql(s opstring, numeric bool) sqlstring {
+	return str2sql(op2str(s, numeric))
 }
 
 func op2str(s opstring, numeric bool) string {
@@ -155,7 +157,8 @@ func collectClausesOfLevel(r *http.Request, cols []CContext, level string) ([]Cl
 			setclauses = append(setclauses, Clause{Column: colname, Operator: "sn", Value: set, IsNumeric: numeric})
 		} else if set != "" && !numeric {
 			setclauses = append(setclauses, Clause{Column: colname, Operator: "sv", Value: set, IsNumeric: numeric})
-		} else if val != "" || comp == "i0" || comp == "n0" {
+		}
+		if val != "" || comp == "i0" || comp == "n0" {
 			new := val2clause(colname, val, comp, col)
 			whereclauses = append(whereclauses, new)
 		}
@@ -167,7 +170,7 @@ func val2clause(colname string, val string, comp string, col CContext) Clause {
 	var numeric bool
 	if col.IsNumeric != "" {
 		if comp == "" {
-			ncomp, nval := sqlFilterNumericComparison(html.UnescapeString(val))
+			ncomp, nval := sqlFilterNumericComparison(val)
 			if ncomp == "" {
 				comp = "eq" // use default for numeric comparisons
 			} else {
@@ -201,8 +204,8 @@ func WhereQuery2Level(q url.Values, ccols []CContext, level string) []Clause {
 	var clauses []Clause
 	for _, col := range ccols {
 		colname := col.Label
-		val := q.Get(html.EscapeString("W" + level + col.Name))
-		comp := q.Get(html.EscapeString("O" + level + col.Name))
+		val := q.Get("W" + level + col.Name)
+		comp := q.Get("O" + level + col.Name)
 		if val != "" || comp == "i0" || comp == "n0" {
 			new := val2clause(colname, val, comp, col)
 			clauses = append(clauses, new)
@@ -220,11 +223,11 @@ func putWhereStackIntoQuery(q url.Values, whereStack [][]Clause) {
 
 func putWhereClausesIntoQuery(q url.Values, level string, whereClauses []Clause) {
 	for _, clause := range whereClauses {
-		colhtml := html.EscapeString(clause.Column)
+		colhtml := clause.Column
 		if clause.Value != "" {
-			q.Set("W"+level+colhtml, html.EscapeString(clause.Value))
+			q.Set("W"+level+colhtml, clause.Value)
 		}
-		q.Set("O"+level+colhtml, html.EscapeString(string(clause.Operator)))
+		q.Set("O"+level+colhtml, string(clause.Operator))
 	}
 }
 
@@ -240,11 +243,11 @@ func WhereStack2Hidden(whereStack [][]Clause) []CContext {
 func WhereClauses2Hidden(level string, whereClauses []Clause) []CContext {
 	var r []CContext
 	for _, clause := range whereClauses {
-		colhtml := html.EscapeString(clause.Column)
+		colhtml := clause.Column
 		if clause.Value != "" {
-			r = append(r, CContext{Name: "W" + level + colhtml, Value: html.EscapeString(clause.Value)})
+			r = append(r, CContext{Name: "W" + level + colhtml, Value: clause.Value})
 		}
-		r = append(r, CContext{Name: "O" + level + colhtml, Value: html.EscapeString(string(clause.Operator))})
+		r = append(r, CContext{Name: "O" + level + colhtml, Value: string(clause.Operator)})
 	}
 	return r
 }

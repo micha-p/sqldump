@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"html"
 	"log"
 	"regexp"
 )
@@ -34,6 +33,16 @@ type CContext struct {
 	Valid     string
 	Value     string
 	Readonly  string
+}
+
+func getColumn(cols []CContext, name string) CContext {
+	for i,c := range(cols) {
+		if c.Name == name {
+			return cols[i]
+		}
+	}
+	checkY(errors.New("Column "+name + "not found"))
+	return CContext{}
 }
 
 func getRows(conn *sql.DB, stmt sqlstring) (*sql.Rows, error, float64) {
@@ -215,9 +224,9 @@ func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary
 		if c != col.Name {
 			checkY(errors.New("Mismatch in column names"))
 		}
-		name := html.EscapeString(col.Name)
+		name := col.Name
 		nv := getNullString(vals[i])
-		value := html.EscapeString(nv.String)
+		value := nv.String
 		var readonly, valid string
 		if name == primary {
 			readonly = "1"

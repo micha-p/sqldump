@@ -62,7 +62,7 @@ func sqlExec(prepared *sql.Stmt) (sql.Result, float64, error) {
 }
 
 func sqlExec1(prepared *sql.Stmt, arg string) (sql.Result, float64, error) {
-	log.Println("[SQL]", arg)
+	log.Println("[SQL]", "EXECUTE stmt USING " + arg)
 	t0 := time.Now()
 	r, err := prepared.Exec(arg)
 	t1 := time.Now()
@@ -156,15 +156,17 @@ func sqlWhereClauses(whereStack [][]Clause) sqlstring {
 		return ""
 	} else {
 		var r sqlstring
-		for _, clauses := range whereStack {
-			for _, clause := range clauses {
-				if len(r) > 0 {
+		for l, clauses := range whereStack {
+			for i, clause := range clauses {
+				if l==0 && i == 0 {
+					r = r + " WHERE "
+				} else {
 					r = r + " && "
 				}
 				r = r + clause2sql(clause)
 			}
 		}
-		return str2sql(" WHERE ") + r
+		return r
 	}
 }
 

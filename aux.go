@@ -6,8 +6,6 @@ import (
 	"strconv"
 )
 
-/* 	Any identifier with double quotes in its name has to be escaped.
- */
 
 func escape(name string, link ...string) Entry {
 	if len(link) > 0 {
