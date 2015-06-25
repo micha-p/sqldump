@@ -168,19 +168,3 @@ func makeMenu3(m url.Values) []Entry {
 	return menu
 }
 
-func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string) {
-
-	t, o, d, n, g, k, v := readRequest(r)
-
-	q := r.URL.Query()
-	action := q.Get("action")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if action != "" && db != "" && t != "" {
-		actionRouter(w, r, conn, host, db)
-	} else if db != "" && t == "" {
-		showTables(w, conn, t, o, d, g, v)
-	} else if db != ""{
-		dumpRouter(w, r, conn, t, o, d, n, g, k, v)
-	}
-}

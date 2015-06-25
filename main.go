@@ -11,10 +11,11 @@ import (
 	"strings"
 	"regexp"
 )
-
+   
 // HACK! TODO use proper accessors
 func getDSN(conn *sql.DB) string {
-	dsn := regexp.MustCompile(" ([^ ]*) ").FindStringSubmatch(fmt.Sprint(conn))
+	dsn := regexp.MustCompile("dsn:\"([^ ]*)\",").FindStringSubmatch(fmt.Sprintf("%#v",conn))
+	
 	if len(dsn)>1 {
 		return dsn[1]
 	} else {
@@ -50,13 +51,64 @@ func cssHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func loginPageHandler(w http.ResponseWriter, r *http.Request) {
+func loginShowPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, loginPage)
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
 
+func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string) {
+
+	t, o, d, n, g, k, v := readRequest(r)
+
+	q := r.URL.Query()
+	action := q.Get("action")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if action != "" && db != "" && t != "" {
+		actionRouter(w, r, conn, host, db)
+	} else if db != "" && t == "" {
+		showTables(w, conn, host, db, t, o, d, g, v)
+	} else if db != ""{
+		dumpRouter(w, r, conn, t, o, d, n, g, k, v)
+	} else {
+		loginShowPage(w,r)
+	}
+}
+
+
+func startWork(w http.ResponseWriter, r *http.Request, dbms string, host string, port string, user string, pass string, base string, new bool) {
+
+	if strings.ToUpper(base)=="INFORMATION_SCHEMA" && !INFOFLAG {
+		clearCredentials(w)
+		log.Println("[AUTH]", "Access denied",base)
+		shipFatal(w,"Access denied to INFORMATION_SCHEMA")
+	} else {
+		conn, err := sql.Open(dbms, dsn(user, pass, host, port, base))
+		defer conn.Close()
+		if err != nil {
+			clearCredentials(w)
+			log.Println("[AUTH]", "Connection closed", dbms, user, host, port, base)
+			shipFatal(w,err)
+		} else {
+			err := conn.Ping()
+			if err != nil {
+				clearCredentials(w)
+				log.Println("[AUTH]", "Access denied", dbms, user, host, port, base)
+				shipFatal(w,err)
+			} else {
+				if new {
+					log.Println("[AUTH]", "Query", dbms, user, host, port, base)
+					setCredentials(w, r, dbms, host, port, user, pass, base)
+				}
+				workRouter(w, r, conn, host, base)
+			}
+		}
+	}
+}
+
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	log.Println("[GET]", r.URL)
 	user := q.Get("user") // Login via bookmark
@@ -65,27 +117,21 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	port := q.Get("port")
 	dbms := q.Get("dbms")
 	base := q.Get("db")
+	if dbms == "" {
+		dbms = "mysql"
+	}
+	if host == "" {
+		host = "localhost"
+	}
+	if port == "" {
+		port = "3306"
+	}
 	if user != "" && pass != "" && base != "" {
-		log.Println("[LOGIN]", dbms, user, host, port, base)
-		if dbms == "" {
-			dbms = "mysql"
-		}
-		if host == "" {
-			host = "localhost"
-		}
-		if port == "" {
-			port = "3306"
-		}
-		setCredentials(w, r, dbms, host, port, user, pass, base)
-		conn, err := sql.Open(dbms, dsn(user, pass, host, port, base))
-		checkY(err)
-		workRouter(w, r, conn, host, base)
+		startWork(w, r, dbms, host, port, user, pass, base, true)
 	} else if dbms, host, port, user, pass, base, err := getCredentials(r); err == nil {
-		conn, err := sql.Open(dbms, dsn(user, pass, host, port, base))
-		checkY(err)
-		workRouter(w, r, conn, host, base)
+		startWork(w, r, dbms, host, port, user, pass, base, false)
 	} else {
-		loginPageHandler(w, r)
+		loginShowPage(w, r)
 	}
 }
 
@@ -103,7 +149,7 @@ func main() {
 	var SECURE = flag.String("s", "", "https Connection TLS")
 	var HOST = flag.String("h", "localhost", "server name")
 	var PORT = flag.Int("p", 8080, "server port")
-	var INFO = flag.Bool("i", false, "include INFORMATION_SCHEMA in overview")
+	var INFO = flag.Bool("i", false, "enable access to INFORMATION_SCHEMA")
 	var MODIFY = flag.Bool("m", false, "modify database schema: create, alter, drop tables (TODO)")
 	var EXPERT = flag.Bool("x", false, "expert mode to access privileges, routines, triggers, views (TODO)")
 	var QUIET = flag.Bool("q", false, "suppress messages (sql statements, row numbers of results)")
@@ -129,7 +175,7 @@ func main() {
 		http.HandleFunc("/"+CSS_FILE, cssHandler)
 	}
 	http.HandleFunc("/favicon.ico", faviconHandler)
-	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/login", loginFormHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/test", testHandler)
 	http.HandleFunc("/", indexHandler)

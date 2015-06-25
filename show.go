@@ -6,8 +6,8 @@ import (
 	"net/url"
 )
 
-func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 
+/* func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 	q := url.Values{}
 	// "SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`,TABLE_COLLATION AS `Collation`,CREATE_TIME AS `Create`, TABLE_COMMENT AS `Comment`
 	stmt := str2sql("SHOW DATABASES")
@@ -31,12 +31,14 @@ func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 	}
 	// message suppressed, as it is not really useful and database should be chosen at login or bookmarked
 	tableOutSimple(w, conn, "", head, records, []Entry{})
-}
+}*/
 
-func showTables(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, g string, v string) {
+func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string,t string, o string, d string, g string, v string) {
 
-	_,db := getHostDB(getDSN(conn))
 	q := url.Values{}
+	
+	// TODO show table status; http://dev.mysql.com/doc/refman/5.1/en/show-table-status.html
+
 	query := str2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 	query = query + " FROM information_schema.TABLES"
 	query = query + sqlWhere("TABLE_SCHEMA", "=", db) + sqlHaving(g, "=", v) + sqlOrder(o, d)
@@ -92,7 +94,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, t string, o string, d strin
 	} else {
 		msg = Message{Msg: sql2str(query), Rows: rownum, Affected: -1, Seconds: sec}
 	}
-	tableOutRows(w, conn, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, [][]Clause{})
+	tableOutRows(w, conn, host, db, "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, [][]Clause{})
 }
 
 /*

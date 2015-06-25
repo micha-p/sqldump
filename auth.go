@@ -33,6 +33,9 @@ func getCredentials(r *http.Request) (string, string, string, string, string, st
 			user = cookieValue["user"]
 			pass = cookieValue["pass"]
 			base = cookieValue["base"]
+			if DEBUGFLAG {
+				log.Println("[HTTP]","Cookie found:", "(" + dbms + ") " + user + "@" + host + ":" + port + "/" + base )
+			}
 		} else { // cookieerror
 			log.Println("[Cookie error] ", user+"@"+host+":"+port+"("+dbms+") "+base)
 			return "", "", "", "", "", "", err
@@ -58,7 +61,7 @@ func setCredentials(w http.ResponseWriter, r *http.Request, dbms string, host st
 		}
 		http.SetCookie(w, c)
 		if DEBUGFLAG {
-			log.Println("[Cookie] " + user + "@" + host + ":" + port + "(" + dbms + ") "+base)
+			log.Println("[HTTP]","Cookie set:", "(" + dbms + ") " + user + "@" + host + ":" + port + "/" + base )
 		}
 	}
 }
@@ -71,9 +74,12 @@ func clearCredentials(w http.ResponseWriter) {
 		MaxAge: -1,
 	}
 	http.SetCookie(w, cookie)
+	if DEBUGFLAG {
+		log.Println("[HTTP]","Cookie withdrawn")
+	}
 }
 
-func loginHandler(w http.ResponseWriter, request *http.Request) {
+func loginFormHandler(w http.ResponseWriter, request *http.Request) {
 	user := request.FormValue("user")
 	pass := request.FormValue("pass")
 	base := request.FormValue("base")
@@ -81,13 +87,12 @@ func loginHandler(w http.ResponseWriter, request *http.Request) {
 	port := request.FormValue("port")
 	dbms := request.FormValue("dbms")
 	if user != "" && pass != "" && base !="" {
-		log.Println("[LOGIN]", dbms, user, host, port, base)
-		setCredentials(w, request, dbms, host, port, user, pass, base)
+		startWork(w, request, dbms, host, port, user, pass, base, true)
 	}
-	http.Redirect(w, request, request.URL.Host, 302)
 }
 
 func logoutHandler(w http.ResponseWriter, request *http.Request) {
+	log.Println("[AUTH]","Logout")
 	clearCredentials(w)
 	http.Redirect(w, request, request.URL.Host, 302)
 }

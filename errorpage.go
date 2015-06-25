@@ -38,6 +38,27 @@ func shipErrorPage(w http.ResponseWriter, conn *sql.DB, t string, cols []CContex
 	checkY(err)
 }
 
+func shipFatal(w http.ResponseWriter, msg interface{}) {
+
+	c := EContext{
+		CSS:      CSS_FILE,
+		Action:   "BACK",
+		Button:   "Back",
+		Database: "",
+		Table:    "",
+		Back:     "/login",
+		Columns:  []CContext{CContext{"1", "", "Error", "", "", "", "valid", fmt.Sprint(msg), ""}},
+		Trail:    []Entry{},
+	}
+
+	if DEBUGFLAG {
+		initTemplate()
+	}
+	err := templateError.Execute(w, c)
+	checkY(err)
+}
+
+
 func checkErrorPage(w http.ResponseWriter, conn *sql.DB, t string, query sqlstring, err error) {
 	if err != nil {
 		s := sql2str(query)
@@ -51,3 +72,4 @@ func shipMessage(w http.ResponseWriter, conn *sql.DB, msg string) {
 	cols := []CContext{CContext{"1", "", "Message", "", "", "", "valid", msg, ""}}
 	shipErrorPage(w, conn, "", cols)
 }
+
