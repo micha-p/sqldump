@@ -77,12 +77,10 @@ func makeTrail(host string, db string, t string, o string, d string, whereStack 
 
 	q := url.Values{}
 
-	trail := []Entry{Entry{host, "/", ""}}
+	trail := []Entry{Entry{host, "/logout", ""}}
 
 	if db != "" {
-		q.Add("action", "USE")
-		trail = append(trail, escape(db, q.Encode()))
-		q.Del("action")
+		trail = append(trail, escape(db, "/"))
 	}
 	if t != "" {
 		q.Add("t", t)
