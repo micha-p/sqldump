@@ -41,6 +41,7 @@ func dsn(user string, pw string, host string, port string, db string) string {
 	return user + ":" + pw + "@tcp(" + host + ":" + port + ")/" + db
 }
 
+
 func Atoi64(s string) (int64, error) {
 	n, err := strconv.ParseInt(s, 10, 64)
 	return n, err

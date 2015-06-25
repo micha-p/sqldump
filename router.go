@@ -127,9 +127,8 @@ func dumpSelection(w http.ResponseWriter, conn *sql.DB, host string, db string, 
 
 
 
-func readRequest(r *http.Request) (string, string, string, string, string, string, string, string) {
+func readRequest(r *http.Request) (string, string, string, string, string, string, string) {
 	q := r.URL.Query()
-	db := q.Get("db")
 	t := q.Get("t")
 	o := q.Get("o")
 	d := q.Get("d")
@@ -137,7 +136,7 @@ func readRequest(r *http.Request) (string, string, string, string, string, strin
 	g := q.Get("g")
 	k := q.Get("k")
 	v := q.Get("v")
-	return db, t, o, d, n, g, k, v
+	return t, o, d, n, g, k, v
 }
 
 func makeMenu(q url.Values, name string, value string, label string) Entry {
@@ -169,21 +168,19 @@ func makeMenu3(m url.Values) []Entry {
 	return menu
 }
 
-func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
+func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string) {
 
-	db, t, o, d, n, g, k, v := readRequest(r)
+	t, o, d, n, g, k, v := readRequest(r)
 
 	q := r.URL.Query()
 	action := q.Get("action")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if action != "" && db != "" && t != "" {
-		actionRouter(w, r, conn, host)
-	} else if db == "" {
-		showDatabases(w, conn, host)
-	} else if t == "" {
+		actionRouter(w, r, conn, host, db)
+	} else if db != "" && t == "" {
 		showTables(w, conn, host, db, t, o, d, g, v)
-	} else {
+	} else if db != ""{
 		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	}
 }

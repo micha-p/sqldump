@@ -35,7 +35,7 @@ type CContext struct {
 	Readonly  string
 }
 
-func getColumn(cols []CContext, name string) CContext {
+func findColumn(cols []CContext, name string) CContext {
 	for i,c := range(cols) {
 		if c.Name == name {
 			return cols[i]
@@ -78,22 +78,6 @@ func getCount(conn *sql.DB, stmt sqlstring) string {
 	var field string
 	row.Scan(&field)
 	return field
-}
-
-// retrieves column names from empty set
-// only needed for collecting clauses
-// TODO change parameters for clauses
-
-func getCols(conn *sql.DB, t string) []string {
-
-	err := conn.Ping()
-	checkY(err)
-	rows, _, err := sqlQuery(conn, sqlStar(t)+sqlLimit(0, 0))
-	checkY(err)
-	defer rows.Close()
-
-	cols, err := rows.Columns()
-	return cols
 }
 
 func getPrimary(conn *sql.DB, t string) string {
@@ -144,7 +128,10 @@ func getColumnMainType(conn *sql.DB, host string, db string, t string, c string)
 }
 */
 
-func getColumnInfo(conn *sql.DB, t string) []CContext {
+
+
+
+func getColumnInfo(conn *sql.DB, t string) []CContext {fmt.Sprint(conn)
 	err := conn.Ping()
 	checkY(err)
 	rows, _, err := sqlQuery(conn, sqlColumns(t))
@@ -208,7 +195,7 @@ func getRowScan(rows *sql.Rows) ([]string, []interface{}, error) {
 	return cols, values, err
 }
 
-func getColumnInfoFilled(conn *sql.DB, host string, db string, t string, primary string, rows *sql.Rows) []CContext {
+func getColumnInfoFilled(conn *sql.DB, t string, primary string, rows *sql.Rows) []CContext {
 
 	err := conn.Ping()
 	checkY(err)

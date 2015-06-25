@@ -36,7 +36,6 @@ func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string) {
 
 	q := url.Values{}
-	q.Add("db", db)
 	query := str2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 	query = query + " FROM information_schema.TABLES"
 	query = query + sqlWhere("TABLE_SCHEMA", "=", db) + sqlHaving(g, "=", v) + sqlOrder(o, d)
@@ -47,7 +46,6 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	columns, err := rows.Columns()
 	checkY(err)
 	home := url.Values{}
-	home.Add("db", db)
 	home.Add("o", o)
 	home.Add("d", d)
 	head := createHead(db, "", o, d, "", "", columns, home)
@@ -66,7 +64,6 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 		err = rows.Scan(valuePtrs...)
 		checkY(err)
 		g := url.Values{}
-		g.Add("db", db)
 		g.Add("t", getNullString(values[0]).String)
 		row = append(row, escape(Int64toa(rownum), g.Encode()))
 		for i, c := range columns {
@@ -77,7 +74,6 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 			if c == "Table" || c == "Comment" {
 				v := nv.String
 				g := url.Values{}
-				g.Add("db", db)
 				g.Add("t", v)
 				row = append(row, escape(v, g.Encode()))
 			} else {

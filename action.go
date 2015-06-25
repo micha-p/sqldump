@@ -24,9 +24,9 @@ type FContext struct {
 	Level    string
 }
 
-func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string) {
+func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string) {
 
-	db, t, o, d, n, g, k, v := readRequest(r)
+	t, o, d, n, g, k, v := readRequest(r)
 
 	q := r.URL.Query()
 	action := q.Get("action")
@@ -38,6 +38,8 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	if action == "INFO" {
 		stmt := str2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
 		showInfo(w, conn, host, db, t, stmt)
+	} else if action=="USE"{
+		showDatabases(w, conn, host)
 	} else if action == "GOTO" && n != "" {
 		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
 	} else if action == "SELECT" {
@@ -103,6 +105,7 @@ func shipForm(w http.ResponseWriter, r *http.Request, conn *sql.DB,
 	q.Del("action")
 	linkback := q.Encode()
 
+	host,db = getHostDB(getDSN(conn))
 	c := FContext{
 		CSS:      CSS_FILE,
 		Action:   action,
@@ -161,7 +164,7 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 		rows, err, _ := getRows(conn, sqlStar(t)+sqlWhereClauses(wclauses))
 		checkY(err)
 		defer rows.Close()
-		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, "", rows), hiddencols, whereStack)
+		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", getColumnInfoFilled(conn, t, "", rows), hiddencols, whereStack)
 	} else {
 		shipForm(w, r, conn, host, db, t, o, d, "UPDATE", "Update", "", colinfo, hiddencols, whereStack)
 	}
@@ -169,7 +172,7 @@ func actionUPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host
 func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, k string, v string) {
 	colinfo := getColumnInfo(conn, t)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	col_g := getColumn(colinfo,k)
+	col_g := findColumn(colinfo,k)
 	isNumeric := col_g.IsNumeric
 	var numeric bool
 	if isNumeric != "" {
@@ -189,12 +192,12 @@ func actionKV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereStack)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, t, primary, rows), hiddencols, whereStack)
 }
 func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, host string, db string, t string, g string, v string) {
 	colinfo := getColumnInfo(conn, t)
 	whereStack := WhereQuery2Stack(r.URL.Query(), colinfo)
-	col_g := getColumn(colinfo,g)
+	col_g := findColumn(colinfo,g)
 	isNumeric := col_g.IsNumeric
 	var numeric bool
 	if isNumeric != "" {
@@ -214,7 +217,7 @@ func actionGV_UPDATEFORM(w http.ResponseWriter, r *http.Request, conn *sql.DB, h
 	checkY(err)
 	defer rows.Close()
 	primary := getPrimary(conn, t)
-	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, host, db, t, primary, rows), hiddencols, whereStack)
+	shipForm(w, r, conn, host, db, t, "", "", "UPDATE", "Update", "", getColumnInfoFilled(conn, t, primary, rows), hiddencols, whereStack)
 }
 
 // Excutes a statement on a selection by where-clauses

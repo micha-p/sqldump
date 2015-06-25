@@ -20,8 +20,8 @@ import (
 
 func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, messageStack []Message) {
 
-	menu := makeMenu3(makeFreshQuery(db, t, o, d))
-	q := makeFreshQuery(db, t, o, d)
+	menu := makeMenu3(makeFreshQuery(t, o, d))
+	q := makeFreshQuery(t, o, d)
 	linkleft := escape("<", q.Encode())
 	linkright := escape(">", q.Encode())
 	rows, err, sec := getRows(conn, stmt)
@@ -49,7 +49,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string,
 	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
-	q := makeFreshQuery(db, t, o, d)
+	q := makeFreshQuery(t, o, d)
 	q.Set("g", g)
 	q.Set("v", v)
 	putWhereStackIntoQuery(q, whereStack)
@@ -99,7 +99,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string,
 	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
-	q := makeFreshQuery(db, t, o, d)
+	q := makeFreshQuery(t, o, d)
 	putWhereStackIntoQuery(q, whereStack)
 	menu := makeMenu5(q)
 	rows, err, sec := getRows(conn, stmt)
@@ -123,7 +123,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64,
 	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
-	q := makeFreshQuery(db, t, o, d)
+	q := makeFreshQuery(t, o, d)
 	putWhereStackIntoQuery(q, whereStack)
 
 	rowrange := end - start
@@ -158,9 +158,8 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 /**** HELPERS ***********************/
 
-func makeFreshQuery(db string, t string, o string, d string) url.Values {
+func makeFreshQuery(t string, o string, d string) url.Values {
 	q := url.Values{}
-	q.Set("db", db)
 	q.Set("t", t)
 	if o != "" {
 		q.Set("o", o)

@@ -10,7 +10,7 @@ import (
 func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64,
 	stmt sqlstring, whereStack [][]Clause) {
 
-	q := makeFreshQuery(db, t, o, d)
+	q := makeFreshQuery(t, o, d)
 	putWhereStackIntoQuery(q, whereStack)
 
 	left := Int64toa(maxInt64(nint-1, 1))
@@ -78,7 +78,7 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 
 func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, k string, v string, stmt sqlstring) {
 
-	q := makeFreshQuery(db, t, "", "")
+	q := makeFreshQuery(t, "", "")
 	q.Set("k", k)
 	next, err := getSingleValue(conn, sqlSelect(k, t)+sqlWhere(k, ">", v)+sqlOrder(k, "")+sqlLimit(1, 0))
 	if err == nil {
@@ -95,7 +95,7 @@ func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	}
 	linkleft := escape("<", q.Encode())
 
-	m := makeFreshQuery(db, t, "", "")
+	m := makeFreshQuery(t, "", "")
 	m.Set("k", k)
 	m.Set("v", v)
 	menu := makeMenu5(m)

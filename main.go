@@ -9,7 +9,29 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"regexp"
 )
+
+// HACK! TODO use proper accessors
+func getDSN(conn *sql.DB) string {
+	dsn := regexp.MustCompile(" ([^ ]*) ").FindStringSubmatch(fmt.Sprint(conn))
+	if len(dsn)>1 {
+		return dsn[1]
+	} else {
+		return ""
+	}
+}
+
+func getHostDB(dsn string) (string,string) {
+	db :=  regexp.MustCompile("/(.*)$").FindStringSubmatch(dsn)
+	host := regexp.MustCompile("\\(([^ ]*):").FindStringSubmatch(dsn)
+	if len(host)>1 && len(db) > 1{
+		return host[1], db[1]
+	} else {
+		return "",""
+	}
+}
+
 
 // restrict GET to reserved files
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -42,9 +64,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	host := q.Get("host")
 	port := q.Get("port")
 	dbms := q.Get("dbms")
-	db := q.Get("db")
-	if user != "" && pass != "" {
-		log.Println("[LOGIN]", dbms, user, host, port, db)
+	base := q.Get("db")
+	if user != "" && pass != "" && base != "" {
+		log.Println("[LOGIN]", dbms, user, host, port, base)
 		if dbms == "" {
 			dbms = "mysql"
 		}
@@ -54,14 +76,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		if port == "" {
 			port = "3306"
 		}
-		setCredentials(w, r, dbms, host, port, user, pass)
-		conn, err := sql.Open(dbms, dsn(user, pass, host, port, db))
+		setCredentials(w, r, dbms, host, port, user, pass, base)
+		conn, err := sql.Open(dbms, dsn(user, pass, host, port, base))
 		checkY(err)
-		workRouter(w, r, conn, host)
-	} else if dbms, host, port, user, pass, err := getCredentials(r); err == nil {
-		conn, err := sql.Open(dbms, dsn(user, pass, host, port, db))
+		workRouter(w, r, conn, host, base)
+	} else if dbms, host, port, user, pass, base, err := getCredentials(r); err == nil {
+		conn, err := sql.Open(dbms, dsn(user, pass, host, port, base))
 		checkY(err)
-		workRouter(w, r, conn, host)
+		workRouter(w, r, conn, host, base)
 	} else {
 		loginPageHandler(w, r)
 	}

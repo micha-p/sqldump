@@ -56,7 +56,6 @@ type TContext struct {
 func makeBack(host string, db string, t string, o string, d string, k string) string {
 	q := url.Values{}
 	if db != "" {
-		q.Add("db", db)
 		if t != "" {
 			q.Add("t", t)
 		}
@@ -81,15 +80,15 @@ func makeTrail(host string, db string, t string, o string, d string, whereStack 
 	trail := []Entry{Entry{host, "/", ""}}
 
 	if db != "" {
-		q.Add("db", db)
+		q.Add("action", "USE")
 		trail = append(trail, escape(db, q.Encode()))
+		q.Del("action")
 	}
 	if t != "" {
 		q.Add("t", t)
 		trail = append(trail, escape(t, q.Encode()))
 	}
 
-	q.Set("db", db)
 	q.Set("t", t)
 	q.Set("o", o)
 	q.Set("d", d)
