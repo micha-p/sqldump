@@ -1,7 +1,7 @@
 <html>
 <head>
 <title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{else}}{{.User}}@{{.Host}}:{{.Port}}{{end}}</title>
-{{if .CSS}}<link rel="stylesheet" type="text/css" href="{{.CSS}}"/>{{end}}
+{{if .CSS}}<link rel="stylesheet" type="text/css" href="/{{.CSS}}"/>{{end}}
 <body>
 
 {{if .Trail}}

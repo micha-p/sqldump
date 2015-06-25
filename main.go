@@ -51,6 +51,32 @@ func cssHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func statusHandler(w http.ResponseWriter, r *http.Request) {
+	if dbms, host, port, user, pass, base, err := getCredentialsFromRequest(r); err == nil {
+		startStatus(w, r, dbms, host, port, user, pass, base, true)
+	} else if dbms, host, port, user, pass, base, err := getCredentialsFromCookie(r); err == nil {
+		startStatus(w, r, dbms, host, port, user, pass, base, false)
+	} else {
+		loginShowPage(w, r)
+	}
+}
+
+func startStatus(w http.ResponseWriter, r *http.Request, 
+	dbms string, user string, pass string, host string, port string, base string, new bool) {
+
+	conn,err := getDB(w,r, dbms, user, pass, host, port, base, new)
+	if err == nil {
+		defer conn.Close()
+		t, o, d, _, g, _, v := readRequest(r)
+		showTableStatus(w, conn, host, base, t, o, d, g, v)
+	} else {
+		conn.Close()
+		log.Println("[AUTH]",err)
+		shipFatal(w,err)
+	}
+}
+
+
 func loginShowPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, loginPage)
@@ -62,10 +88,9 @@ func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 	t, o, d, n, g, k, v := readRequest(r)
 
 	q := r.URL.Query()
-	action := q.Get("action")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if action != "" && db != "" && t != "" {
+	if q.Get("action") != "" && db != "" && t != "" {
 		actionRouter(w, r, conn, host, db)
 	} else if db != "" && t == "" {
 		showTables(w, conn, host, db, t, o, d, g, v)
@@ -77,59 +102,53 @@ func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 }
 
 
-func startWork(w http.ResponseWriter, r *http.Request, dbms string, host string, port string, user string, pass string, base string, new bool) {
-
-	if strings.ToUpper(base)=="INFORMATION_SCHEMA" && !INFOFLAG {
-		clearCredentials(w)
-		log.Println("[AUTH]", "Access denied",base)
-		shipFatal(w,"Access denied to INFORMATION_SCHEMA")
-	} else {
-		conn, err := sql.Open(dbms, dsn(user, pass, host, port, base))
+func startWork(w http.ResponseWriter, r *http.Request, 
+	dbms string, user string, pass string, host string, port string, base string, new bool) {
+	conn,err := getDB(w,r, dbms, user, pass, host, port, base, new)
+	if err == nil {
 		defer conn.Close()
-		if err != nil {
-			clearCredentials(w)
-			log.Println("[AUTH]", "Connection closed", dbms, user, host, port, base)
-			shipFatal(w,err)
-		} else {
-			err := conn.Ping()
-			if err != nil {
-				clearCredentials(w)
-				log.Println("[AUTH]", "Access denied", dbms, user, host, port, base)
-				shipFatal(w,err)
-			} else {
-				if new {
-					log.Println("[AUTH]", "Query", dbms, user, host, port, base)
-					setCredentials(w, r, dbms, host, port, user, pass, base)
-				}
-				workRouter(w, r, conn, host, base)
-			}
-		}
+		workRouter(w, r, conn, host, base)
+	} else {
+		conn.Close()
+		log.Println("[AUTH]",err)
+		shipFatal(w,err)
 	}
 }
 
 
+func getDB(w http.ResponseWriter, r *http.Request, 
+	dbms string, user string, pass string, host string, port string, base string, new bool) (*sql.DB, error) {
+	
+	var conn *sql.DB
+	var err error
+	if strings.ToUpper(base)=="INFORMATION_SCHEMA" && !INFOFLAG {
+		clearCredentials(w)
+		err = fmt.Errorf("Access denied for user '"+user+"'@'"+host+"' to database '"+base+"'")
+	} else {
+		conn, err = sql.Open(dbms, dsn(user, pass, host, port, base))
+		if err != nil {
+			clearCredentials(w)
+		} else {
+			err = conn.Ping()
+			if err != nil {
+				clearCredentials(w)
+			} else {
+				if new {
+					log.Println("[AUTH]", "Query", dbms, user, host, port, base)
+					setCredentials(w, r, dbms, user, pass, host, port, base)
+				}
+			}
+		}
+	}
+	return conn, err	
+}
+
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	log.Println("[GET]", r.URL)
-	user := q.Get("user") // Login via bookmark
-	pass := q.Get("pass")
-	host := q.Get("host")
-	port := q.Get("port")
-	dbms := q.Get("dbms")
-	base := q.Get("db")
-	if dbms == "" {
-		dbms = "mysql"
-	}
-	if host == "" {
-		host = "localhost"
-	}
-	if port == "" {
-		port = "3306"
-	}
-	if user != "" && pass != "" && base != "" {
-		startWork(w, r, dbms, host, port, user, pass, base, true)
-	} else if dbms, host, port, user, pass, base, err := getCredentials(r); err == nil {
-		startWork(w, r, dbms, host, port, user, pass, base, false)
+	if dbms, user, pass, host, port, base, err := getCredentialsFromRequest(r); err == nil {
+		startWork(w, r, dbms, user, pass, host, port, base, true)
+	} else if dbms, user, pass, host, port, base, err := getCredentialsFromCookie(r); err == nil {
+		startWork(w, r, dbms, user, pass, host, port, base, false)
 	} else {
 		loginShowPage(w, r)
 	}
@@ -178,6 +197,7 @@ func main() {
 	http.HandleFunc("/login", loginFormHandler)
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/test", testHandler)
+	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/", indexHandler)
 
 	if DEBUGFLAG {

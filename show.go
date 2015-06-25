@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 
@@ -33,25 +34,40 @@ import (
 	tableOutSimple(w, conn, "", head, records, []Entry{})
 }*/
 
-func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string,t string, o string, d string, g string, v string) {
-
-	q := url.Values{}
-	
-	// TODO show table status; http://dev.mysql.com/doc/refman/5.1/en/show-table-status.html
-
-	query := str2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
+func showTableStatus(w http.ResponseWriter, conn *sql.DB, host string, db string,t string, o string, d string, g string, v string) {
+	query := str2sql("SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`, "+
+	"AVG_ROW_LENGTH AS `Avg_row_length`, DATA_LENGTH AS `Data_length`, MAX_DATA_LENGTH AS `Max_data_length`, INDEX_LENGTH AS `Index_length`,"+
+	"AUTO_INCREMENT AS `Auto_Increment`, CREATE_TIME AS `Create_time`,  TABLE_COLLATION AS `Collation`, TABLE_COMMENT AS `Comment`")
 	query = query + " FROM information_schema.TABLES"
+	showTableInfo(w, conn, host, db, t, o, d, g, v, "status", "SHOW TABLE STATUS",query)
+}
+
+
+func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string,t string, o string, d string, g string, v string) {
+	query := str2sql("SELECT TABLE_NAME AS `Table`, CREATE_TIME AS `Create_time`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
+	query = query + " FROM information_schema.TABLES"
+	showTableInfo(w, conn, host, db, t, o, d, g, v, "", "SHOW TABLES", query)
+}
+
+func showTableInfo(w http.ResponseWriter, conn *sql.DB, host string, db string,
+	t string, o string, d string, g string, v string, 
+	path string, short sqlstring, query sqlstring) {
+	
 	query = query + sqlWhere("TABLE_SCHEMA", "=", db) + sqlHaving(g, "=", v) + sqlOrder(o, d)
 	rows, err, sec := getRows(conn, query)
 	checkY(err)
 	defer rows.Close()
-
 	columns, err := rows.Columns()
 	checkY(err)
-	home := url.Values{}
-	home.Add("o", o)
-	home.Add("d", d)
-	head := createHead("", o, d, "", "", columns, home)
+
+	home := makeFreshQuery("", o, d)
+	if g !=""{
+		home.Add("g",g)
+	}
+	if v !=""{
+		home.Add("v",v)
+	}
+	head := createHead("", o, d, "", "", columns, path, home)
 
 	count := len(columns)
 	values := make([]interface{}, count)
@@ -69,32 +85,39 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string,t st
 		g := url.Values{}
 		g.Add("t", getNullString(values[0]).String)
 		row = append(row, escape(Int64toa(rownum), g.Encode()))
+		g.Del("t")
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			if c == "Rows" && (db == "INFORMATION_SCHEMA" || db == "information_schema") && (INFOFLAG || EXPERTFLAG) {
+			if c == "Rows" && (INFOFLAG || EXPERTFLAG) && strings.ToUpper(db) == "INFORMATION_SCHEMA" {
 				nv = sql.NullString{Valid: true, String: getCount(conn, sqlCount(row[1].Text))}
 			}
-			if c == "Table" || c == "Comment" {
+			if c == "Table" || c == "Comment" { // these links should navigate, not group!
 				v := nv.String
 				g := url.Values{}
 				g.Add("t", v)
-				row = append(row, escape(v, g.Encode()))
+				// these links should navigate, not group!
+				row = append(row, escape(v, "", g.Encode()))
 			} else {
-				row = append(row, makeEntry(nv, "", c, "", q))
+				row = append(row, makeEntry(nv, c, "", path, home))
 			}
 		}
 		records = append(records, row)
 	}
 
 	// Shortened statement
-	query = "SHOW TABLES" + sqlHaving(g, "=", v) + sqlOrder(o, d)
+	query = short + sqlHaving(g, "=", v) + sqlOrder(o, d)
 	var msg Message
 	if QUIETFLAG {
 		msg = Message{}
 	} else {
 		msg = Message{Msg: sql2str(query), Rows: rownum, Affected: -1, Seconds: sec}
 	}
-	tableOutRows(w, conn, host, db, "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, [][]Clause{})
+	
+	m:=makeFreshQuery("", o, d)
+	var menu []Entry
+	menu = append(menu, makeMenuPath(m, "", "", "i", "status"))
+	
+	tableOutRows(w, conn, "","","", "", "", "", Entry{}, Entry{}, head, records, menu, []Message{msg}, [][]Clause{})
 }
 
 /*
@@ -129,24 +152,24 @@ func showInfo(w http.ResponseWriter, conn *sql.DB, t string, stmt sqlstring) {
 }
 
 // do not export
-// will modify query
-func makeEntry(nv sql.NullString, t string, c string, primary string, q url.Values) Entry {
+// might modify query
+func makeEntry(nv sql.NullString, column string, primary string, path string, q url.Values) Entry {
 	if nv.Valid {
 		v := nv.String
-		if c == primary {
+		if column == primary {
 			q.Set("k", primary)
 			q.Set("v", v)
-			link := q.Encode()
+			query := q.Encode()
 			q.Del("k")
 			q.Del("v")
-			return escape(v, link)
+			return escape(v, path, query)
 		} else {
-			q.Set("g", c)
+			q.Set("g", column)
 			q.Set("v", v)
-			link := q.Encode()
+			query := q.Encode()
 			q.Del("g")
 			q.Del("v")
-			return escape(v, link)
+			return escape(v, path, query)
 		}
 	} else {
 		return escapeNull()

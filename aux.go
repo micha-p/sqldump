@@ -7,9 +7,15 @@ import (
 )
 
 
-func escape(name string, link ...string) Entry {
-	if len(link) > 0 {
-		return Entry{Text: name, Link: "/?" + link[0], Null: ""}
+func escape(name string, arg ...string) Entry {
+	if len(arg) == 2 && arg[1] !="" {
+		return Entry{Text: name, Link: "/"+arg[0] + "?" + arg[1], Null: ""}
+	} else if len(arg) == 2 && arg[1] =="" {
+		return Entry{Text: name, Link: "/"+arg[0], Null: ""}
+	} else if len(arg) == 2 && arg[0] =="" {
+		return Entry{Text: name, Link: "/?"+arg[1], Null: ""}
+	} else if len(arg) == 1 {
+		return Entry{Text: name, Link: "/?" + arg[0], Null: ""}
 	} else {
 		return Entry{Text: name, Link: "", Null: ""}
 	}

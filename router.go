@@ -139,13 +139,20 @@ func readRequest(r *http.Request) (string, string, string, string, string, strin
 	return t, o, d, n, g, k, v
 }
 
+
+
+
 func makeMenu(q url.Values, name string, value string, label string) Entry {
+	return makeMenuPath(q,name, value, label,"")
+}
+
+func makeMenuPath(q url.Values, name string, value string, label string, path string) Entry {
 	if name != "" {
 		q.Set(name, value)
 	}
 	link := q.Encode()
 	q.Del(name)
-	return escape(label, link)
+	return escape(label, path, link)
 }
 
 func makeMenu5(m url.Values) []Entry {

@@ -77,11 +77,7 @@ func makeTrail(host string, db string, t string, o string, d string, whereStack 
 
 	q := url.Values{}
 
-	trail := []Entry{Entry{host, "/logout", ""}}
-
-	if db != "" {
-		trail = append(trail, escape(db, "/"))
-	}
+	trail := []Entry{escape(host, "logout",""), escape(db, q.Encode())}
 	if t != "" {
 		q.Add("t", t)
 		trail = append(trail, escape(t, q.Encode()))
@@ -113,18 +109,18 @@ func makeTitleWithArrow(title string, primary string, d string) string {
 	}
 }
 
-func makeTitleEntry(q url.Values, column string, primary string, o string, d string) Entry {
+func makeTitleEntry(path string, q url.Values, column string, primary string, o string, d string) Entry {
 	var r Entry
 	if o == column {
 		label := makeTitleWithArrow(column, primary, d)
 		q.Set("o", o)
 		if d == "" {
 			q.Set("d", "1")
-			r = escape(label, q.Encode())
+			r = escape(label, path, q.Encode())
 			q.Del("d")
 		} else {
 			q.Del("d")
-			r = escape(label, q.Encode())
+			r = escape(label, path, q.Encode())
 			q.Set("d", d)
 		}
 		q.Set("o", o)
@@ -132,9 +128,9 @@ func makeTitleEntry(q url.Values, column string, primary string, o string, d str
 		q.Set("o", column)
 		q.Del("d")
 		if primary == column {
-			r = escape(column+" (ID)", q.Encode())
+			r = escape(column+" (ID)", path, q.Encode())
 		} else {
-			r = escape(column, q.Encode())
+			r = escape(column, path, q.Encode())
 		}
 	}
 	q.Set("o", o)
@@ -142,15 +138,18 @@ func makeTitleEntry(q url.Values, column string, primary string, o string, d str
 	return r
 }
 
-func createHead(t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
+func createHead(t string, o string, d string, n string, primary string, columns []string, path string, q url.Values) []Entry {
 	head := []Entry{}
 	home := url.Values{}
-	home.Set("t", t)
-	head = append(head, escape("#", home.Encode()))
+	if t !="" {
+		home.Set("t", t)
+		q.Set("t", t)
+	}
+	head = append(head, escape("#", path, home.Encode()))
 
 	q.Set("t", t)
 	for _, title := range columns {
-		head = append(head, makeTitleEntry(q, title, primary, o, d))
+		head = append(head, makeTitleEntry(path, q, title, primary, o, d))
 	}
 	return head
 }

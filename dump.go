@@ -35,7 +35,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, t string, o string, d string,
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(t, o, d, "", primary, columns, url.Values{})
+	head := createHead(t, o, d, "", primary, columns, "", url.Values{})
 	records, rownum := makeRecords(rows, t, primary, 0, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
@@ -85,7 +85,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, t string, o string, d string
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(t, o, d, "", primary, columns, q)
+	head := createHead(t, o, d, "", primary, columns, "", q)
 	records, rownum := makeRecords(rows, t, primary, 0, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
@@ -113,7 +113,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, t string, o string, d string
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(t, o, d, "", primary, columns, q)
+	head := createHead(t, o, d, "", primary, columns, "", q)
 	records, rownum := makeRecords(rows, t, primary, 0, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
@@ -149,7 +149,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, t string, o string, d string
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(t, o, d, limitstring, "", columns, q)
+	head := createHead(t, o, d, limitstring, "", columns, "", q)
 	records, rownum := makeRecords(rows, t, primary, start-1, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
@@ -160,7 +160,9 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, t string, o string, d string
 
 func makeFreshQuery(t string, o string, d string) url.Values {
 	q := url.Values{}
-	q.Set("t", t)
+	if t != "" {
+		q.Set("t", t)
+	}
 	if o != "" {
 		q.Set("o", o)
 	}
@@ -204,7 +206,7 @@ func makeRecords(rows *sql.Rows, t string, primary string, offset int64, q url.V
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			row = append(row, makeEntry(nv, t, c, primary, q))
+			row = append(row, makeEntry(nv, c, primary, "", q))
 		}
 		records = append(records, row)
 	}
