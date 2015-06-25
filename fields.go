@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, nint int64, nmax int64,
+func showFields(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, n string, nint int64, nmax int64,
 	stmt sqlstring, whereStack [][]Clause) {
 
 	q := makeFreshQuery(t, o, d)
@@ -25,10 +25,10 @@ func showFields(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	q.Set("n", nstring)
 	menu := makeMenu3(q)
 
-	verticalView(w, conn, stmt, host, db, t, o, d /* primary: */, "", nstring, "#", linkleft, linkright, menu, whereStack, q)
+	verticalView(w, conn, stmt, t, o, d /* primary: */, "", nstring, "#", linkleft, linkright, menu, whereStack, q)
 }
 
-func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host string, db string, t string, o string, d string,
+func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, t string, o string, d string,
 	primary string, counter string, counterlabel string,
 	linkleft Entry, linkright Entry, menu []Entry, whereStack [][]Clause, q url.Values) {
 
@@ -57,7 +57,6 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 		q.Set("d", d)
 	}
 	home := url.Values{}
-	home.Add("db", db)
 	home.Add("t", t)
 	head := []Entry{escape("#", home.Encode()), title_column, escape("Data")}
 
@@ -70,13 +69,13 @@ func verticalView(w http.ResponseWriter, conn *sql.DB, stmt sqlstring, host stri
 		}
 		row := []Entry{Entry{Text: strconv.Itoa(i + 1)},
 			Entry{Text: label},
-			makeEntry(nv, db, t, c, "", q)}
+			makeEntry(nv, t, c, "", q)}
 		records = append(records, row)
 	}
-	tableOutFields(w, conn, host, db, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu, whereStack)
+	tableOutFields(w, conn, t, o, d, counter, counterlabel, linkleft, linkright, head, records, menu, whereStack)
 }
 
-func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, k string, v string, stmt sqlstring) {
+func showKeyValue(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, k string, v string, stmt sqlstring) {
 
 	q := makeFreshQuery(t, "", "")
 	q.Set("k", k)
@@ -99,5 +98,5 @@ func showKeyValue(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	m.Set("k", k)
 	m.Set("v", v)
 	menu := makeMenu5(m)
-	verticalView(w, conn, stmt, host, db, t /* order: */, k, d, k, v, k+" (ID) =", linkleft, linkright, menu, [][]Clause{}, q)
+	verticalView(w, conn, stmt, t /* order: */, k, d, k, v, k+" (ID) =", linkleft, linkright, menu, [][]Clause{}, q)
 }

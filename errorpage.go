@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"database/sql"
 )
 
 type EContext struct {
@@ -16,8 +17,9 @@ type EContext struct {
 	Trail    []Entry
 }
 
-func shipErrorPage(w http.ResponseWriter, host string, db string, t string, cols []CContext) {
+func shipErrorPage(w http.ResponseWriter, conn *sql.DB, t string, cols []CContext) {
 
+	host,db := getHostDB(getDSN(conn))
 	c := EContext{
 		CSS:      CSS_FILE,
 		Action:   "BACK",
@@ -36,16 +38,16 @@ func shipErrorPage(w http.ResponseWriter, host string, db string, t string, cols
 	checkY(err)
 }
 
-func checkErrorPage(w http.ResponseWriter, host string, db string, t string, query sqlstring, err error) {
+func checkErrorPage(w http.ResponseWriter, conn *sql.DB, t string, query sqlstring, err error) {
 	if err != nil {
 		s := sql2str(query)
 		cols := []CContext{CContext{"1", "", "Query", "", "", "", "valid", s, ""},
 			CContext{"2", "", "Error", "", "", "", "valid", fmt.Sprint(err), ""}}
-		shipErrorPage(w, host, db, t, cols)
+		shipErrorPage(w, conn, t, cols)
 	}
 }
 
-func shipMessage(w http.ResponseWriter, host string, db string, msg string) {
+func shipMessage(w http.ResponseWriter, conn *sql.DB, msg string) {
 	cols := []CContext{CContext{"1", "", "Message", "", "", "", "valid", msg, ""}}
-	shipErrorPage(w, host, db, "", cols)
+	shipErrorPage(w, conn, "", cols)
 }

@@ -30,11 +30,12 @@ func showDatabases(w http.ResponseWriter, conn *sql.DB, host string) {
 		}
 	}
 	// message suppressed, as it is not really useful and database should be chosen at login or bookmarked
-	tableOutSimple(w, conn, host, "", "", head, records, []Entry{})
+	tableOutSimple(w, conn, "", head, records, []Entry{})
 }
 
-func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string) {
+func showTables(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, g string, v string) {
 
+	_,db := getHostDB(getDSN(conn))
 	q := url.Values{}
 	query := str2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 	query = query + " FROM information_schema.TABLES"
@@ -48,7 +49,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	home := url.Values{}
 	home.Add("o", o)
 	home.Add("d", d)
-	head := createHead(db, "", o, d, "", "", columns, home)
+	head := createHead("", o, d, "", "", columns, home)
 
 	count := len(columns)
 	values := make([]interface{}, count)
@@ -77,7 +78,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 				g.Add("t", v)
 				row = append(row, escape(v, g.Encode()))
 			} else {
-				row = append(row, makeEntry(nv, db, "", c, "", q))
+				row = append(row, makeEntry(nv, "", c, "", q))
 			}
 		}
 		records = append(records, row)
@@ -91,7 +92,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 	} else {
 		msg = Message{Msg: sql2str(query), Rows: rownum, Affected: -1, Seconds: sec}
 	}
-	tableOutRows(w, conn, host, db, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, [][]Clause{})
+	tableOutRows(w, conn, "", "", "", "", "", "", Entry{}, Entry{}, head, records, []Entry{}, []Message{msg}, [][]Clause{})
 }
 
 /*
@@ -103,7 +104,7 @@ func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string, t s
 | start | date        | YES  |     | NULL    |       |
 +-------+-------------+------+-----+---------+-------+
 */
-func showInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, stmt sqlstring) {
+func showInfo(w http.ResponseWriter, conn *sql.DB, t string, stmt sqlstring) {
 
 	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
@@ -122,12 +123,12 @@ func showInfo(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 		i = i + 1
 	}
 	// message not shown as it disturbs equal alignment of info, query and field.
-	tableOutSimple(w, conn, host, db, t, head, records, []Entry{})
+	tableOutSimple(w, conn, t, head, records, []Entry{})
 }
 
 // do not export
 // will modify query
-func makeEntry(nv sql.NullString, db string, t string, c string, primary string, q url.Values) Entry {
+func makeEntry(nv sql.NullString, t string, c string, primary string, q url.Values) Entry {
 	if nv.Valid {
 		v := nv.String
 		if c == primary {

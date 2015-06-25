@@ -124,7 +124,7 @@ func getMainType(t string) string {
 
 func getColumnMainType(conn *sql.DB, host string, db string, t string, c string) string {
 	stmt := "select data_type from information_schema.columns where table_schema = '" + db + "'and table_name = '" + t + "' and column_name = '" + c+ "'"
-	return getMainType(getSingleValue(conn, host, db, stmt))
+	return getMainType(getSingleValue(conn, stmt))
 }
 */
 

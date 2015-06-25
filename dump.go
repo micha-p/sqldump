@@ -18,7 +18,7 @@ import (
  * table out
  */
 
-func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, stmt sqlstring, messageStack []Message) {
+func dumpRows(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, stmt sqlstring, messageStack []Message) {
 
 	menu := makeMenu3(makeFreshQuery(t, o, d))
 	q := makeFreshQuery(t, o, d)
@@ -26,7 +26,7 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	linkright := escape(">", q.Encode())
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
-		checkErrorPage(w, host, db, t, stmt, err)
+		checkErrorPage(w, conn, t, stmt, err)
 		return
 	} else {
 		defer rows.Close()
@@ -35,18 +35,18 @@ func dumpRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t str
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(db, t, o, d, "", primary, columns, url.Values{})
-	records, rownum := makeRecords(rows, db, t, primary, 0, q)
+	head := createHead(t, o, d, "", primary, columns, url.Values{})
+	records, rownum := makeRecords(rows, t, primary, 0, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, [][]Clause{})
+	tableOutRows(w, conn, t, primary, o, d, " ", "#", linkleft, linkright, head, records, menu, messageStack, [][]Clause{})
 }
 
 // difference to dumprows
 // 1. counter, label, linkleft and linkright
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. Delete will delete immediately
-func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, g string, v string,
+func dumpGroup(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, g string, v string,
 	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
 	q := makeFreshQuery(t, o, d)
@@ -56,7 +56,7 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	menu := makeMenu5(q)
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
-		checkErrorPage(w, host, db, t, stmt, err)
+		checkErrorPage(w, conn, t, stmt, err)
 		return
 	} else {
 		defer rows.Close()
@@ -85,18 +85,18 @@ func dumpGroup(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(db, t, o, d, "", primary, columns, q)
-	records, rownum := makeRecords(rows, db, t, primary, 0, q)
+	head := createHead(t, o, d, "", primary, columns, q)
+	records, rownum := makeRecords(rows, t, primary, 0, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, whereStack)
+	tableOutRows(w, conn, t, primary, o, d, v, g+" =", linkleft, linkright, head, records, menu, messageStack, whereStack)
 }
 
 // difference to dumpRows
 // 1. trail shows where clauses
 // 2. as there is already a selection, update will show UPDATEFORM
 // 3. delete will show FILLEDDELETEFORM for confirmation (TODO)
-func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string,
+func dumpWhere(w http.ResponseWriter, conn *sql.DB, t string, o string, d string,
 	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
 	q := makeFreshQuery(t, o, d)
@@ -104,7 +104,7 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	menu := makeMenu5(q)
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
-		checkErrorPage(w, host, db, t, stmt, err)
+		checkErrorPage(w, conn, t, stmt, err)
 		return
 	} else {
 		defer rows.Close()
@@ -113,14 +113,14 @@ func dumpWhere(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(db, t, o, d, "", primary, columns, q)
-	records, rownum := makeRecords(rows, db, t, primary, 0, q)
+	head := createHead(t, o, d, "", primary, columns, q)
+	records, rownum := makeRecords(rows, t, primary, 0, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, whereStack)
+	tableOutRows(w, conn, t, primary, o, d, "", "", Entry{}, Entry{}, head, records, menu, messageStack, whereStack)
 }
 
-func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, start int64, end int64, max int64,
+func dumpRange(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, start int64, end int64, max int64,
 	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
 	q := makeFreshQuery(t, o, d)
@@ -140,7 +140,7 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 
 	rows, err, sec := getRows(conn, stmt)
 	if err != nil {
-		checkErrorPage(w, host, db, t, stmt, err)
+		checkErrorPage(w, conn, t, stmt, err)
 		return
 	} else {
 		defer rows.Close()
@@ -149,11 +149,11 @@ func dumpRange(w http.ResponseWriter, conn *sql.DB, host string, db string, t st
 	primary := getPrimary(conn, t)
 	columns, err := rows.Columns()
 	checkY(err)
-	head := createHead(db, t, o, d, limitstring, "", columns, q)
-	records, rownum := makeRecords(rows, db, t, primary, start-1, q)
+	head := createHead(t, o, d, limitstring, "", columns, q)
+	records, rownum := makeRecords(rows, t, primary, start-1, q)
 
 	messageStack = append(messageStack, Message{Msg: sql2str(stmt), Rows: rownum, Affected: -1, Seconds: sec})
-	tableOutRows(w, conn, host, db, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, whereStack)
+	tableOutRows(w, conn, t, primary, o, d, limitstring, "#", linkleft, linkright, head, records, menu, messageStack, whereStack)
 }
 
 /**** HELPERS ***********************/
@@ -187,7 +187,7 @@ func makeValuesPointers(columns []string) ([]interface{}, []interface{}) {
 	return values, valuePtrs
 }
 
-func makeRecords(rows *sql.Rows, db string, t string, primary string, offset int64, q url.Values) ([][]Entry, int64) {
+func makeRecords(rows *sql.Rows, t string, primary string, offset int64, q url.Values) ([][]Entry, int64) {
 
 	//q, err := url.ParseQuery(original.Encode());checkY(err)   // brute force to preserve original
 	columns, err := rows.Columns()
@@ -204,7 +204,7 @@ func makeRecords(rows *sql.Rows, db string, t string, primary string, offset int
 
 		for i, c := range columns {
 			nv := getNullString(values[i])
-			row = append(row, makeEntry(nv, db, t, c, primary, q))
+			row = append(row, makeEntry(nv, t, c, primary, q))
 		}
 		records = append(records, row)
 	}

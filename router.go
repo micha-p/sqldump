@@ -68,38 +68,38 @@ import (
 */
 
 func dumpRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB,
-	host string, db string, t string, o string, d string, n string, g string, k string, v string) {
+	t string, o string, d string, n string, g string, k string, v string) {
 
 	colinfo := getColumnInfo(conn, t)
 	stmt := sqlStar(t)
 
 	if k != "" && v != "" && k == getPrimary(conn, t) {
 		stmt = stmt + sqlHaving(k, "=", v)
-		showKeyValue(w, conn, host, db, t, o, d, k, v, stmt)
+		showKeyValue(w, conn, t, o, d, k, v, stmt)
 	} else {
 		wclauses, _ := collectClauses(r, colinfo)
 
 		if len(wclauses) == 0 && g == "" && v == "" && n == "" {
 			stmt = stmt + sqlOrder(o, d)
-			dumpRows(w, conn, host, db, t, o, d, stmt, []Message{})
+			dumpRows(w, conn, t, o, d, stmt, []Message{})
 
 		} else {
 			stmt = stmt + sqlWhereClauses(wclauses)
 			stmt = stmt + sqlHaving(g, "=", v)
 			stmt = stmt + sqlOrder(o, d)
-			dumpSelection(w, conn, host, db, t, o, d, n, g, v, stmt, wclauses, []Message{})
+			dumpSelection(w, conn, t, o, d, n, g, v, stmt, wclauses, []Message{})
 		}
 	}
 }
 
-func dumpSelection(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, o string, d string, n string, g string, v string,
+func dumpSelection(w http.ResponseWriter, conn *sql.DB, t string, o string, d string, n string, g string, v string,
 	stmt sqlstring, whereStack [][]Clause, messageStack []Message) {
 
 	if g == "" && n == "" {
-		dumpWhere(w, conn, host, db, t, o, d, stmt, whereStack, messageStack)
+		dumpWhere(w, conn, t, o, d, stmt, whereStack, messageStack)
 	} else {
 		if n == "" {
-			dumpGroup(w, conn, host, db, t, o, d, g, v, stmt, whereStack, messageStack)
+			dumpGroup(w, conn, t, o, d, g, v, stmt, whereStack, messageStack)
 		} else {
 			singlenumber := regexp.MustCompile("^ *(\\d+) *$").FindString(n)
 			limits := regexp.MustCompile("^ *(\\d+) *- *(\\d+) *$").FindStringSubmatch(n)
@@ -109,7 +109,7 @@ func dumpSelection(w http.ResponseWriter, conn *sql.DB, host string, db string, 
 				ni, _ := Atoi64(singlenumber)
 				ni = minInt64(ni, nmax)
 				stmt = stmt + sqlLimit(1, ni)
-				showFields(w, conn, host, db, t, o, d, singlenumber, ni, nmax, stmt, whereStack)
+				showFields(w, conn, t, o, d, singlenumber, ni, nmax, stmt, whereStack)
 			} else if len(limits) == 3 {
 				nstart, err := Atoi64(limits[1])
 				checkY(err)
@@ -117,9 +117,9 @@ func dumpSelection(w http.ResponseWriter, conn *sql.DB, host string, db string, 
 				checkY(err)
 				nend = minInt64(nend, nmax)
 				stmt = stmt + sqlLimit(1+nend-nstart, nstart)
-				dumpRange(w, conn, host, db, t, o, d, nstart, nend, nmax, stmt, whereStack, messageStack)
+				dumpRange(w, conn, t, o, d, nstart, nend, nmax, stmt, whereStack, messageStack)
 			} else {
-				shipMessage(w, host, db, "Can't understand number or range: "+n)
+				shipMessage(w, conn, "Can't understand number or range: "+n)
 			}
 		}
 	}
@@ -179,8 +179,8 @@ func workRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host strin
 	if action != "" && db != "" && t != "" {
 		actionRouter(w, r, conn, host, db)
 	} else if db != "" && t == "" {
-		showTables(w, conn, host, db, t, o, d, g, v)
+		showTables(w, conn, t, o, d, g, v)
 	} else if db != ""{
-		dumpRouter(w, r, conn, host, db, t, o, d, n, g, k, v)
+		dumpRouter(w, r, conn, t, o, d, n, g, k, v)
 	}
 }

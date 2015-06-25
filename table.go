@@ -144,14 +144,12 @@ func makeTitleEntry(q url.Values, column string, primary string, o string, d str
 	return r
 }
 
-func createHead(db string, t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
+func createHead(t string, o string, d string, n string, primary string, columns []string, q url.Values) []Entry {
 	head := []Entry{}
 	home := url.Values{}
-	home.Set("db", db)
 	home.Set("t", t)
 	head = append(head, escape("#", home.Encode()))
 
-	q.Set("db", db)
 	q.Set("t", t)
 	for _, title := range columns {
 		head = append(head, makeTitleEntry(q, title, primary, o, d))
@@ -159,8 +157,9 @@ func createHead(db string, t string, o string, d string, n string, primary strin
 	return head
 }
 
-func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, head []Entry, records [][]Entry, menu []Entry) {
+func tableOutSimple(w http.ResponseWriter, conn *sql.DB, t string, head []Entry, records [][]Entry, menu []Entry) {
 
+	host,db := getHostDB(getDSN(conn))
 	c := TContext{
 		User:     "",
 		Host:     host,
@@ -189,7 +188,7 @@ func tableOutSimple(w http.ResponseWriter, conn *sql.DB, host string, db string,
 	checkY(err)
 }
 
-func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t string, primary string, o string, d string,
+func tableOutRows(w http.ResponseWriter, conn *sql.DB, t string, primary string, o string, d string,
 	n string, counterLabel string, linkleft Entry, linkright Entry,
 	head []Entry, records [][]Entry, menu []Entry, messageStack []Message, whereStack [][]Clause) {
 
@@ -198,6 +197,7 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 		msgs = messageStack
 	}
 
+	host,db := getHostDB(getDSN(conn))
 	c := TContext{
 		User:     "",
 		Host:     host,
@@ -227,14 +227,14 @@ func tableOutRows(w http.ResponseWriter, conn *sql.DB, host string, db string, t
 	checkY(err)
 }
 
-func tableOutFields(w http.ResponseWriter, conn *sql.DB, host string,
-	db string, t string, o string, d string,
+func tableOutFields(w http.ResponseWriter, conn *sql.DB, t string, o string, d string,
 	counterContent string, counterLabel string,
 	linkleft Entry, linkright Entry,
 	head []Entry, records [][]Entry, menu []Entry, whereStack [][]Clause) {
 
 	initTemplate()
 
+	host,db := getHostDB(getDSN(conn))
 	c := TContext{
 		User:     "",
 		Host:     host,
