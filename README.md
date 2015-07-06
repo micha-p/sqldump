@@ -56,14 +56,14 @@ A small web-based tool for database administration.
        \___________ row number: show record (browse by number or range)
 
 
-Symbol 	|	Action
---------|-------------
-+ 		|	Add
-~ 		|	Change
-- 		|	Remove
-i 		|	Info
-<		|   Left (towards start)
->		|   Right (towards end)
+    Symbol  |	Action
+    --------|-------------
+    +       |	Add
+    ~       |	Change
+    -       |	Remove
+    i       |	Info
+    <       |   Left (towards start)
+    >       |   Right (towards end)
 
 
 ### Security
@@ -109,7 +109,6 @@ Credentials taken from a simple html-form are directly submitted to the library 
 
 - insert and query limited by request length
 - some data types cause problems at driver level
-- only one where clause per field (will be improved in future versions)
 
 # License
 
