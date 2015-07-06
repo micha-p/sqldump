@@ -2,16 +2,13 @@
 <head>
 <title>{{if .Database}}{{.Database}}{{if .Table}}.{{.Table}}{{end}}{{else}}{{.User}}@{{.Host}}:{{.Port}}{{end}}</title>
 {{if .CSS}}<link rel="stylesheet" type="text/css" href="/{{.CSS}}"/>{{end}}
-<body>
 
-{{if .Trail}}
+<body>{{if .Trail}}
 <div class="top">
 	<div class="breadcrumb">
 	    <a href="logout" class="trail">&times;</a>{{range .Trail}}
 	    <a href="{{.Link}}" class="trail">{{.Text}}</a>{{end}}
-	</div>
-
-	{{if .Counter}}
+	</div>{{if .Counter}}
 	<div class="counter">
 		<form action="/">{{if .Left}}
 			<a href="{{.Left.Link}}" class="count"> {{.Left.Text}} </a>{{end}}
@@ -26,15 +23,11 @@
 			<button type="submit" hidden='hidden'>go</button>{{if .Right}}
 			<a href="{{.Right.Link}}" class="count" > {{.Right.Text}} </a>{{end}}
 		</form>
-    </div>
-	{{end}}
-
-	{{if .Menu}}
+    </div>{{end}}{{if .Menu}}
 	<div class="right">{{range .Menu}}
 		<a href="{{.Link}}" class="count" >[{{.Text}}]</a>{{end}}
 	</div>{{end}}
-</div>
-{{end}}
+</div>{{end}}
 
 {{define "sec"}}({{printf "%.2f" .}} sec){{end}}
 {{define "rows"}}{{if eq .Rows 0}}Empty set {{template "sec" .Seconds}}{{else if eq .Rows 1}}1 row in set {{template "sec" .Seconds}}{{else}}{{.Rows}} rows in set {{template "sec" .Seconds}}{{end}}{{end}}
@@ -45,8 +38,7 @@
    {{.Msg}};{{if ge .Rows 0}}<br>
    {{template "rows" .}}{{end}}{{if ge .Affected 0}}<br>
    {{template "affected" .}}{{end}}
-</div>
-{{end}}
+</div>{{end}}
 
 {{define "entry"}}{{if .Null}}<font color="red"><em>{{.Null}}</em></font>{{else}}{{if .Link}}<a href="{{.Link}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}{{end}}
 {{if ne 0 (len .Records) }}
@@ -55,9 +47,7 @@
    <tr>{{range .Head}} <th>{{template "entry" .}}</th> {{end}}{{if .Trail}}{{else}}<th>{{template "entry" .Back}}</th> {{end}}</tr>{{range .Records}}
    <tr>{{range .}} <td>{{template "entry" .}}</td>{{end}} </tr>{{end}}
    </table>
-</div>
-{{end}}
-
+</div>{{end}}
 </body>
 </html>
 

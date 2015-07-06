@@ -45,13 +45,14 @@ th > a:visited {color: #74AD6E;}               		/* my green */
 th > a:hover {color: orange;text-decoration: underline}
 th > a:active {color: red;}
 td {
+	white-space: nowrap;
 	padding: 4px 8px;
     border-right: 1px solid #715524;
 	border-bottom: 1px solid #715524;
 	background: #fff;
 	color: #715524;        							/* my brown */
 }
-td.cell {    padding: 0px 8px; }
+td.cell {padding: 0px 8px;}
 
 input.cell
     {

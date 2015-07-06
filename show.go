@@ -34,24 +34,65 @@ import (
 	tableOutSimple(w, conn, "", head, records, []Entry{})
 }*/
 
-func showTableStatus(w http.ResponseWriter, conn *sql.DB, host string, db string,t string, o string, d string, g string, v string) {
-	query := str2sql("SELECT TABLE_NAME AS `Table`, ENGINE AS `Engine`, TABLE_ROWS AS `Rows`, "+
-	"AVG_ROW_LENGTH AS `Avg_row_length`, DATA_LENGTH AS `Data_length`, MAX_DATA_LENGTH AS `Max_data_length`, INDEX_LENGTH AS `Index_length`,"+
-	"AUTO_INCREMENT AS `Auto_Increment`, CREATE_TIME AS `Create_time`,  TABLE_COLLATION AS `Collation`, TABLE_COMMENT AS `Comment`")
-	query = query + " FROM information_schema.TABLES"
-	showTableInfo(w, conn, host, db, t, o, d, g, v, "status", "SHOW TABLE STATUS",query)
+func UpperAsColumn(array []sqlstring)sqlstring{
+	var r sqlstring
+	for _,v := range array{
+		r=r + ", "+ str2sql(strings.ToUpper(sql2str(v)))+ " AS `"+v+"`"
+	}
+	return r
 }
 
+func showTableStatus(w http.ResponseWriter, conn *sql.DB, host string, db string,t string, o string, d string, g string, v string) {
+
+	var query sqlstring
+	query = "SELECT TABLE_NAME AS `Table`"
+	
+	if t=="1" {
+		query = query + UpperAsColumn([]sqlstring{"Engine","Version","Row_format","Auto_increment"})
+	} else if t=="2" {
+		query = query + ", TABLE_ROWS AS `Rows`"
+		query = query + UpperAsColumn([]sqlstring{"Avg_row_length","Data_length","Max_data_length","Index_length","Data_free"}) 
+	} else if t=="3" {
+		query = query + UpperAsColumn([]sqlstring{"Create_time","Update_time","Check_time"})
+		query = query + ", TABLE_COLLATION AS `Collation`"
+		query = query + UpperAsColumn([]sqlstring{"Checksum","Create_options"}) 
+		query = query + ", TABLE_COMMENT AS `Comment`"
+	} else {
+		query = query + UpperAsColumn([]sqlstring{"Engine","Version","Row_format"})
+		query = query + ", TABLE_ROWS AS `Rows`"
+		query = query + UpperAsColumn([]sqlstring{"Avg_row_length","Data_length","Max_data_length","Index_length","Data_free"}) 
+		query = query + UpperAsColumn([]sqlstring{"Auto_Increment"})
+		query = query + UpperAsColumn([]sqlstring{"Create_time","Update_time","Check_time"})
+		query = query + ", TABLE_COLLATION AS `Collation`"
+		query = query + UpperAsColumn([]sqlstring{"Checksum","Create_options"}) 
+		query = query + ", TABLE_COMMENT AS `Comment`"
+	}
+	query = query + " FROM information_schema.TABLES"
+	
+	m:=makeFreshQuery("", o, d)
+	var menu []Entry							
+	menu = append(menu, makeMenuPath(m, "t", "1", "1", "status"))
+	menu = append(menu, makeMenuPath(m, "t", "2", "2", "status"))
+	menu = append(menu, makeMenuPath(m, "t", "3", "3", "status"))
+	menu = append(menu, makeMenuPath(m, "",  "", "i", "status"))
+
+	showTableInfo(w, conn, host, db, t, o, d, g, v, "status", "SHOW TABLE STATUS",menu, query)
+}
 
 func showTables(w http.ResponseWriter, conn *sql.DB, host string, db string,t string, o string, d string, g string, v string) {
-	query := str2sql("SELECT TABLE_NAME AS `Table`, CREATE_TIME AS `Create_time`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
+	query := str2sql("SELECT TABLE_NAME AS `Table`, TABLE_ROWS AS `Rows`, TABLE_COMMENT AS `Comment`")
 	query = query + " FROM information_schema.TABLES"
-	showTableInfo(w, conn, host, db, t, o, d, g, v, "", "SHOW TABLES", query)
+
+	m:=makeFreshQuery("", o, d)
+	var menu []Entry
+	menu = append(menu, makeMenuPath(m, "", "", "i", "status"))
+
+	showTableInfo(w, conn, host, db, t, o, d, g, v, "", "SHOW TABLES", menu, query)
 }
 
 func showTableInfo(w http.ResponseWriter, conn *sql.DB, host string, db string,
 	t string, o string, d string, g string, v string, 
-	path string, short sqlstring, query sqlstring) {
+	path string, short sqlstring, menu []Entry, query sqlstring) {
 	
 	query = query + sqlWhere("TABLE_SCHEMA", "=", db) + sqlHaving(g, "=", v) + sqlOrder(o, d)
 	rows, err, sec := getRows(conn, query)
@@ -112,11 +153,7 @@ func showTableInfo(w http.ResponseWriter, conn *sql.DB, host string, db string,
 	} else {
 		msg = Message{Msg: sql2str(query), Rows: rownum, Affected: -1, Seconds: sec}
 	}
-	
-	m:=makeFreshQuery("", o, d)
-	var menu []Entry
-	menu = append(menu, makeMenuPath(m, "", "", "i", "status"))
-	
+		
 	tableOutRows(w, conn, "","","", "", "", "", Entry{}, Entry{}, head, records, menu, []Message{msg}, [][]Clause{})
 }
 
