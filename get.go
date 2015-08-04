@@ -131,7 +131,8 @@ func getColumnMainType(conn *sql.DB, host string, db string, t string, c string)
 
 
 
-func getColumnInfo(conn *sql.DB, t string) []CContext {fmt.Sprint(conn)
+func getColumnInfo(conn *sql.DB, t string) []CContext {
+	fmt.Sprint(conn)
 	err := conn.Ping()
 	checkY(err)
 	rows, _, err := sqlQuery(conn, sqlColumns(t))

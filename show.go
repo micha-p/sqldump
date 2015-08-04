@@ -167,26 +167,97 @@ func showTableInfo(w http.ResponseWriter, conn *sql.DB, host string, db string,
 +-------+-------------+------+-----+---------+-------+
 */
 func showColumns(w http.ResponseWriter, conn *sql.DB, t string, stmt sqlstring) {
-
 	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
 	defer rows.Close()
 
-	records := [][]Entry{}
 	head := []Entry{escape("#"), escape("Field"), escape("Type"), escape("Null"), escape("Key"), escape("Default"), escape("Extra")}
-
+	records := [][]Entry{}
 	var i int64 = 1
 	for rows.Next() {
-		var f, t, n, k, e string
+		var f, y, n, k, e string
 		var d []byte // or use http://golang.org/pkg/database/sql/#NullString
-		err := rows.Scan(&f, &t, &n, &k, &d, &e)
+		err := rows.Scan(&f, &y, &n, &k, &d, &e)
 		checkY(err)
-		records = append(records, []Entry{escape(Int64toa(i)), escape(f), escape(t), escape(n), escape(k), escape(string(d)), escape(e)})
+		g := url.Values{}
+		g.Set("action","INFO")
+		g.Set("t",t)
+		g.Set("o",f)
+		records = append(records, []Entry{escape(Int64toa(i)), escape(f,g.Encode()), escape(y), escape(n), escape(k), escape(string(d)), escape(e)})
 		i = i + 1
 	}
 	// message supressed as it disturbs equal alignment of info, query and field.
 	tableOutSimple(w, conn, t, head, records, []Entry{})
 }
+
+func showFrequency(w http.ResponseWriter, conn *sql.DB, t string, column string) {
+	stmt := str2sql("SELECT ") + sqlProtectIdentifier(column)	+ str2sql(" AS 'group',")
+	stmt = stmt + str2sql(" COUNT(") + sqlProtectIdentifier(column) + str2sql(") AS count,")
+	stmt = stmt + str2sql(" RPAD('', LN(COUNT(") + sqlProtectIdentifier(column) + str2sql(")), '*') ")
+	stmt = stmt + str2sql(" FROM ") + sqlProtectIdentifier(t)
+	stmt = stmt + str2sql(" GROUP  BY ") + sqlProtectIdentifier(column)
+	stmt = stmt + str2sql(" ORDER  BY count DESC;")
+
+	rows, err, _ := getRows(conn, stmt)
+	checkY(err)
+	defer rows.Close()
+
+	head := []Entry{escape("#"), escape("Group"), escape("Count"), escape("Histogram")}
+	records := [][]Entry{}
+
+	var i int64 = 1
+	for rows.Next() {
+		var count int64
+		var group, histogram sql.NullString 
+		err := rows.Scan(&group, &count, &histogram)
+		checkY(err)
+		records = append(records, []Entry{escape(Int64toa(i)), escape(group.String), escape(Int64toa(count)), escape(histogram.String)})
+		i = i + 1
+	}
+	// message supressed as it disturbs equal alignment of info, query and field.
+	tableOutSimple(w, conn, t, head, records, []Entry{})
+}
+
+
+func showHistogram(w http.ResponseWriter, conn *sql.DB, t string, column string) {
+
+	stmt := str2sql("SELECT ROUND(") + sqlProtectIdentifier(column)	+ str2sql(", -2) AS center,")
+	stmt = stmt + str2sql(" COUNT(") + sqlProtectIdentifier(column) + str2sql("),")
+	stmt = stmt + str2sql(" RPAD('', LN(COUNT(") + sqlProtectIdentifier(column) + str2sql(")), '*')")
+	stmt = stmt + str2sql(" FROM ") + sqlProtectIdentifier(t)
+	stmt = stmt + str2sql(" GROUP  BY center;")
+	
+	rows, err, _ := getRows(conn, stmt)
+	checkY(err)
+	defer rows.Close()
+
+	head := []Entry{escape("#"), escape("Center"), escape("Count"), escape("Histogram")}
+	records := [][]Entry{}
+
+	var i int64 = 1
+	for rows.Next() {
+		var center,count int64
+		var histogram string
+		err := rows.Scan(&center, &count, &histogram)
+		checkY(err)
+		records = append(records, []Entry{escape(Int64toa(i)), escape(Int64toa(center)), escape(Int64toa(count)), escape(histogram)})
+		i = i + 1
+	}
+	// message supressed as it disturbs equal alignment of info, query and field.
+	tableOutSimple(w, conn, t, head, records, []Entry{})
+}
+
+
+func showStat(w http.ResponseWriter, conn *sql.DB, t string, column string) {
+	cols := getColumnInfo(conn, t)
+	colinfo := findColumn(cols, column)
+	if colinfo.IsNumeric != "" {
+		showHistogram(w, conn, t, column)
+	} else {
+		showFrequency(w, conn, t, column)
+	}
+}
+
 
 // do not export
 // might modify query

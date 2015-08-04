@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-
+// TODO test if link s really escaped
 func escape(name string, arg ...string) Entry {
 	if len(arg) == 2 && arg[1] !="" {
 		return Entry{Text: name, Link: "/"+arg[0] + "?" + arg[1], Null: ""}

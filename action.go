@@ -35,9 +35,11 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	colinfo := getColumnInfo(conn, t)
 	wclauses, sclauses := collectClauses(r, colinfo)
 	// TODO change *FORM to form="*"
-	if action == "INFO" {
+	if action == "INFO" && o =="" {
 		stmt := str2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
 		showColumns(w, conn, t, stmt)
+	} else if action == "INFO" && o != "" {
+		showStat(w, conn, t, o)
 	} else if action == "GOTO" && n != "" {
 		dumpRouter(w, r, conn, t, o, d, n, g, k, v)
 	} else if action == "SELECT" {
