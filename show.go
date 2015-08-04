@@ -166,7 +166,7 @@ func showTableInfo(w http.ResponseWriter, conn *sql.DB, host string, db string,
 | start | date        | YES  |     | NULL    |       |
 +-------+-------------+------+-----+---------+-------+
 */
-func showInfo(w http.ResponseWriter, conn *sql.DB, t string, stmt sqlstring) {
+func showColumns(w http.ResponseWriter, conn *sql.DB, t string, stmt sqlstring) {
 
 	rows, err, _ := getRows(conn, stmt)
 	checkY(err)
@@ -184,7 +184,7 @@ func showInfo(w http.ResponseWriter, conn *sql.DB, t string, stmt sqlstring) {
 		records = append(records, []Entry{escape(Int64toa(i)), escape(f), escape(t), escape(n), escape(k), escape(string(d)), escape(e)})
 		i = i + 1
 	}
-	// message not shown as it disturbs equal alignment of info, query and field.
+	// message supressed as it disturbs equal alignment of info, query and field.
 	tableOutSimple(w, conn, t, head, records, []Entry{})
 }
 

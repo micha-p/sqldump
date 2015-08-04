@@ -37,7 +37,7 @@ func actionRouter(w http.ResponseWriter, r *http.Request, conn *sql.DB, host str
 	// TODO change *FORM to form="*"
 	if action == "INFO" {
 		stmt := str2sql("SHOW COLUMNS FROM ") + sqlProtectIdentifier(t)
-		showInfo(w, conn, t, stmt)
+		showColumns(w, conn, t, stmt)
 	} else if action == "GOTO" && n != "" {
 		dumpRouter(w, r, conn, t, o, d, n, g, k, v)
 	} else if action == "SELECT" {
